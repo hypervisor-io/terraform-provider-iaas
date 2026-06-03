@@ -3,6 +3,7 @@ package resources_test
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"sync"
 	"testing"
 
@@ -51,13 +52,83 @@ resource "iaas_db_parameter_group" "test" {
 // ---------------------------------------------------------------------------
 // dbParameterGroupMockServer is a stateful mock of the parameter-group API.
 //
-// State is a single group keyed by id. The mock supports:
-//   - GET  /db/parameter-groups → list (returns the stored group)
-//   - POST /db/parameter-groups → create (stores name/engine/parameters)
-//   - PATCH /db/parameter-group/{id} → update (patches name/parameters)
-//   - DELETE /db/parameter-group/{id} → delete (removes group)
+// It SIMULATES the server's appendParameterSuffixes() behaviour: for the known
+// suffix-bearing keys it appends the suffix on every write, exactly as the real
+// Master controller does (Master app/Http/Controllers/UserApi/DbParameterGroupController.php).
+//
+// Suffix map (sourced from Master config/managed_database_parameters.php):
+//
+//	mysql/mariadb:
+//	  innodb_buffer_pool_size  → "M"
+//	  innodb_log_file_size     → "M"
+//	  innodb_redo_log_capacity → "G"
+//	  max_allowed_packet       → "M"
+//	  tmp_table_size           → "M"
+//	  max_heap_table_size      → "M"
+//	postgresql:
+//	  shared_buffers           → "MB"
+//	  effective_cache_size     → "MB"
+//	  work_mem                 → "MB"
+//	  maintenance_work_mem     → "MB"
+//	  wal_buffers              → "MB"
+//	  max_wal_size             → "MB"
+//
+// The mock supports:
+//   - GET  /db/parameter-groups         → list
+//   - POST /db/parameter-groups         → create
+//   - PATCH /db/parameter-group/{id}    → update
+//   - DELETE /db/parameter-group/{id}   → delete
 //
 // ---------------------------------------------------------------------------
+
+// mockSuffixes mirrors the server-side appendParameterSuffixes() logic.
+// Key: engine → paramKey → suffix string to append.
+var mockSuffixes = map[string]map[string]string{
+	"mysql": {
+		"innodb_buffer_pool_size":  "M",
+		"innodb_log_file_size":     "M",
+		"innodb_redo_log_capacity": "G",
+		"max_allowed_packet":       "M",
+		"tmp_table_size":           "M",
+		"max_heap_table_size":      "M",
+	},
+	"mariadb": {
+		"innodb_buffer_pool_size":  "M",
+		"innodb_log_file_size":     "M",
+		"innodb_redo_log_capacity": "G",
+		"max_allowed_packet":       "M",
+		"tmp_table_size":           "M",
+		"max_heap_table_size":      "M",
+	},
+	"postgresql": {
+		"shared_buffers":       "MB",
+		"effective_cache_size": "MB",
+		"work_mem":             "MB",
+		"maintenance_work_mem": "MB",
+		"wal_buffers":          "MB",
+		"max_wal_size":         "MB",
+	},
+}
+
+// applyServerSuffixes simulates the server's non-idempotent suffix append:
+// for each key that has a known suffix for the engine, it appends the suffix
+// to the value string (unconditionally, as the real server does).
+func applyServerSuffixes(engine string, params map[string]string) map[string]string {
+	suffixes, ok := mockSuffixes[engine]
+	if !ok {
+		return params
+	}
+	out := make(map[string]string, len(params))
+	for k, v := range params {
+		if sfx, hasSfx := suffixes[k]; hasSfx {
+			out[k] = v + sfx
+		} else {
+			out[k] = v
+		}
+	}
+	return out
+}
+
 type dbParameterGroupMockServer struct {
 	mu   sync.Mutex
 	id   string
@@ -66,8 +137,8 @@ type dbParameterGroupMockServer struct {
 	// engine is immutable once created.
 	engine string
 
-	// parameters mirrors what the API returns (server may have applied suffix
-	// transforms; in the mock we store as-given for simplicity).
+	// parameters stores what the server returns — i.e. with suffixes applied,
+	// mirroring the real server's stored form.
 	parameters map[string]string
 
 	deleted bool
@@ -89,17 +160,18 @@ func (s *dbParameterGroupMockServer) groupObject() map[string]any {
 // ---------------------------------------------------------------------------
 // TestUnitDBParameterGroup_lifecycle — MOCK-backed lifecycle proof.
 //
+// Uses only SUFFIX-FREE parameters (max_connections, wait_timeout) so values
+// round-trip cleanly through the honest mock (which simulates server-side suffix
+// appending for the known suffix-bearing keys). This proves the happy path:
+// suffix-free params are not transformed and survive plan→apply→read unchanged.
+//
 // Steps:
-//  1. Create with name + engine + parameters → assert id, name, engine,
-//     parameters.max_connections. Assert the POST body carried name, engine,
-//     parameters.
-//  2. Import by id → rehydrates from list (no SHOW endpoint).
-//  3. Update: rename + replace parameters map → assert the state reflects the
-//     new name and new parameters; assert PATCH body was sent with the new values.
+//  1. Create with max_connections=200 → id, name, engine, parameters assert.
+//  2. Import by id → rehydrates from list.
+//  3. Update: rename + new suffix-free parameters (wait_timeout added) →
+//     assert new state. Assert PATCH body sent with full replacement map.
 //  4. Delete is implicit teardown.
 //
-// This proves the Map-based parameter model: create sets the full map, update
-// sends the full replacement map, read rebuilds from the list-and-match GET.
 // ---------------------------------------------------------------------------
 func TestUnitDBParameterGroup_lifecycle(t *testing.T) {
 	ensureTFBinary(t)
@@ -113,8 +185,7 @@ func TestUnitDBParameterGroup_lifecycle(t *testing.T) {
 		parameters: map[string]string{},
 	}
 
-	// LIST — GET /db/parameter-groups returns the stored group (or an empty list
-	// if deleted).
+	// LIST — GET /db/parameter-groups
 	srv.Handle("GET", "/db/parameter-groups", func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -130,8 +201,9 @@ func TestUnitDBParameterGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// CREATE — POST /db/parameter-groups stores name/engine/parameters, returns the
-	// new group object under "parameter_group".
+	// CREATE — POST /db/parameter-groups
+	// Simulates the server's appendParameterSuffixes() by applying mock suffixes
+	// to the incoming parameter values before storing them.
 	srv.Handle("POST", "/db/parameter-groups", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -144,12 +216,14 @@ func TestUnitDBParameterGroup_lifecycle(t *testing.T) {
 			store.engine = e
 		}
 		if p, ok := body["parameters"].(map[string]any); ok {
-			store.parameters = make(map[string]string, len(p))
+			raw := make(map[string]string, len(p))
 			for k, v := range p {
 				if sv, ok := v.(string); ok {
-					store.parameters[k] = sv
+					raw[k] = sv
 				}
 			}
+			// Apply the same non-idempotent suffix transform the real server does.
+			store.parameters = applyServerSuffixes(store.engine, raw)
 		}
 		store.deleted = false
 		writeJSON(w, http.StatusOK, map[string]any{
@@ -158,7 +232,8 @@ func TestUnitDBParameterGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// UPDATE — PATCH /db/parameter-group/{id} patches name and/or parameters.
+	// UPDATE — PATCH /db/parameter-group/{id}
+	// Also applies server-side suffix transforms on the incoming parameters.
 	srv.Handle("PATCH", "/db/parameter-group/"+pgID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -168,12 +243,14 @@ func TestUnitDBParameterGroup_lifecycle(t *testing.T) {
 			store.name = n
 		}
 		if p, ok := body["parameters"].(map[string]any); ok {
-			store.parameters = make(map[string]string, len(p))
+			raw := make(map[string]string, len(p))
 			for k, v := range p {
 				if sv, ok := v.(string); ok {
-					store.parameters[k] = sv
+					raw[k] = sv
 				}
 			}
+			// Apply the same non-idempotent suffix transform the real server does.
+			store.parameters = applyServerSuffixes(store.engine, raw)
 		}
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success":         true,
@@ -181,7 +258,7 @@ func TestUnitDBParameterGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — DELETE /db/parameter-group/{id} marks deleted.
+	// DELETE — DELETE /db/parameter-group/{id}
 	srv.Handle("DELETE", "/db/parameter-group/"+pgID, func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -194,7 +271,7 @@ func TestUnitDBParameterGroup_lifecycle(t *testing.T) {
 
 	providerCfg := acctest.ProviderConfig(srv.Endpoint())
 
-	// Create config: MySQL parameter group with one parameter.
+	// Create config: suffix-free parameters only — these round-trip cleanly.
 	createCfg := providerCfg + `
 resource "iaas_db_parameter_group" "test" {
   name   = "my-mysql-params"
@@ -205,14 +282,14 @@ resource "iaas_db_parameter_group" "test" {
 }
 `
 
-	// Update config: renamed + different parameters (full replacement map).
+	// Update config: rename + add wait_timeout (also suffix-free).
 	updateCfg := providerCfg + `
 resource "iaas_db_parameter_group" "test" {
   name   = "my-mysql-params-v2"
   engine = "mysql"
   parameters = {
-    innodb_buffer_pool_size = "512M"
-    max_connections         = "500"
+    max_connections = "500"
+    wait_timeout    = "3600"
   }
 }
 `
@@ -238,14 +315,14 @@ resource "iaas_db_parameter_group" "test" {
 				ImportStateId:     pgID,
 				ImportStateVerify: true,
 			},
-			// 3. Update: rename + full parameter replacement.
+			// 3. Update: rename + full parameter replacement (still suffix-free).
 			{
 				Config: updateCfg,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("iaas_db_parameter_group.test", "name", "my-mysql-params-v2"),
 					resource.TestCheckResourceAttr("iaas_db_parameter_group.test", "engine", "mysql"),
-					resource.TestCheckResourceAttr("iaas_db_parameter_group.test", "parameters.innodb_buffer_pool_size", "512M"),
 					resource.TestCheckResourceAttr("iaas_db_parameter_group.test", "parameters.max_connections", "500"),
+					resource.TestCheckResourceAttr("iaas_db_parameter_group.test", "parameters.wait_timeout", "3600"),
 					resource.TestCheckResourceAttr("iaas_db_parameter_group.test", "parameters.%", "2"),
 				),
 			},
@@ -286,7 +363,137 @@ resource "iaas_db_parameter_group" "test" {
 	if len(params) != 2 {
 		t.Errorf("patch parameters map has %d keys; want 2", len(params))
 	}
-	if params["innodb_buffer_pool_size"] != "512M" {
-		t.Errorf("patch params[innodb_buffer_pool_size] = %v; want 512M", params["innodb_buffer_pool_size"])
+	if params["max_connections"] != "500" {
+		t.Errorf("patch params[max_connections] = %v; want 500", params["max_connections"])
+	}
+	if params["wait_timeout"] != "3600" {
+		t.Errorf("patch params[wait_timeout] = %v; want 3600", params["wait_timeout"])
+	}
+}
+
+// ---------------------------------------------------------------------------
+// TestUnitDBParameterGroup_rejectSuffixKey — NEGATIVE validator test.
+//
+// Confirms that specifying a suffix-bearing parameter key (e.g.
+// innodb_buffer_pool_size for mysql) is rejected at plan time with a clear
+// error naming the offending key and explaining the root cause.
+//
+// This test does NOT need a mock server — the validator fires before any API
+// call is made.
+// ---------------------------------------------------------------------------
+func TestUnitDBParameterGroup_rejectSuffixKey(t *testing.T) {
+	ensureTFBinary(t)
+
+	// A minimal mock server is required so the provider can configure itself
+	// (the provider Configure step needs a reachable endpoint), but no API calls
+	// will ever reach it because the validator errors out at plan time.
+	srv := acctest.NewMockServer(t)
+	providerCfg := acctest.ProviderConfig(srv.Endpoint())
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				// innodb_buffer_pool_size is a suffix-bearing key for mysql.
+				Config: providerCfg + `
+resource "iaas_db_parameter_group" "bad" {
+  name   = "should-be-rejected"
+  engine = "mysql"
+  parameters = {
+    innodb_buffer_pool_size = "512"
+    max_connections         = "200"
+  }
+}
+`,
+				// The validator must fire with an error that names the offending key
+				// and explains the non-idempotent suffix problem.
+				ExpectError: regexp.MustCompile(`innodb_buffer_pool_size`),
+			},
+		},
+	})
+}
+
+// ---------------------------------------------------------------------------
+// TestUnitDBParameterGroup_rejectSuffixKeyPostgresql — NEGATIVE validator test
+// for the postgresql engine.
+//
+// Confirms that shared_buffers (suffix 'MB') is rejected for postgresql.
+// ---------------------------------------------------------------------------
+func TestUnitDBParameterGroup_rejectSuffixKeyPostgresql(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+	providerCfg := acctest.ProviderConfig(srv.Endpoint())
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: providerCfg + `
+resource "iaas_db_parameter_group" "bad_pg" {
+  name   = "pg-should-be-rejected"
+  engine = "postgresql"
+  parameters = {
+    shared_buffers  = "256"
+    max_connections = "100"
+  }
+}
+`,
+				ExpectError: regexp.MustCompile(`shared_buffers`),
+			},
+		},
+	})
+}
+
+// ---------------------------------------------------------------------------
+// TestUnitDBParameterGroup_suffixSimulation — unit test for the mock's
+// applyServerSuffixes helper: verifies it correctly simulates the server-side
+// suffix transform, i.e. the same non-idempotency the validator protects against.
+// ---------------------------------------------------------------------------
+func TestUnitDBParameterGroup_suffixSimulation(t *testing.T) {
+	cases := []struct {
+		engine string
+		input  map[string]string
+		want   map[string]string
+	}{
+		{
+			engine: "mysql",
+			input:  map[string]string{"innodb_buffer_pool_size": "512", "max_connections": "200"},
+			want:   map[string]string{"innodb_buffer_pool_size": "512M", "max_connections": "200"},
+		},
+		{
+			engine: "mysql",
+			// Simulates second write with already-suffixed value → corruption.
+			input: map[string]string{"innodb_buffer_pool_size": "512M"},
+			want:  map[string]string{"innodb_buffer_pool_size": "512MM"},
+		},
+		{
+			engine: "postgresql",
+			input:  map[string]string{"shared_buffers": "128", "max_connections": "100"},
+			want:   map[string]string{"shared_buffers": "128MB", "max_connections": "100"},
+		},
+		{
+			engine: "mariadb",
+			input:  map[string]string{"max_heap_table_size": "64", "wait_timeout": "3600"},
+			want:   map[string]string{"max_heap_table_size": "64M", "wait_timeout": "3600"},
+		},
+		{
+			// Unknown engine: no suffixes applied.
+			engine: "unknown",
+			input:  map[string]string{"some_key": "value"},
+			want:   map[string]string{"some_key": "value"},
+		},
+	}
+
+	for _, tc := range cases {
+		got := applyServerSuffixes(tc.engine, tc.input)
+		for k, wantV := range tc.want {
+			if got[k] != wantV {
+				t.Errorf("engine=%q key=%q: got %q, want %q", tc.engine, k, got[k], wantV)
+			}
+		}
+		if len(got) != len(tc.want) {
+			t.Errorf("engine=%q: result has %d keys, want %d", tc.engine, len(got), len(tc.want))
+		}
 	}
 }

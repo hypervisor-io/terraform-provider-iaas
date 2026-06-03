@@ -3,13 +3,14 @@ package resources
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -18,12 +19,66 @@ import (
 )
 
 // Interface assertions — iaas_db_parameter_group follows the golden ssh_key
-// resource pattern (simple sync CRUD).
+// resource pattern (simple sync CRUD) plus ResourceWithConfigValidators.
 var (
-	_ resource.Resource                = &dbParameterGroupResource{}
-	_ resource.ResourceWithConfigure   = &dbParameterGroupResource{}
-	_ resource.ResourceWithImportState = &dbParameterGroupResource{}
+	_ resource.Resource                     = &dbParameterGroupResource{}
+	_ resource.ResourceWithConfigure        = &dbParameterGroupResource{}
+	_ resource.ResourceWithImportState      = &dbParameterGroupResource{}
+	_ resource.ResourceWithConfigValidators = &dbParameterGroupResource{}
 )
+
+// suffixBearingKeys is the set of parameter KEYs per engine that the Master
+// server's appendParameterSuffixes() transforms non-idempotently (appending a
+// unit suffix such as "M" or "MB" to the stored value on every write).
+//
+// Source of truth: Master config/managed_database_parameters.php — every entry
+// that carries a 'suffix' key is listed here.  When that PHP file changes,
+// re-sync the sets below.
+//
+//	mysql / mariadb suffix-bearing keys  (suffix 'M' or 'G'):
+//	  innodb_buffer_pool_size   → 'M'
+//	  innodb_log_file_size      → 'M'
+//	  innodb_redo_log_capacity  → 'G'
+//	  max_allowed_packet        → 'M'
+//	  tmp_table_size            → 'M'
+//	  max_heap_table_size       → 'M'
+//
+//	postgresql suffix-bearing keys  (suffix 'MB'):
+//	  shared_buffers            → 'MB'
+//	  effective_cache_size      → 'MB'
+//	  work_mem                  → 'MB'
+//	  maintenance_work_mem      → 'MB'
+//	  wal_buffers               → 'MB'
+//	  max_wal_size              → 'MB'
+//
+// mariadb inherits all mysql params (array_merge in PHP) and adds no new
+// suffix-bearing keys of its own.
+var suffixBearingKeys = map[string]map[string]struct{}{
+	"mysql": {
+		"innodb_buffer_pool_size":  {},
+		"innodb_log_file_size":     {},
+		"innodb_redo_log_capacity": {},
+		"max_allowed_packet":       {},
+		"tmp_table_size":           {},
+		"max_heap_table_size":      {},
+	},
+	"mariadb": {
+		"innodb_buffer_pool_size":  {},
+		"innodb_log_file_size":     {},
+		"innodb_redo_log_capacity": {},
+		"max_allowed_packet":       {},
+		"tmp_table_size":           {},
+		"max_heap_table_size":      {},
+	},
+	"postgresql": {
+		"shared_buffers":       {},
+		"effective_cache_size": {},
+		"work_mem":             {},
+		"maintenance_work_mem": {},
+		"wal_buffers":          {},
+		"max_wal_size":         {},
+	},
+}
 
 // NewDBParameterGroupResource is the resource constructor registered with the
 // provider.
@@ -55,10 +110,12 @@ func NewDBParameterGroupResource() resource.Resource {
 // GetDBParameterGroup which lists all groups and finds by id (list-and-match).
 //
 // Parameters are modelled as MapAttribute(String):
-//   - The API accepts a name→value map; the controller appends unit suffixes
-//     from the catalog (e.g. 512 → "512M") before storing.
-//   - Values in the LIST response may be strings with suffixes.
-//   - Users should provide string values in the form the API returns them.
+//   - The API accepts a name→value map.
+//   - The server's appendParameterSuffixes() appends a unit suffix to certain
+//     parameter values on every write (e.g. "512" → "512M"). This is
+//     non-idempotent: sending "512M" back results in "512MM" being stored.
+//     Only suffix-free parameters (see suffixBearingKeys) may be managed via
+//     Terraform; suffix-bearing parameters must be set via the control panel.
 //   - This is a simple flat map (no per-param add/remove endpoints, no nested
 //     set) — update sends the full replacement map.
 //   - The map is Required on create and updatable in place.
@@ -95,6 +152,12 @@ func (r *dbParameterGroupResource) Schema(_ context.Context, _ resource.SchemaRe
 			"The engine is immutable (changing it forces a new resource); the name and " +
 			"parameters map can be updated in place. Updating parameters sends the full " +
 			"replacement map to the API.\n\n" +
+			"**Supported parameters:** Only suffix-free parameters may be managed here " +
+			"(e.g. `max_connections`, `wait_timeout`). Memory-size parameters whose values " +
+			"receive a unit suffix from the server (e.g. `innodb_buffer_pool_size`, " +
+			"`shared_buffers`) are not supported via Terraform and must be configured through " +
+			"the control panel. Attempting to use a suffix-bearing parameter produces a " +
+			"plan-time error.\n\n" +
 			"Parameter groups are a billed add-on: if billing is disabled, all operations " +
 			"fail with HTTP 403. To apply a parameter group to a database, use the " +
 			"dedicated `PATCH /database/{id}/parameter-group` API action (not yet modelled " +
@@ -124,17 +187,105 @@ func (r *dbParameterGroupResource) Schema(_ context.Context, _ resource.SchemaRe
 				Required:    true,
 				ElementType: types.StringType,
 				Description: "Map of database configuration parameter names to their string values. " +
-					"Parameter keys are validated against the engine's catalog on the server. " +
-					"The server may append unit suffixes (e.g. \"M\" for memory values) so " +
-					"values should be provided in the form the API returns them. Updating this " +
-					"attribute sends the full replacement map; use an empty map ({}) to clear " +
-					"all custom parameters.",
-				PlanModifiers: []planmodifier.Map{
-					mapplanmodifier.UseStateForUnknown(),
-				},
+					"Only suffix-free parameters are supported (e.g. `max_connections`, " +
+					"`wait_timeout`, `slow_query_log`). Memory-size parameters whose values " +
+					"receive a server-appended unit suffix (e.g. `innodb_buffer_pool_size`, " +
+					"`innodb_log_file_size`, `innodb_redo_log_capacity`, `max_allowed_packet`, " +
+					"`tmp_table_size`, `max_heap_table_size` for MySQL/MariaDB; " +
+					"`shared_buffers`, `effective_cache_size`, `work_mem`, " +
+					"`maintenance_work_mem`, `wal_buffers`, `max_wal_size` for PostgreSQL) " +
+					"cannot be managed via Terraform reliably — set them via the control panel. " +
+					"Updating this attribute sends the full replacement map; use an empty " +
+					"map (`{}`) to clear all custom parameters.",
+				// UseStateForUnknown is intentionally omitted on a Required attribute.
+				// Required attributes are always known at plan time from the config, so
+				// UseStateForUnknown would be vacuous here (the plan value is never unknown).
 			},
 		},
 	}
+}
+
+// ConfigValidators returns the slice of config-level validators run at plan time.
+// dbParameterGroupSuffixValidator rejects configurations that name suffix-bearing
+// parameter keys; both engine and parameters are Required so both are known in
+// ValidateConfig.
+func (r *dbParameterGroupResource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		&dbParameterGroupSuffixValidator{},
+	}
+}
+
+// dbParameterGroupSuffixValidator implements resource.ConfigValidator.
+// It errors when any key in the parameters map is in the suffix-bearing set for
+// the resource's engine, preventing non-idempotent server-side suffix appending.
+type dbParameterGroupSuffixValidator struct{}
+
+// Description returns the plain-text description of the validator.
+func (v *dbParameterGroupSuffixValidator) Description(_ context.Context) string {
+	return "Rejects suffix-bearing parameter keys that the server transforms non-idempotently."
+}
+
+// MarkdownDescription returns the markdown description of the validator.
+func (v *dbParameterGroupSuffixValidator) MarkdownDescription(_ context.Context) string {
+	return v.Description(context.Background())
+}
+
+// ValidateResource checks for suffix-bearing parameter keys given the engine.
+func (v *dbParameterGroupSuffixValidator) ValidateResource(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var cfg dbParameterGroupModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Both engine and parameters are Required; if either is unknown/null at
+	// validate time (shouldn't happen for Required, but be defensive) skip.
+	if cfg.Engine.IsUnknown() || cfg.Engine.IsNull() {
+		return
+	}
+	if cfg.Parameters.IsUnknown() || cfg.Parameters.IsNull() {
+		return
+	}
+
+	engine := cfg.Engine.ValueString()
+	suffixKeys, known := suffixBearingKeys[engine]
+	if !known {
+		// Unknown engine — server will validate; nothing for us to check.
+		return
+	}
+
+	var params map[string]string
+	resp.Diagnostics.Append(cfg.Parameters.ElementsAs(ctx, &params, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Collect the offending keys so the error message names all of them at once.
+	var offending []string
+	for k := range params {
+		if _, bad := suffixKeys[k]; bad {
+			offending = append(offending, k)
+		}
+	}
+	if len(offending) == 0 {
+		return
+	}
+
+	sort.Strings(offending)
+	resp.Diagnostics.AddAttributeError(
+		path.Root("parameters"),
+		"Unsupported suffix-bearing parameter key(s)",
+		fmt.Sprintf(
+			"The following parameter key(s) cannot be managed via Terraform for engine %q: %s.\n\n"+
+				"The server appends a unit suffix to these values on every write (e.g. \"512\" "+
+				"becomes \"512M\", and a subsequent apply of \"512M\" would produce \"512MM\"), "+
+				"causing perpetual plan drift and value corruption. "+
+				"Set these parameters through the control panel instead; "+
+				"only suffix-free parameters (e.g. max_connections, wait_timeout) are supported here.",
+			engine,
+			strings.Join(offending, ", "),
+		),
+	)
 }
 
 // Configure pulls the shared *client.Client from the provider. Tolerates a nil
@@ -156,8 +307,7 @@ func (r *dbParameterGroupResource) Configure(_ context.Context, req resource.Con
 }
 
 // Create provisions a new parameter group, then reads it back via list so state
-// reflects the server-assigned id and any parameter transformations (e.g. suffix
-// appending by the controller).
+// reflects the server-assigned id and any parameter transformations.
 func (r *dbParameterGroupResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan dbParameterGroupModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -190,9 +340,8 @@ func (r *dbParameterGroupResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	// Read back so state reflects the server-stored form (e.g. suffix-transformed
-	// parameter values). Use GetDBParameterGroup (list-and-match) since there is no
-	// SHOW endpoint.
+	// Read back so state reflects the server-stored form. Use GetDBParameterGroup
+	// (list-and-match) since there is no SHOW endpoint.
 	state, notFound, readDiags := r.readState(ctx, id)
 	resp.Diagnostics.Append(readDiags...)
 	if notFound {
@@ -372,7 +521,10 @@ func apiMapToParameters(ctx context.Context, raw any) (types.Map, error) {
 
 	apiMap, ok := raw.(map[string]any)
 	if !ok {
-		// Unexpected type — return empty map rather than failing.
+		// Unexpected type — return an empty map rather than failing hard.
+		// This preserves forward-compatibility: if a future API schema migration
+		// returns parameters in a shape we don't recognise, an empty state is far
+		// safer than an error that would leave the resource unmanageable.
 		m, _ := types.MapValue(objType, map[string]attr.Value{})
 		return m, nil
 	}
