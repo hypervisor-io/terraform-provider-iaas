@@ -220,6 +220,7 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewVolumeResource,
 		resources.NewVolumeSnapshotResource,
 		resources.NewNATGatewayResource,
+		resources.NewLoadBalancerResource,
 	}
 }
 
