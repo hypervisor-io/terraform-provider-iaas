@@ -239,6 +239,7 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewInstanceBackupPolicyResource,
 		resources.NewDBBackupPolicyResource,
 		resources.NewNotificationChannelResource,
+		resources.NewAlertRuleResource,
 	}
 }
 
