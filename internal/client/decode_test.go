@@ -63,6 +63,32 @@ func TestDecodeList_MalformedJSON(t *testing.T) {
 	}
 }
 
+func TestDecodeList_DataNotArray(t *testing.T) {
+	// "data" field is a string, not an array — must error, not panic.
+	body := []byte(`{"data":"nope"}`)
+
+	_, err := decodeList(body)
+	if err == nil {
+		t.Fatal("decodeList: expected error when 'data' is not an array, got nil")
+	}
+	if !strings.Contains(err.Error(), "not an array") {
+		t.Errorf("error message %q does not mention 'not an array'", err.Error())
+	}
+}
+
+func TestDecodeList_DataElementNotObject(t *testing.T) {
+	// data[1] is a scalar — must error mentioning the index.
+	body := []byte(`{"data":[{"id":"a"},"scalar"]}`)
+
+	_, err := decodeList(body)
+	if err == nil {
+		t.Fatal("decodeList: expected error when data element is not an object, got nil")
+	}
+	if !strings.Contains(err.Error(), "data[1]") {
+		t.Errorf("error message %q does not mention 'data[1]'", err.Error())
+	}
+}
+
 // ----------------------------------------------------------------------------
 // decodeItem tests
 // ----------------------------------------------------------------------------

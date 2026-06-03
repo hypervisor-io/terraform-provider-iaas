@@ -2,7 +2,6 @@ package client
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 )
 
@@ -58,10 +57,6 @@ func decodeList(body []byte) ([]map[string]any, error) {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 
-	if len(raw) == 0 {
-		return nil, errors.New("empty response body")
-	}
-
 	switch raw[0] {
 	case '[':
 		// Top-level JSON array.
@@ -84,19 +79,23 @@ func decodeList(body []byte) ([]map[string]any, error) {
 		}
 
 		// Laravel paginator shape: {"data":[…], …}
-		if dataRaw, ok := top["data"]; ok {
-			dataBytes, err := json.Marshal(dataRaw)
-			if err != nil {
-				return nil, fmt.Errorf("re-encoding data field: %w", err)
-			}
-			var items []map[string]any
-			if err := json.Unmarshal(dataBytes, &items); err != nil {
-				return nil, fmt.Errorf("decoding paginator data: %w", err)
-			}
-			return items, nil
+		dataRaw, ok := top["data"]
+		if !ok {
+			return nil, fmt.Errorf("unexpected object response: no 'data' array and no top-level array (decodeList called on a single-resource endpoint?)")
 		}
-
-		return nil, errors.New("response is an object with no 'data' array and no top-level array")
+		dataSlice, ok := dataRaw.([]any)
+		if !ok {
+			return nil, fmt.Errorf("paginator 'data' field is not an array (got %T)", dataRaw)
+		}
+		items := make([]map[string]any, 0, len(dataSlice))
+		for i, v := range dataSlice {
+			obj, ok := v.(map[string]any)
+			if !ok {
+				return nil, fmt.Errorf("paginator data[%d] is not an object (got %T)", i, v)
+			}
+			items = append(items, obj)
+		}
+		return items, nil
 	}
 }
 
@@ -116,7 +115,7 @@ func checkSuccessFlag(top map[string]any) error {
 
 	// success == false
 	if msg, ok := top["message"].(string); ok && msg != "" {
-		return errors.New(msg)
+		return fmt.Errorf("%s", msg)
 	}
-	return errors.New("API returned success=false")
+	return fmt.Errorf("API returned success=false")
 }
