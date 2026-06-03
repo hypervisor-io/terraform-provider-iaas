@@ -209,6 +209,7 @@ func resolveClient(endpoint, token string, timeoutSecs int64, insecure bool) (*c
 func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		resources.NewSSHKeyResource,
+		resources.NewVPCResource,
 	}
 }
 
