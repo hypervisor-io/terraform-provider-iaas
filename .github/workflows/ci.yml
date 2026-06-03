@@ -41,3 +41,10 @@ jobs:
 
       - name: Test
         run: go test ./...
+
+      - name: Check generated docs are up to date
+        run: |
+          go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest
+          export PATH="$PATH:$(go env GOPATH)/bin"
+          make docs
+          git diff --exit-code docs/

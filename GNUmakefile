@@ -22,4 +22,5 @@ tools:
 
 .PHONY: docs
 docs:
+	@command -v tfplugindocs >/dev/null 2>&1 || $(MAKE) tools
 	tfplugindocs generate --provider-name iaas
