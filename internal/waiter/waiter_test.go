@@ -3,7 +3,7 @@ package waiter_test
 import (
 	"context"
 	"errors"
-	"fmt"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -48,32 +48,27 @@ func TestConvergesAfterNPolls(t *testing.T) {
 	}
 }
 
-// TestFailStateReturnsError: Refresh returns a terminal error; WaitFor must
-// return an error whose message contains the fail state description.
+// TestFailStateReturnsError: StatePoller detects a fail state and WaitFor must
+// surface it as a non-nil error whose message contains the fail state name.
+// This exercises the full StatePoller→WaitFor path end-to-end.
 func TestFailStateReturnsError(t *testing.T) {
-	terminalErr := fmt.Errorf("resource entered fail state: error")
+	get := func() (map[string]any, error) {
+		return map[string]any{"state": "error"}, nil
+	}
+	refresh := waiter.StatePoller(get, "state", []string{"deployed"}, []string{"error"})
 
 	opts := waiter.Options{
 		Interval: time.Millisecond,
 		Timeout:  5 * time.Second,
-		Refresh: func() (string, bool, error) {
-			return "error", false, terminalErr
-		},
+		Refresh:  refresh,
 	}
 
 	err := waiter.WaitFor(context.Background(), opts)
 	if err == nil {
-		t.Fatal("expected an error, got nil")
+		t.Fatal("expected an error for fail state, got nil")
 	}
-	if !errors.Is(err, terminalErr) && err.Error() != terminalErr.Error() {
-		// Accept either direct wrap or same message; require "error" (state) in message
-		if err.Error() == "" {
-			t.Fatalf("error message is empty")
-		}
-	}
-	// The error message should mention the state "error"
-	if msg := err.Error(); msg == "" {
-		t.Fatal("empty error message")
+	if !strings.Contains(err.Error(), "error") {
+		t.Fatalf("expected error message to contain fail state %q, got: %v", "error", err)
 	}
 }
 
@@ -104,23 +99,7 @@ func TestTimeoutReturnsDeadlineExceeded(t *testing.T) {
 	if elapsed > 2*time.Second {
 		t.Fatalf("WaitFor took too long: %v (expected fast timeout)", elapsed)
 	}
-	// Error message must name the last observed state.
-	if msg := err.Error(); msg == "" {
-		t.Fatal("empty error message")
-	}
-	// Check last state is mentioned
-	found := false
-	for _, s := range []string{lastState, "timed out", "timeout", "deadline"} {
-		_ = s
-	}
-	// Just check it contains something useful — the last state "pending"
-	for _, needle := range []string{lastState} {
-		if contains(err.Error(), needle) {
-			found = true
-			break
-		}
-	}
-	if !found {
+	if !strings.Contains(err.Error(), lastState) {
 		t.Fatalf("timeout error %q does not mention last state %q", err.Error(), lastState)
 	}
 }
@@ -193,7 +172,7 @@ func TestStatePollerFailState(t *testing.T) {
 	if done {
 		t.Fatal("expected done=false for fail state")
 	}
-	if !contains(err.Error(), "error") {
+	if !strings.Contains(err.Error(), "error") {
 		t.Fatalf("error message %q does not name fail state %q", err.Error(), state)
 	}
 }
@@ -265,18 +244,4 @@ func TestStatePollerNonStringField(t *testing.T) {
 	if done {
 		t.Fatal("expected done=false for non-string field")
 	}
-}
-
-// ─── helpers ─────────────────────────────────────────────────────────────────
-
-func contains(s, sub string) bool {
-	return len(s) >= len(sub) && (s == sub || len(sub) == 0 ||
-		func() bool {
-			for i := 0; i <= len(s)-len(sub); i++ {
-				if s[i:i+len(sub)] == sub {
-					return true
-				}
-			}
-			return false
-		}())
 }

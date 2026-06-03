@@ -8,6 +8,7 @@ package waiter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -45,6 +46,10 @@ type Options struct {
 // Between polls it applies a light capped exponential backoff starting at
 // Interval, and every sleep is interruptible by ctx / timeout cancellation.
 func WaitFor(ctx context.Context, opts Options) error {
+	if opts.Interval <= 0 {
+		return errors.New("waiter: Interval must be > 0")
+	}
+
 	// Wrap ctx with our own timeout when the caller requests one.
 	if opts.Timeout > 0 {
 		var cancel context.CancelFunc
@@ -90,6 +95,9 @@ func WaitFor(ctx context.Context, opts Options) error {
 // deadlineOrCanceled distinguishes a waiter-imposed timeout (DeadlineExceeded)
 // from an upstream ctx cancellation and returns an appropriately worded error.
 func deadlineOrCanceled(ctx context.Context, lastState string) error {
+	// == is correct here: context.WithTimeout returns the sentinel
+	// context.DeadlineExceeded directly (not a wrapped error), so errors.Is is
+	// not needed and == is sufficient.
 	if ctx.Err() == context.DeadlineExceeded {
 		// Wrap DeadlineExceeded so errors.Is works, but add human context.
 		return fmt.Errorf("waiter: timed out waiting for resource; last observed state: %q: %w",
