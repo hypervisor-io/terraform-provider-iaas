@@ -226,6 +226,8 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewLBFrontendResource,
 		resources.NewLBRoutingRuleResource,
 		resources.NewLBCertificateResource,
+		resources.NewVPNGatewayResource,
+		resources.NewVPNPeerResource,
 	}
 }
 
@@ -240,5 +242,6 @@ func (p *IaasProvider) DataSources(_ context.Context) []func() datasource.DataSo
 		datasources.NewPlanDataSource,
 		datasources.NewImageDataSource,
 		datasources.NewISODataSource,
+		datasources.NewVPNPeerConfigDataSource,
 	}
 }
