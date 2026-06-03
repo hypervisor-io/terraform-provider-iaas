@@ -195,6 +195,8 @@ resource "iaas_project" "test" {
 					resource.TestCheckResourceAttr("iaas_project.test", "id", projectID),
 					resource.TestCheckResourceAttr("iaas_project.test", "name", "Renamed Project"),
 					resource.TestCheckResourceAttr("iaas_project.test", "color", "#F59E0B"),
+					// description was removed from config → clears to null/unset.
+					resource.TestCheckNoResourceAttr("iaas_project.test", "description"),
 				),
 			},
 		},

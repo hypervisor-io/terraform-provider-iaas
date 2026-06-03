@@ -621,8 +621,10 @@ func apiToTaintsList(raw any) (types.List, diag.Diagnostics) {
 		}
 		key, _ := t["key"].(string)
 		effect, _ := t["effect"].(string)
+		// A PRESENT value key (even "") is a real taint value — e.g. a
+		// NoSchedule taint with no value is valid. Only an ABSENT key → null.
 		valueAttr := types.StringNull()
-		if v, ok := t["value"].(string); ok && v != "" {
+		if v, ok := t["value"].(string); ok {
 			valueAttr = types.StringValue(v)
 		}
 		obj, d := types.ObjectValue(taintAttrTypes, map[string]attr.Value{

@@ -91,9 +91,9 @@ Required:
 Optional:
 
 - `expected_status` (Number) Expected HTTP status code (100–599) for http/https probes.
-- `healthy_threshold` (Number) Consecutive successes before the record is marked healthy again (1–10). Defaults to 2 when omitted.
-- `interval` (Number) Seconds between probes (10–300). Defaults to 30 when omitted.
+- `healthy_threshold` (Number) Consecutive successes before the record is marked healthy again (1–10). Optional; null is stored when omitted — the check agent applies its own default.
+- `interval` (Number) Seconds between probes (10–300). Optional; null is stored when omitted — the check agent applies its own default.
 - `path` (String) HTTP(S) probe path, e.g. "/health". For http/https only.
 - `port` (Number) Probe port (1–65535). Defaults server-side by type.
-- `timeout` (Number) Probe timeout in seconds (2–60). Defaults to 5 when omitted.
-- `unhealthy_threshold` (Number) Consecutive failures before the record is marked unhealthy (1–10). Defaults to 3 when omitted.
+- `timeout` (Number) Probe timeout in seconds (2–60). Optional; null is stored when omitted — the check agent applies its own default.
+- `unhealthy_threshold` (Number) Consecutive failures before the record is marked unhealthy (1–10). Optional; null is stored when omitted — the check agent applies its own default.

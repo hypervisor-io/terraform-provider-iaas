@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -217,10 +218,16 @@ func (r *s3BucketResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"quota": schema.Int64Attribute{
 				Computed:    true,
 				Description: "Storage quota in bytes, derived from the plan. Stable after create.",
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"bandwidth": schema.Int64Attribute{
 				Computed:    true,
 				Description: "Monthly bandwidth allowance in bytes, derived from the plan. Stable after create.",
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -282,8 +289,11 @@ func (r *s3BucketResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	// Apply the ACL if the user requested a non-default access control.
-	if !plan.DefaultAccess.IsNull() && !plan.DefaultAccess.IsUnknown() && plan.DefaultAccess.ValueString() != "" {
+	// Apply the ACL if the user requested a non-default access control. The
+	// server default is "private", so skip the no-op call when the plan asks
+	// for "private" — it avoids a redundant ACL PATCH at create time.
+	if !plan.DefaultAccess.IsNull() && !plan.DefaultAccess.IsUnknown() &&
+		plan.DefaultAccess.ValueString() != "" && plan.DefaultAccess.ValueString() != "private" {
 		if err := r.client.SetS3BucketACL(ctx, id, plan.DefaultAccess.ValueString()); err != nil {
 			resp.Diagnostics.Append(diagFromErr("Error setting S3 bucket ACL", err))
 			return

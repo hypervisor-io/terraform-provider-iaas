@@ -385,11 +385,7 @@ func (r *autoscalingGroupResource) Update(ctx context.Context, req resource.Upda
 	// security_group_ids: send the full desired set when the attribute is set
 	// (including empty → clear). Null means "don't touch".
 	if !plan.SecurityGroupIDs.IsNull() && !plan.SecurityGroupIDs.IsUnknown() {
-		sgs := stringSetValues(plan.SecurityGroupIDs)
-		if sgs == nil {
-			sgs = []string{}
-		}
-		fields["security_group_ids"] = sgs
+		fields["security_group_ids"] = stringSetValues(plan.SecurityGroupIDs)
 	}
 
 	obj, err := r.client.UpdateAutoscalingGroup(ctx, id, fields)
@@ -484,8 +480,8 @@ func autoscalingGroupStateFromAPI(obj map[string]any, prior autoscalingGroupMode
 		// (SHOW echoes them but config is authoritative); plan_id/image_id are
 		// mutable, so refresh from the API.
 		HypervisorGroupID: stringOrPrior(obj, "hypervisor_group_id", prior.HypervisorGroupID),
-		PlanID:            stringOrPrior(obj, "plan_id", prior.PlanID),
-		ImageID:           stringOrPrior(obj, "image_id", prior.ImageID),
+		PlanID:            stringFromAPI(obj, "plan_id", prior.PlanID),
+		ImageID:           stringFromAPI(obj, "image_id", prior.ImageID),
 		VPCID:             optionalStringFromAPI(obj, "vpc_id", prior.VPCID),
 		VPCSubnetID:       optionalStringFromAPI(obj, "vpc_subnet_id", prior.VPCSubnetID),
 		LoadBalancerID:    optionalStringFromAPI(obj, "load_balancer_id", prior.LoadBalancerID),

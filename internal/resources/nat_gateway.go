@@ -122,8 +122,10 @@ func (r *natGatewayResource) Schema(ctx context.Context, _ resource.SchemaReques
 				Description: "Whether NAT (outbound translation) is active on the gateway. Defaults " +
 					"to true. Updatable in place (enable/disable). Note: the server may set this to " +
 					"false out of band if the gateway is suspended for bandwidth overage, which would " +
-					"surface as drift. Modelled Optional+Computed so an omitted value round-trips " +
-					"against the server default.",
+					"surface as drift. Re-applying with nat_enabled = true while the gateway is " +
+					"bandwidth-suspended will fail with a clear server message — resolve the bandwidth " +
+					"issue first, then re-enable. Modelled Optional+Computed so an omitted value " +
+					"round-trips against the server default.",
 			},
 			"subnet_ids": schema.SetAttribute{
 				Optional:    true,

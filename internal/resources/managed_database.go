@@ -513,7 +513,7 @@ func managedDatabaseStateFromAPI(obj map[string]any, prior managedDatabaseModel)
 
 		// vpc_subnet_id IS returned by SHOW; preserve prior when absent.
 		VPCSubnetID:       optionalStringFromAPI(obj, "vpc_subnet_id", prior.VPCSubnetID),
-		HypervisorGroupID: stringFromAPI(obj, "hypervisor_group_id", prior.HypervisorGroupID),
+		HypervisorGroupID: optionalStringFromAPI(obj, "hypervisor_group_id", prior.HypervisorGroupID),
 
 		// Write-only trigger — never in SHOW; preserve prior verbatim.
 		ResetPassword: prior.ResetPassword,

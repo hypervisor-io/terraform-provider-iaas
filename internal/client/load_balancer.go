@@ -107,6 +107,9 @@ func (c *Client) GetLoadBalancer(ctx context.Context, id string) (map[string]any
 // the shared doList paginator decoder cannot be used directly. Instead doItem
 // unwraps the named key (surfacing C3 success:false), then the inner paginator's
 // "data" array is flattened to []map[string]any.
+//
+// CAVEAT: this fetches only page 1 (the named-key paginator can't use the
+// auto-paginating doList) — a future list data source must add page iteration.
 func (c *Client) ListLoadBalancers(ctx context.Context) ([]map[string]any, error) {
 	paginator, err := c.doItem(ctx, "GET", "/load-balancers", nil, "load_balancers")
 	if err != nil {

@@ -80,7 +80,7 @@ output "nat_gateway_public_ip" {
 ### Optional
 
 - `name` (String) Display name for the gateway (lowercase alphanumeric and dashes). Defaults to "natgw-<vpc name>" when omitted. Updatable in place. Modelled Optional+Computed so an omitted name round-trips against the server default without showing spurious drift.
-- `nat_enabled` (Boolean) Whether NAT (outbound translation) is active on the gateway. Defaults to true. Updatable in place (enable/disable). Note: the server may set this to false out of band if the gateway is suspended for bandwidth overage, which would surface as drift. Modelled Optional+Computed so an omitted value round-trips against the server default.
+- `nat_enabled` (Boolean) Whether NAT (outbound translation) is active on the gateway. Defaults to true. Updatable in place (enable/disable). Note: the server may set this to false out of band if the gateway is suspended for bandwidth overage, which would surface as drift. Re-applying with nat_enabled = true while the gateway is bandwidth-suspended will fail with a clear server message — resolve the bandwidth issue first, then re-enable. Modelled Optional+Computed so an omitted value round-trips against the server default.
 - `subnet_ids` (Set of String) UUIDs of the VPC's PRIVATE subnets attached to this NAT gateway, as an order-independent set. Adding or removing an id attaches or detaches that subnet in place. When omitted at create, the server attaches ALL of the VPC's private subnets; the resource then adopts that server-chosen set into state (so leave this unset to manage attachments outside Terraform, or set it explicitly to manage them here). Only private subnets may be attached.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 

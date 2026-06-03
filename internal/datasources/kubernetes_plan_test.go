@@ -53,6 +53,42 @@ data "iaas_kubernetes_plan" "t" {
 	})
 }
 
+// TestUnitKubernetesPlan_cp — kind="cp" hits /kubernetes/search/cp-plans. The cp
+// catalog is the IDENTICAL underlying instance-plan list as worker (the server
+// splits the route only for semantic clarity), so it resolves the same specs.
+func TestUnitKubernetesPlan_cp(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+	srv.Handle("GET", "/kubernetes/search/cp-plans", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(k8sWorkerPlansBody))
+	})
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+data "iaas_kubernetes_plan" "t" {
+  kind = "cp"
+  name = "std-2"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.iaas_kubernetes_plan.t", "id", "ip-1"),
+					resource.TestCheckResourceAttr("data.iaas_kubernetes_plan.t", "cpu_cores", "2"),
+					resource.TestCheckResourceAttr("data.iaas_kubernetes_plan.t", "ram", "4096"),
+					resource.TestCheckResourceAttr("data.iaas_kubernetes_plan.t", "storage", "80"),
+					resource.TestCheckResourceAttr("data.iaas_kubernetes_plan.t", "credit_value", "1000"),
+				),
+			},
+		},
+	})
+}
+
 // TestUnitKubernetesPlan_lb — kind="lb" hits the distinct /kubernetes/search/
 // lb-plans route; LB plans carry no storage, so it settles to 0.
 func TestUnitKubernetesPlan_lb(t *testing.T) {

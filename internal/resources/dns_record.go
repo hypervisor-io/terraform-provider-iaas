@@ -188,26 +188,30 @@ func (r *dnsRecordResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 						Description: "Expected HTTP status code (100–599) for http/https probes.",
 					},
 					"interval": schema.Int64Attribute{
-						Optional:    true,
-						Computed:    true,
-						Description: "Seconds between probes (10–300). Defaults to 30 when omitted.",
+						Optional: true,
+						Computed: true,
+						Description: "Seconds between probes (10–300). Optional; null is stored when " +
+							"omitted — the check agent applies its own default.",
 					},
 					"timeout": schema.Int64Attribute{
-						Optional:    true,
-						Computed:    true,
-						Description: "Probe timeout in seconds (2–60). Defaults to 5 when omitted.",
+						Optional: true,
+						Computed: true,
+						Description: "Probe timeout in seconds (2–60). Optional; null is stored when " +
+							"omitted — the check agent applies its own default.",
 					},
 					"unhealthy_threshold": schema.Int64Attribute{
 						Optional: true,
 						Computed: true,
 						Description: "Consecutive failures before the record is marked unhealthy " +
-							"(1–10). Defaults to 3 when omitted.",
+							"(1–10). Optional; null is stored when omitted — the check agent " +
+							"applies its own default.",
 					},
 					"healthy_threshold": schema.Int64Attribute{
 						Optional: true,
 						Computed: true,
 						Description: "Consecutive successes before the record is marked healthy " +
-							"again (1–10). Defaults to 2 when omitted.",
+							"again (1–10). Optional; null is stored when omitted — the check " +
+							"agent applies its own default.",
 					},
 				},
 			},

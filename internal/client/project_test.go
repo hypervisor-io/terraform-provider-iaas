@@ -33,6 +33,44 @@ func projectObject(id, name, description, color string) map[string]any {
 	return obj
 }
 
+// TestListProjects_Success verifies that ListProjects:
+//   - GETs /projects (plural)
+//   - unwraps the Laravel paginator ({data:[...]}) into a flat []map[string]any.
+func TestListProjects_Success(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.WriteHeader(http.StatusOK)
+		resp, _ := json.Marshal(map[string]any{
+			"success": true,
+			"data": []any{
+				projectObject("p1", "First", "desc", "#3B82F6"),
+				projectObject("p2", "Second", "", ""),
+			},
+		})
+		_, _ = w.Write(resp)
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	projects, err := c.ListProjects(context.Background())
+	if err != nil {
+		t.Fatalf("ListProjects returned error: %v", err)
+	}
+	if gotMethod != http.MethodGet {
+		t.Errorf("method = %s; want GET", gotMethod)
+	}
+	if gotPath != "/api/projects" {
+		t.Errorf("path = %s; want /api/projects (plural)", gotPath)
+	}
+	if len(projects) != 2 {
+		t.Fatalf("len(projects) = %d; want 2", len(projects))
+	}
+	if projects[0]["id"] != "p1" || projects[1]["id"] != "p2" {
+		t.Errorf("ids = %v, %v; want p1, p2", projects[0]["id"], projects[1]["id"])
+	}
+}
+
 // TestCreateProject_Success verifies that CreateProject:
 //   - POSTs to /projects (plural)
 //   - sends name + optional description and color

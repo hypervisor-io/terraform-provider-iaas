@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/iaas/terraform-provider-iaas/internal/client"
@@ -80,6 +82,9 @@ func (d *kubernetesPlanDataSource) Schema(_ context.Context, _ datasource.Schema
 				Description: "Which plan catalog to search: `worker` (worker instance plan), `cp` " +
 					"(control-plane instance plan — identical list to `worker`), or `lb` " +
 					"(control-plane load-balancer plan). Any other value errors.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("worker", "cp", "lb"),
+				},
 			},
 			"name": schema.StringAttribute{
 				Required: true,
