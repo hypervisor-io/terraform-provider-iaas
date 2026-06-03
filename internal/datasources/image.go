@@ -128,11 +128,16 @@ func imageText(img map[string]any) string {
 func resolveImage(images []map[string]any, name string) (map[string]any, error) {
 	// Prefer exact match — short-circuits ambiguity (e.g. "Ubuntu 24.04" vs
 	// "Ubuntu 24.04 Minimal").
-	exact, err := findUnique(images, "image", name, func(img map[string]any) bool {
+	exact, exactErr := findUnique(images, "image", name, func(img map[string]any) bool {
 		return imageText(img) == name
 	})
-	if err == nil {
+	if exactErr == nil {
 		return exact, nil
+	}
+	// Only fall back to substring matching when there was NO exact match.
+	// A "multiple exact matches" error must be surfaced, not masked by substring.
+	if !strings.HasPrefix(exactErr.Error(), "no ") {
+		return nil, exactErr
 	}
 
 	// Fall back to a unique case-insensitive substring match.

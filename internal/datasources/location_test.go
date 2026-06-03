@@ -82,6 +82,47 @@ data "iaas_location" "t" {
 	})
 }
 
+// TestUnitLocation_ambiguousOR — a name that matches one location's slug AND a
+// different location's display_name produces a "multiple * match" error.
+//
+// locA has slug "london" (matches by slug); locB has display_name "london"
+// (matches by display_name). The findUnique OR predicate accepts both, so two
+// items pass the filter → "multiple location match" error, not a spurious
+// single-match result.
+func TestUnitLocation_ambiguousOR(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+	srv.Handle("GET", "/cloud-service/locations", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"current_page": 1,
+			"data": []any{
+				// locA: slug "london" matches the filter by name-field equality.
+				map[string]any{"id": "loc-a", "name": "london", "display_name": "London City", "country": "GB"},
+				// locB: display_name "london" matches the filter by display_name equality.
+				map[string]any{"id": "loc-b", "name": "ldn", "display_name": "london", "country": "GB"},
+			},
+			"total": 2,
+		})
+	})
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+data "iaas_location" "t" {
+  name = "london"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config:      cfg,
+				ExpectError: regexp.MustCompile(`multiple .* match`),
+			},
+		},
+	})
+}
+
 // TestUnitLocation_noMatch — a name matching nothing errors clearly.
 func TestUnitLocation_noMatch(t *testing.T) {
 	ensureTFBinary(t)

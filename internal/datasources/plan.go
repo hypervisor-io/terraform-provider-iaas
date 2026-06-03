@@ -65,8 +65,9 @@ func (d *planDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 			},
 			"plan_group": schema.StringAttribute{
 				Optional: true,
-				Description: "Optional plan-group name to disambiguate when the same plan " +
-					"name exists in multiple groups.",
+				Description: "Optional plan-group slug (e.g. `general`) to disambiguate when " +
+					"the same plan name exists in multiple groups. This must be the slug " +
+					"`name` field of the plan group, not its human display name.",
 			},
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -138,6 +139,8 @@ func (d *planDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 			return
 		}
 		for _, p := range plans {
+			// __-prefixed keys are synthetic sidecar fields injected by the provider
+			// (not real API fields); this one carries the owning plan-group id through findUnique.
 			p["__plan_group_id"] = groupID
 			allPlans = append(allPlans, p)
 		}

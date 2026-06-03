@@ -41,7 +41,7 @@ output "plan_id" {
 
 ### Optional
 
-- `plan_group` (String) Optional plan-group name to disambiguate when the same plan name exists in multiple groups.
+- `plan_group` (String) Optional plan-group slug (e.g. `general`) to disambiguate when the same plan name exists in multiple groups. This must be the slug `name` field of the plan group, not its human display name.
 
 ### Read-Only
 
