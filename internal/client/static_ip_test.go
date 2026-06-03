@@ -258,3 +258,42 @@ func TestDeleteStaticIP_EmptyID(t *testing.T) {
 		t.Fatal("DeleteStaticIP: expected error for empty id, got nil")
 	}
 }
+
+// ---------------------------------------------------------------------------
+// GetStaticIP — page-2 scan
+// ---------------------------------------------------------------------------
+
+// TestGetStaticIP_Page2 verifies that GetStaticIP finds an item that lives on
+// PAGE 2 of a multi-page paginator. This is the core regression test for the
+// "doList only returned page 1" bug: before the fix, the target id would never
+// be found and GetStaticIP would return a 404 *APIError even though the record
+// exists on the server.
+//
+// Mock server:
+//   - page 1 (no "page" param or "page=1"): last_page=2, data=[{id: "sip-page1"}]
+//   - page 2 ("page=2"):                    last_page=2, data=[{id: "sip-page2", status:"allocated"}]
+//
+// GetStaticIP("sip-page2") must return the item from page 2.
+func TestGetStaticIP_Page2(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		if r.URL.Query().Get("page") == "2" {
+			_, _ = w.Write([]byte(`{"current_page":2,"last_page":2,"data":[{"id":"sip-page2","status":"allocated","ip":{"ip":"10.0.0.2"}}]}`))
+		} else {
+			_, _ = w.Write([]byte(`{"current_page":1,"last_page":2,"data":[{"id":"sip-page1","status":"attached","ip":{"ip":"10.0.0.1"}}]}`))
+		}
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	obj, err := c.GetStaticIP(context.Background(), "sip-page2")
+	if err != nil {
+		t.Fatalf("GetStaticIP returned error: %v (item is on page 2 — pagination bug?)", err)
+	}
+	if obj["id"] != "sip-page2" {
+		t.Errorf("obj[id] = %v; want sip-page2", obj["id"])
+	}
+	if obj["status"] != "allocated" {
+		t.Errorf("obj[status] = %v; want allocated", obj["status"])
+	}
+}

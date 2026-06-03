@@ -2,7 +2,9 @@ package resources_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -17,15 +19,28 @@ import (
 // runs or blocks CI. Requires a reachable panel + IP-locked token via
 // IAAS_API_ENDPOINT / IAAS_API_TOKEN (checked by acctest.PreCheck).
 // Also requires billing to be enabled on the target panel and real UUIDs for
-// ip_id and hypervisor_group_id from the /static-ips/available endpoint.
+// ip_id and hypervisor_group_id supplied via the env vars below; the test
+// skips cleanly when either var is absent so a bare TF_ACC=1 run does not
+// fail with a confusing 404/422.
+//
+//	IAAS_TEST_STATIC_IP_ID   — UUID of an available (unallocated) IP
+//	IAAS_TEST_HG_ID          — UUID of the hypervisor group that owns the IP
+//
 // ---------------------------------------------------------------------------
 func TestAccStaticIP_basic(t *testing.T) {
-	const config = `
+	ipID := os.Getenv("IAAS_TEST_STATIC_IP_ID")
+	hgID := os.Getenv("IAAS_TEST_HG_ID")
+	if ipID == "" || hgID == "" {
+		t.Skip("TestAccStaticIP_basic: set IAAS_TEST_STATIC_IP_ID and IAAS_TEST_HG_ID to run this acceptance test")
+	}
+
+	config := fmt.Sprintf(`
 resource "iaas_static_ip" "test" {
-  ip_id               = "REPLACE-WITH-A-REAL-IP-UUID"
-  hypervisor_group_id = "REPLACE-WITH-A-REAL-GROUP-UUID"
+  ip_id               = %q
+  hypervisor_group_id = %q
 }
-`
+`, ipID, hgID)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Factories,

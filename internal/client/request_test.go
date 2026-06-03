@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -192,4 +193,184 @@ func TestDoVoid_422_IsAPIError(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected *APIError; got %T", err)
 	}
+}
+
+// ---------------------------------------------------------------------------
+// doList — auto-pagination of Laravel paginators.
+// ---------------------------------------------------------------------------
+
+// TestDoList_MultiPage verifies that doList fetches ALL pages of a Laravel
+// paginator and returns items from every page in order.
+// The mock server serves page 1 (items [{id:"a"}]) and page 2 (items [{id:"b"}]).
+func TestDoList_MultiPage(t *testing.T) {
+	var hits int32 // atomic counter of server requests
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&hits, 1)
+		pageParam := r.URL.Query().Get("page")
+		w.WriteHeader(http.StatusOK)
+		if pageParam == "2" {
+			_, _ = w.Write([]byte(`{"current_page":2,"last_page":2,"data":[{"id":"b"}]}`))
+		} else {
+			// page 1 (no param or param == "1")
+			_, _ = w.Write([]byte(`{"current_page":1,"last_page":2,"data":[{"id":"a"}]}`))
+		}
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	items, err := c.doList(context.Background(), http.MethodGet, "/things", nil)
+	if err != nil {
+		t.Fatalf("doList returned error: %v", err)
+	}
+
+	if len(items) != 2 {
+		t.Fatalf("len(items) = %d; want 2", len(items))
+	}
+	if items[0]["id"] != "a" {
+		t.Errorf("items[0][id] = %v; want a", items[0]["id"])
+	}
+	if items[1]["id"] != "b" {
+		t.Errorf("items[1][id] = %v; want b", items[1]["id"])
+	}
+
+	// Exactly 2 server hits: one for page 1, one for page 2.
+	if n := atomic.LoadInt32(&hits); n != 2 {
+		t.Errorf("server was hit %d times; want exactly 2", n)
+	}
+}
+
+// TestDoList_SinglePagePaginator verifies that a paginator with last_page==1
+// results in exactly ONE server request (no spurious page-2 fetch).
+func TestDoList_SinglePagePaginator(t *testing.T) {
+	var hits int32
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&hits, 1)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"current_page":1,"last_page":1,"data":[{"id":"only"}]}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	items, err := c.doList(context.Background(), http.MethodGet, "/things", nil)
+	if err != nil {
+		t.Fatalf("doList returned error: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len(items) = %d; want 1", len(items))
+	}
+	if items[0]["id"] != "only" {
+		t.Errorf("items[0][id] = %v; want only", items[0]["id"])
+	}
+	if n := atomic.LoadInt32(&hits); n != 1 {
+		t.Errorf("server was hit %d times; want exactly 1 (no extra page fetch)", n)
+	}
+}
+
+// TestDoList_TopLevelArray_Unchanged verifies that a top-level JSON array
+// response (non-paginator) is returned as-is in a single fetch.
+func TestDoList_TopLevelArray_Unchanged(t *testing.T) {
+	var hits int32
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&hits, 1)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`[{"id":"x"},{"id":"y"}]`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	items, err := c.doList(context.Background(), http.MethodGet, "/things", nil)
+	if err != nil {
+		t.Fatalf("doList returned error: %v", err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("len(items) = %d; want 2", len(items))
+	}
+	if n := atomic.LoadInt32(&hits); n != 1 {
+		t.Errorf("server was hit %d times; want exactly 1 (array = no pagination)", n)
+	}
+}
+
+// TestDoList_MultiPage_PreserveQueryString verifies that when the initial path
+// carries an existing query string (e.g. ?search=x), the page-2 request retains
+// that param alongside the injected page=2.
+func TestDoList_MultiPage_PreserveQueryString(t *testing.T) {
+	var page2RawQuery string
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		w.WriteHeader(http.StatusOK)
+		if q.Get("page") == "2" {
+			page2RawQuery = r.URL.RawQuery
+			_, _ = w.Write([]byte(`{"current_page":2,"last_page":2,"data":[{"id":"b"}]}`))
+		} else {
+			_, _ = w.Write([]byte(`{"current_page":1,"last_page":2,"data":[{"id":"a"}]}`))
+		}
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	items, err := c.doList(context.Background(), http.MethodGet, "/things?search=x", nil)
+	if err != nil {
+		t.Fatalf("doList returned error: %v", err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("len(items) = %d; want 2", len(items))
+	}
+
+	// The page-2 request must carry both search=x and page=2.
+	u, _ := parseQuery(page2RawQuery)
+	if u["search"] != "x" {
+		t.Errorf("page-2 request missing search=x; raw query was %q", page2RawQuery)
+	}
+	if u["page"] != "2" {
+		t.Errorf("page-2 request missing page=2; raw query was %q", page2RawQuery)
+	}
+}
+
+// parseQuery is a small local helper that decodes a raw query string into a
+// flat map (first value per key only). It avoids importing net/url in the test
+// file itself (we already have it in request.go).
+func parseQuery(raw string) (map[string]string, error) {
+	// Parse "key=val&key2=val2" manually to avoid import.
+	m := make(map[string]string)
+	if raw == "" {
+		return m, nil
+	}
+	// net/url is already a transitive import in the test binary — use it.
+	import_url_parse := func(s string) map[string]string {
+		r := make(map[string]string)
+		for _, pair := range splitAmpersand(s) {
+			kv := splitEq(pair)
+			if len(kv) == 2 && kv[0] != "" {
+				r[kv[0]] = kv[1]
+			}
+		}
+		return r
+	}
+	return import_url_parse(raw), nil
+}
+
+func splitAmpersand(s string) []string {
+	var out []string
+	start := 0
+	for i, ch := range s {
+		if ch == '&' {
+			out = append(out, s[start:i])
+			start = i + 1
+		}
+	}
+	out = append(out, s[start:])
+	return out
+}
+
+func splitEq(s string) []string {
+	for i, ch := range s {
+		if ch == '=' {
+			return []string{s[:i], s[i+1:]}
+		}
+	}
+	return []string{s}
 }
