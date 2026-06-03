@@ -248,10 +248,10 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 }
 
 // DataSources returns the list of data sources provided. These are the
-// instance-essential catalog lookups (location, plan, image, iso); the
-// region/lb_plan/db_plan/k8s_version data sources are deferred to their tier
-// tasks (they use bespoke Select2/named-key envelopes built alongside their
-// resources).
+// instance-essential catalog lookups (location, plan, image, iso), the VPN peer
+// config download, and the Kubernetes data sources (kubeconfig + autoscaler
+// manifest downloads, plus the cluster-create catalog lookups for version /
+// region / plan).
 func (p *IaasProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		datasources.NewLocationDataSource,
@@ -259,5 +259,10 @@ func (p *IaasProvider) DataSources(_ context.Context) []func() datasource.DataSo
 		datasources.NewImageDataSource,
 		datasources.NewISODataSource,
 		datasources.NewVPNPeerConfigDataSource,
+		datasources.NewKubernetesKubeconfigDataSource,
+		datasources.NewKubernetesAutoscalerManifestDataSource,
+		datasources.NewKubernetesVersionDataSource,
+		datasources.NewKubernetesRegionDataSource,
+		datasources.NewKubernetesPlanDataSource,
 	}
 }
