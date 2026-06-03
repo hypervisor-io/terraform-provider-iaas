@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/iaas/terraform-provider-iaas/internal/client"
+	"github.com/iaas/terraform-provider-iaas/internal/resources"
 )
 
 // Ensure IaasProvider satisfies the provider.Provider interface.
@@ -204,9 +205,11 @@ func resolveClient(endpoint, token string, timeoutSecs int64, insecure bool) (*c
 	return c, diags
 }
 
-// Resources returns the list of resources provided (populated in later tasks).
+// Resources returns the list of resources provided.
 func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
-	return []func() resource.Resource{}
+	return []func() resource.Resource{
+		resources.NewSSHKeyResource,
+	}
 }
 
 // DataSources returns the list of data sources provided (populated in later tasks).
