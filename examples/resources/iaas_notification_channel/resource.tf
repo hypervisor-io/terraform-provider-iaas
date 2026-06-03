@@ -37,6 +37,6 @@ resource "iaas_notification_channel" "webhook_custom" {
     secret         = "my-hmac-signing-secret"
     connect_timeout = "10"
     timeout        = "30"
-    verify_ssl     = "true"
+    verify_ssl     = "1"
   }
 }

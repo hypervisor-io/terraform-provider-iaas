@@ -56,11 +56,12 @@ func NewNotificationChannelResource() resource.Resource {
 // Key design decisions:
 //   - config is modelled as MapAttribute(String): the API accepts a name→value
 //     map whose keys vary by type (webhook_url, bot_token/chat_id, url/method/
-//     headers/secret/connect_timeout/timeout/verify_ssl). A MapAttribute(String)
-//     is the cleanest representation — it round-trips cleanly because the SHOW
-//     endpoint returns config decrypted (encrypted:array in DB, decrypted on read,
-//     no $hidden on the model). Non-string values (bool, int) from the API are
-//     coerced to strings for storage.
+//     secret/connect_timeout/timeout/verify_ssl). Note: the headers key requires
+//     an array value and is not settable via this flat string map (v1).
+//     MapAttribute(String) is the cleanest representation — it round-trips cleanly
+//     because the SHOW endpoint returns config decrypted (encrypted:array in DB,
+//     decrypted on read, no $hidden on the model). Non-string values (bool, int)
+//     from the API are coerced to strings for storage.
 //   - The config map is marked Sensitive: webhook URLs typically embed auth tokens,
 //     and the webhook config.secret is an HMAC key; we protect the whole map.
 //   - type is updatable in place (the update request accepts any valid type +
@@ -104,8 +105,8 @@ func (r *notificationChannelResource) Schema(_ context.Context, _ resource.Schem
 			"The channel type determines which config keys are required:\n" +
 			"  - **slack / discord**: `webhook_url` (required)\n" +
 			"  - **telegram**: `bot_token` + `chat_id` (both required)\n" +
-			"  - **webhook**: `url` (required), plus optional `method`, `headers`, " +
-			"`secret`, `connect_timeout`, `timeout`, `verify_ssl`\n\n" +
+			"  - **webhook**: `url` (required), plus optional `method`, " +
+			"`secret`, `connect_timeout`, `timeout`, `verify_ssl` (`\"1\"`/`\"0\"`)\n\n" +
 			"All config values are stored encrypted at rest but returned decrypted by the API, " +
 			"so the config map always round-trips correctly. The map is marked Sensitive to prevent " +
 			"webhook URLs and tokens from appearing in plan/apply output.\n\n" +
@@ -142,7 +143,11 @@ func (r *notificationChannelResource) Schema(_ context.Context, _ resource.Schem
 					"  - **telegram**: `bot_token` (bot API token), `chat_id` (target chat ID)\n" +
 					"  - **webhook**: `url` (destination URL); optional: `method` (POST or PUT), " +
 					"`secret` (HMAC signing secret), `connect_timeout` (1–30 s), " +
-					"`timeout` (1–60 s), `verify_ssl` (true/false as a string)\n\n" +
+					"`timeout` (1–60 s), `verify_ssl` (`\"1\"` to enable / `\"0\"` to disable " +
+					"— the API's boolean rule only accepts 1/0 as strings)\n\n" +
+					"Note: the `headers` key requires an array value and cannot be set via this " +
+					"resource's flat string config map in v1; configure it via the panel or API " +
+					"directly (a future typed config block may add support).\n\n" +
 					"The map is marked Sensitive so webhook URLs, tokens, and secrets never " +
 					"appear in plan/apply output. The API returns the config on every read " +
 					"(encrypted at rest, decrypted in response), so this attribute always " +
