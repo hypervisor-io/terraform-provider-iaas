@@ -5,9 +5,12 @@
 //   - [PreCheck]: gate function for live acceptance tests that require a real panel.
 //   - [MockServer], [NewMockServer]: registerable mock HTTP server for unit-style
 //     resource tests that run against canned API responses (see mockserver.go).
+//   - [ProviderConfig]: HCL helper that returns a provider block pointing at a
+//     mock server endpoint.
 package acctest
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -19,10 +22,10 @@ import (
 
 // Factories maps the provider name to a protocol-v6 server built from our
 // provider. Pass this map to resource.UnitTest or resource.Test as the
-// ProviderFactories field.
+// ProtoV6ProviderFactories field.
 //
 //	resource.UnitTest(t, resource.TestCase{
-//	    ProviderFactories: acctest.Factories,
+//	    ProtoV6ProviderFactories: acctest.Factories,
 //	    Steps: []resource.TestStep{ … },
 //	})
 var Factories = map[string]func() (tfprotov6.ProviderServer, error){
@@ -54,4 +57,16 @@ func PreCheck(t *testing.T) {
 	if os.Getenv("IAAS_API_TOKEN") == "" {
 		t.Fatal("IAAS_API_TOKEN must be set for acceptance tests")
 	}
+}
+
+// ProviderConfig returns the HCL `provider "iaas"` block pointing at endpoint
+// (typically a MockServer's Endpoint()) with a fixed test token. Prepend it to
+// each resource.TestCase Config string.
+func ProviderConfig(endpoint string) string {
+	return fmt.Sprintf(`
+provider "iaas" {
+  endpoint = %q
+  token    = "test-token"
+}
+`, endpoint)
 }

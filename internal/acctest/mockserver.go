@@ -27,13 +27,28 @@
 package acctest
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
 )
+
+// RecordedRequest holds the details of a single HTTP request received by the
+// MockServer. It is captured before the registered handler is invoked, so the
+// handler always sees the original body via r.Body (which is restored).
+type RecordedRequest struct {
+	Method string
+	// Path is the request URL path as received by the server, including the
+	// "/api" prefix (e.g. "/api/ssh-keys"). Use [MockServer.Requests] with the
+	// bare path (e.g. "/ssh-keys") for a convenient filtered view.
+	Path   string
+	Body   []byte
+	Header http.Header
+}
 
 // MockServer is a test HTTP server that dispatches requests by "METHOD /path".
 // It is safe for concurrent use.
@@ -42,6 +57,7 @@ type MockServer struct {
 
 	mu       sync.RWMutex
 	handlers map[string]http.HandlerFunc
+	recorded []RecordedRequest
 }
 
 // NewMockServer starts a new test HTTP server and registers t.Cleanup to close
@@ -60,15 +76,36 @@ func NewMockServer(t *testing.T) *MockServer {
 	return m
 }
 
-// dispatch is the root handler. It builds the lookup key from the request
-// method and path, finds a registered handler, and calls it. If no handler
-// is found it responds with 404 and a JSON error.
+// dispatch is the root handler. It reads and records the full request body,
+// restores it so the matched handler can read it again, then dispatches to
+// the registered handler. Unmatched (404) requests are also recorded.
 func (m *MockServer) dispatch(w http.ResponseWriter, r *http.Request) {
-	key := r.Method + " " + r.URL.Path
+	// Read the entire request body for capture.
+	var bodyBytes []byte
+	if r.Body != nil {
+		var err error
+		bodyBytes, err = io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "mock: failed to read request body", http.StatusInternalServerError)
+			return
+		}
+		r.Body.Close()
+	}
 
-	m.mu.RLock()
-	h, ok := m.handlers[key]
-	m.mu.RUnlock()
+	// Restore the body so handlers that read r.Body still see the full content.
+	r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
+	// Record the request under the write lock.
+	rec := RecordedRequest{
+		Method: r.Method,
+		Path:   r.URL.Path,
+		Body:   bodyBytes,
+		Header: r.Header.Clone(),
+	}
+	m.mu.Lock()
+	m.recorded = append(m.recorded, rec)
+	h, ok := m.handlers[r.Method+" "+r.URL.Path]
+	m.mu.Unlock()
 
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
@@ -118,4 +155,36 @@ func (m *MockServer) HandleJSON(method, path string, status int, body string) {
 // Example: "http://127.0.0.1:54321/api"
 func (m *MockServer) Endpoint() string {
 	return m.Server.URL + "/api"
+}
+
+// Requests returns all recorded requests for the given method and bare path.
+// The bare path follows the same convention as [MockServer.Handle]: it must
+// begin with "/" and must NOT include the "/api" prefix (e.g. "/ssh-keys").
+// Internally the "/api" prefix is applied before matching, so this mirrors the
+// routing convention used by Handle.
+// Thread-safe.
+func (m *MockServer) Requests(method, path string) []RecordedRequest {
+	fullPath := "/api" + path
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var out []RecordedRequest
+	for _, r := range m.recorded {
+		if r.Method == method && r.Path == fullPath {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+// AllRequests returns every recorded request in the order received.
+// Thread-safe.
+func (m *MockServer) AllRequests() []RecordedRequest {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	out := make([]RecordedRequest, len(m.recorded))
+	copy(out, m.recorded)
+	return out
 }
