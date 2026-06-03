@@ -213,6 +213,7 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewVPCResource,
 		resources.NewVPCSubnetResource,
 		resources.NewInstanceResource,
+		resources.NewProjectResource,
 	}
 }
 
