@@ -1,0 +1,43 @@
+# Copy this file to terraform.tfvars and fill in real values.
+#
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# PREFER supplying the API credentials via environment variables so the secret
+# never lands on disk:
+#
+#   export IAAS_API_ENDPOINT="https://panel.example.com/api"
+#   export IAAS_API_TOKEN="your-ip-locked-bearer-token"
+#
+# If you would rather set them here, uncomment the two lines below (terraform.tfvars
+# is gitignored by convention — do not commit real secrets):
+#
+# iaas_api_endpoint = "https://panel.example.com/api"
+# iaas_api_token    = "your-ip-locked-bearer-token"
+
+# Deploy location — slug or display name (resolved via the iaas_location data source).
+location_name = "nyc"
+
+# Instance plan name within the location.
+plan_name = "s1.small"
+
+# Optional plan-group disambiguator (only when the same plan name spans groups).
+# plan_group = "general"
+
+# OS image name.
+image_name = "Ubuntu 24.04"
+
+# UUID of the VPC-enabled / load-balancer-enabled hypervisor group (location).
+hypervisor_group_id = "00000000-0000-0000-0000-000000000000"
+
+# UUID of an enabled load balancer plan.
+lb_plan_id = "11111111-1111-1111-1111-111111111111"
+
+# SSH public key injected into the instances.
+ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILcl0K3kLJv6N4F2bWj2vJxQ1q3qY8m0Q3a2bC4d5E6F you@example.com"
+
+# Number of web instances behind the load balancer.
+web_instance_count = 2
+
+# Private network sizing.
+vpc_cidr    = "10.0.0.0/24"
+subnet_cidr = "10.0.0.0/24"
