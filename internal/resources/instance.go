@@ -387,14 +387,19 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	// ── ASYNC convergence: poll the deploy task until completed ──────────────
+	// Tolerance=3: up to 3 consecutive transport blips (connection reset, i/o
+	// timeout, etc.) are silently skipped so a brief network hiccup during a
+	// long deploy does not abort the whole create. The HTTP client only retries
+	// 429/5xx; raw transport errors reach here directly, hence the extra guard.
 	waitErr := waiter.WaitFor(ctx, waiter.Options{
 		Interval: pollInterval(),
 		Timeout:  createTimeout,
-		Refresh: waiter.StatePoller(
+		Refresh: waiter.StatePollerWithErrorTolerance(
 			func() (map[string]any, error) { return r.client.GetInstanceTask(ctx, id, taskID) },
 			"status",
 			[]string{"completed"},
 			[]string{"failed"},
+			3,
 		),
 	})
 	if waitErr != nil {
@@ -618,6 +623,10 @@ func boolFromIntAPI(obj map[string]any, key string, fallback types.Bool) types.B
 // if the field is absent and the prior value is null/unknown (the first-create
 // case), it resolves to "" rather than leaking an unknown into state.
 func nestedStringFromAPI(obj map[string]any, parent, sub string, fallback types.String) types.String {
+	// "" means "absent or empty by design" for these Computed string fields —
+	// required for known-after-apply. Later async resources copying this pattern
+	// should note that an empty string is indistinguishable from a genuinely-absent
+	// value; use a sentinel (e.g. "none") if the distinction matters.
 	settle := func(v types.String) types.String {
 		if v.IsNull() || v.IsUnknown() {
 			return types.StringValue("")

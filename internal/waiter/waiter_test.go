@@ -245,3 +245,112 @@ func TestStatePollerNonStringField(t *testing.T) {
 		t.Fatal("expected done=false for non-string field")
 	}
 }
+
+// ─── StatePollerWithErrorTolerance tests ─────────────────────────────────────
+
+// TestErrorTolerance_TwoErrorsThenReady: with maxConsecutiveErrors=2, a getter
+// that errors twice then returns a ready state must converge successfully.
+// The two errors are tolerated (kept as keep-polling), the final ready poll
+// causes done=true, and WaitFor returns nil.
+func TestErrorTolerance_TwoErrorsThenReady(t *testing.T) {
+	transient := errors.New("connection reset")
+	var call int32
+
+	get := func() (map[string]any, error) {
+		n := int(atomic.AddInt32(&call, 1))
+		switch n {
+		case 1, 2:
+			return nil, transient
+		default:
+			return map[string]any{"state": "completed"}, nil
+		}
+	}
+
+	refresh := waiter.StatePollerWithErrorTolerance(get, "state", []string{"completed"}, []string{"failed"}, 2)
+
+	opts := waiter.Options{
+		Interval: time.Millisecond,
+		Timeout:  5 * time.Second,
+		Refresh:  refresh,
+	}
+
+	err := waiter.WaitFor(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("expected nil (two tolerated errors then ready), got: %v", err)
+	}
+	if got := int(atomic.LoadInt32(&call)); got != 3 {
+		t.Fatalf("expected get() called 3 times, got %d", got)
+	}
+}
+
+// TestErrorTolerance_ThreeErrorsTerminal: with maxConsecutiveErrors=2, a getter
+// that errors three times in a row must surface the third error as terminal.
+func TestErrorTolerance_ThreeErrorsTerminal(t *testing.T) {
+	transient := errors.New("i/o timeout")
+	var call int32
+
+	get := func() (map[string]any, error) {
+		atomic.AddInt32(&call, 1)
+		return nil, transient
+	}
+
+	refresh := waiter.StatePollerWithErrorTolerance(get, "state", []string{"completed"}, []string{"failed"}, 2)
+
+	opts := waiter.Options{
+		Interval: time.Millisecond,
+		Timeout:  5 * time.Second,
+		Refresh:  refresh,
+	}
+
+	err := waiter.WaitFor(context.Background(), opts)
+	if err == nil {
+		t.Fatal("expected terminal error after 3 consecutive errors, got nil")
+	}
+	if !errors.Is(err, transient) {
+		t.Fatalf("expected wrapped transient error, got: %v", err)
+	}
+	// Exactly 3 calls: errors 1 and 2 are tolerated, error 3 is terminal.
+	if got := int(atomic.LoadInt32(&call)); got != 3 {
+		t.Fatalf("expected get() called 3 times, got %d", got)
+	}
+}
+
+// TestErrorTolerance_TransientThenSuccessThenFail: a transient error followed
+// by a successful poll that yields a fail state. The error counter resets on the
+// successful poll, and the fail state is still terminal.
+func TestErrorTolerance_TransientThenSuccessThenFail(t *testing.T) {
+	transient := errors.New("connection reset")
+	var call int32
+
+	get := func() (map[string]any, error) {
+		n := int(atomic.AddInt32(&call, 1))
+		switch n {
+		case 1:
+			return nil, transient // tolerated (consecutive=1, within tolerance=2)
+		case 2:
+			return map[string]any{"state": "building"}, nil // success → resets counter
+		default:
+			return map[string]any{"state": "failed"}, nil // fail state → terminal
+		}
+	}
+
+	refresh := waiter.StatePollerWithErrorTolerance(get, "state", []string{"completed"}, []string{"failed"}, 2)
+
+	opts := waiter.Options{
+		Interval: time.Millisecond,
+		Timeout:  5 * time.Second,
+		Refresh:  refresh,
+	}
+
+	err := waiter.WaitFor(context.Background(), opts)
+	if err == nil {
+		t.Fatal("expected terminal error for fail state, got nil")
+	}
+	if !strings.Contains(err.Error(), "failed") {
+		t.Fatalf("expected error to mention fail state %q, got: %v", "failed", err)
+	}
+	// Call 1: tolerated error. Call 2: building (keep polling). Call 3: failed (terminal).
+	if got := int(atomic.LoadInt32(&call)); got != 3 {
+		t.Fatalf("expected get() called 3 times, got %d", got)
+	}
+}

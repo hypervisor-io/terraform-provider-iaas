@@ -144,23 +144,68 @@ func StatePoller(
 		if err != nil {
 			return "", false, err
 		}
+		return classifyState(m, field, readySet, failSet)
+	}
+}
 
-		// Safely extract the state string; any problem → empty string.
-		state := ""
-		if v, ok := m[field]; ok {
-			if s, ok := v.(string); ok {
-				state = s
+// StatePollerWithErrorTolerance is like StatePoller but tolerates up to
+// maxConsecutiveErrors consecutive get() errors (treating them as "keep polling")
+// before surfacing the error as terminal. A successful get() resets the counter.
+// Use for long-running waits where a transient transport blip should not fail the
+// whole operation. (The waiter stays client-agnostic — it does not classify error
+// types; it simply bounds consecutive failures.)
+func StatePollerWithErrorTolerance(
+	get func() (map[string]any, error),
+	field string,
+	ready []string,
+	fail []string,
+	maxConsecutiveErrors int,
+) func() (state string, done bool, err error) {
+	readySet := toSet(ready)
+	failSet := toSet(fail)
+	consecutive := 0
+
+	return func() (string, bool, error) {
+		m, err := get()
+		if err != nil {
+			consecutive++
+			if consecutive <= maxConsecutiveErrors {
+				// Within tolerance: treat as keep-polling, not terminal.
+				return "", false, nil
 			}
+			// Exceeded tolerance: surface as terminal.
+			return "", false, err
 		}
+		// Successful get — reset the consecutive error counter.
+		consecutive = 0
+		return classifyState(m, field, readySet, failSet)
+	}
+}
 
-		switch {
-		case failSet[state]:
-			return state, false, fmt.Errorf("resource entered fail state: %q", state)
-		case readySet[state]:
-			return state, true, nil
-		default:
-			return state, false, nil
+// classifyState extracts the state field from a fetched map and classifies it
+// against the ready and fail sets. Shared by StatePoller and
+// StatePollerWithErrorTolerance to keep the logic in one place.
+//
+//   - state in fail      → (state, false, error describing the fail state)
+//   - state in ready     → (state, true, nil)
+//   - otherwise          → (state, false, nil) keep polling
+//   - missing/non-string → ("", false, nil)   keep polling, no panic
+func classifyState(m map[string]any, field string, readySet, failSet map[string]bool) (string, bool, error) {
+	// Safely extract the state string; any problem → empty string.
+	state := ""
+	if v, ok := m[field]; ok {
+		if s, ok := v.(string); ok {
+			state = s
 		}
+	}
+
+	switch {
+	case failSet[state]:
+		return state, false, fmt.Errorf("resource entered fail state: %q", state)
+	case readySet[state]:
+		return state, true, nil
+	default:
+		return state, false, nil
 	}
 }
 
