@@ -193,9 +193,13 @@ func (r *volumeSnapshotResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	// Persist the id immediately so a failed readiness wait still tracks the
-	// resource for cleanup on the next destroy.
+	// Persist both the snapshot id AND the parent volume_id immediately so that
+	// a failed readiness wait still tracks the resource for cleanup — a destroy
+	// needs both ids to build the DELETE path; without volume_id, the
+	// DeleteVolumeSnapshot call would receive an empty volume id and the
+	// snapshot would be stranded.
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), snapshotID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("volume_id"), volumeID)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

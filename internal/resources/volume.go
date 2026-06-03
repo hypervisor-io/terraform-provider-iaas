@@ -334,11 +334,23 @@ func (r *volumeResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	// RESIZE — plan change.
 	if !plan.VolumePlanID.Equal(state.VolumePlanID) {
-		if _, err := r.client.ResizeVolume(ctx, id, map[string]any{
+		resizeResp, err := r.client.ResizeVolume(ctx, id, map[string]any{
 			"volume_plan_id": plan.VolumePlanID.ValueString(),
-		}); err != nil {
+		})
+		if err != nil {
 			resp.Diagnostics.Append(diagFromErr("Error resizing volume", err))
 			return
+		}
+		// The API returns is_downgrade:true when the selected plan implies a
+		// smaller size than the current plan. Warn rather than error so the
+		// apply still proceeds (the operator may have intentionally selected a
+		// smaller plan), but surface the risk clearly.
+		if downgrade, _ := resizeResp["is_downgrade"].(bool); downgrade {
+			resp.Diagnostics.AddWarning(
+				"Volume downgrade",
+				"The selected volume_plan_id implies a smaller size than the current plan. "+
+					"This may be destructive and can truncate data on some storage backends.",
+			)
 		}
 	}
 

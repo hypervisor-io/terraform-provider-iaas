@@ -292,6 +292,8 @@ func TestResizeVolume_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	// ResizeVolume now returns the top-level envelope so the caller can inspect
+	// is_downgrade alongside the nested volume object.
 	obj, err := c.ResizeVolume(context.Background(), "vol-1", map[string]any{"volume_plan_id": "plan-2"})
 	if err != nil {
 		t.Fatalf("ResizeVolume returned error: %v", err)
@@ -305,8 +307,37 @@ func TestResizeVolume_Success(t *testing.T) {
 	if gotBody["volume_plan_id"] != "plan-2" {
 		t.Errorf("body[volume_plan_id] = %v; want plan-2", gotBody["volume_plan_id"])
 	}
-	if obj["volume_plan_id"] != "plan-2" {
-		t.Errorf("obj[volume_plan_id] = %v; want plan-2", obj["volume_plan_id"])
+	// is_downgrade is at the top-level of the envelope.
+	if obj["is_downgrade"] != false {
+		t.Errorf("obj[is_downgrade] = %v; want false", obj["is_downgrade"])
+	}
+	// The nested volume object is also accessible.
+	vol, ok := obj["volume"].(map[string]any)
+	if !ok {
+		t.Fatalf("obj[volume] is not a map, got %T", obj["volume"])
+	}
+	if vol["volume_plan_id"] != "plan-2" {
+		t.Errorf("obj[volume][volume_plan_id] = %v; want plan-2", vol["volume_plan_id"])
+	}
+}
+
+// TestResizeVolume_Downgrade verifies that ResizeVolume returns is_downgrade:true
+// in the top-level envelope when the server signals a potentially destructive
+// plan change (the resource Update reads this flag to emit a warning diagnostic).
+func TestResizeVolume_Downgrade(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"is_downgrade":true,"volume":{"id":"vol-1","status":"available","size":20,"volume_plan_id":"plan-small"}}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	obj, err := c.ResizeVolume(context.Background(), "vol-1", map[string]any{"volume_plan_id": "plan-small"})
+	if err != nil {
+		t.Fatalf("ResizeVolume returned error: %v", err)
+	}
+	if obj["is_downgrade"] != true {
+		t.Errorf("obj[is_downgrade] = %v; want true (server signalled downgrade)", obj["is_downgrade"])
 	}
 }
 
@@ -515,6 +546,32 @@ func TestFindVolumeSnapshotByName_NotFound(t *testing.T) {
 	_, err := c.FindVolumeSnapshotByName(context.Background(), "vol-1", "nope")
 	if err == nil || !IsNotFound(err) {
 		t.Fatalf("FindVolumeSnapshotByName: expected 404, got %v", err)
+	}
+}
+
+// TestFindVolumeSnapshotByName_MultipleMatches verifies that FindVolumeSnapshotByName
+// returns an error (not a silent first-match) when more than one snapshot shares
+// the given name — the ambiguity guard that prevents stranded duplicate snapshots.
+func TestFindVolumeSnapshotByName_MultipleMatches(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"volume":{"id":"vol-1","snapshots":[` +
+			`{"id":"snap-a","name":"dup","status":"available"},` +
+			`{"id":"snap-b","name":"dup","status":"available"}` +
+			`]}}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	_, err := c.FindVolumeSnapshotByName(context.Background(), "vol-1", "dup")
+	if err == nil {
+		t.Fatal("FindVolumeSnapshotByName: expected error for multiple matches, got nil")
+	}
+	if IsNotFound(err) {
+		t.Errorf("FindVolumeSnapshotByName: error should NOT be a 404, got IsNotFound=true (err: %v)", err)
+	}
+	if !contains(err.Error(), "multiple snapshots") {
+		t.Errorf("error = %q; want it to mention %q", err.Error(), "multiple snapshots")
 	}
 }
 

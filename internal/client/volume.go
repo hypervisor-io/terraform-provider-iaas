@@ -105,13 +105,15 @@ func (c *Client) DetachVolume(ctx context.Context, id string) (map[string]any, e
 
 // ResizeVolume resizes the volume to a new (larger) plan. body must contain
 // "volume_plan_id" (resize is plan-based, not a free-form size). The PATCH
-// returns the fresh volume with its updated size/plan. A cross-class/type or
-// invalid-plan resize surfaces as success:false at HTTP 422 → an error.
+// returns the top-level envelope {success, is_downgrade, volume:{...}}; the
+// caller may inspect "is_downgrade" to warn on a potentially destructive resize.
+// A cross-class/type or invalid-plan resize surfaces as success:false at HTTP
+// 422 → an error.
 func (c *Client) ResizeVolume(ctx context.Context, id string, body map[string]any) (map[string]any, error) {
 	if id == "" {
 		return nil, fmt.Errorf("ResizeVolume: empty id")
 	}
-	return c.doItem(ctx, "PATCH", "/storage/volume/"+url.PathEscape(id)+"/resize", body, "volume")
+	return c.doItem(ctx, "PATCH", "/storage/volume/"+url.PathEscape(id)+"/resize", body, "")
 }
 
 // DeleteVolume deletes (soft-deletes) the volume. The row is removed immediately
@@ -184,10 +186,9 @@ func (c *Client) GetVolumeSnapshot(ctx context.Context, volumeID, snapshotID str
 // FindVolumeSnapshotByName resolves a snapshot by NAME from the parent volume's
 // embedded snapshots[] array. The snapshot CREATE endpoint returns the backup
 // QUEUE (not the snapshot id), so the resource resolves the freshly-created
-// snapshot by the unique name it supplied. When several snapshots share a name
-// the most recently created (last in the array, which the SHOW orders desc — so
-// first) is ambiguous; callers MUST use unique names. Returns a 404-shaped
-// *APIError when no snapshot with that name exists yet.
+// snapshot by the unique name it supplied. Returns an error when more than one
+// snapshot shares the given name (ambiguous — callers MUST use unique names per
+// volume). Returns a 404-shaped *APIError when no snapshot with that name exists.
 func (c *Client) FindVolumeSnapshotByName(ctx context.Context, volumeID, name string) (map[string]any, error) {
 	if volumeID == "" {
 		return nil, fmt.Errorf("FindVolumeSnapshotByName: empty volumeID")
@@ -199,12 +200,20 @@ func (c *Client) FindVolumeSnapshotByName(ctx context.Context, volumeID, name st
 	if err != nil {
 		return nil, err
 	}
+	var matches []map[string]any
 	for _, s := range snapshotsOf(vol) {
 		if n, ok := s["name"].(string); ok && n == name {
-			return s, nil
+			matches = append(matches, s)
 		}
 	}
-	return nil, &APIError{Status: 404, Message: "volume snapshot not found by name"}
+	switch len(matches) {
+	case 0:
+		return nil, &APIError{Status: 404, Message: "volume snapshot not found by name"}
+	case 1:
+		return matches[0], nil
+	default:
+		return nil, fmt.Errorf("multiple snapshots named %q on volume %s; use unique names", name, volumeID)
+	}
 }
 
 // snapshotsOf extracts the embedded snapshots[] array from a volume SHOW object,
