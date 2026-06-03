@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/iaas/terraform-provider-iaas/internal/client"
+	"github.com/iaas/terraform-provider-iaas/internal/datasources"
 	"github.com/iaas/terraform-provider-iaas/internal/resources"
 )
 
@@ -214,7 +215,16 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 	}
 }
 
-// DataSources returns the list of data sources provided (populated in later tasks).
+// DataSources returns the list of data sources provided. These are the
+// instance-essential catalog lookups (location, plan, image, iso); the
+// region/lb_plan/db_plan/k8s_version data sources are deferred to their tier
+// tasks (they use bespoke Select2/named-key envelopes built alongside their
+// resources).
 func (p *IaasProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return []func() datasource.DataSource{
+		datasources.NewLocationDataSource,
+		datasources.NewPlanDataSource,
+		datasources.NewImageDataSource,
+		datasources.NewISODataSource,
+	}
 }
