@@ -48,3 +48,39 @@ jobs:
           export PATH="$PATH:$(go env GOPATH)/bin"
           make docs
           git diff --exit-code docs/
+
+  validate-stack:
+    name: Validate composed example stack
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Build provider binary
+        run: go build -o terraform-provider-iaas .
+
+      - name: Write provider dev override
+        run: |
+          cat > "$RUNNER_TEMP/iaas-dev.tfrc" <<EOF
+          provider_installation {
+            dev_overrides { "iaas/iaas" = "$GITHUB_WORKSPACE" }
+            direct {}
+          }
+          EOF
+
+      - name: Validate examples/stacks/web-app
+        working-directory: examples/stacks/web-app
+        env:
+          TF_CLI_CONFIG_FILE: ${{ runner.temp }}/iaas-dev.tfrc
+        # NOTE: a dev override short-circuits `tofu init`, so we validate directly.
+        # This proves the composed stack stays consistent with the provider schema.
+        # We do NOT run apply — there is no live panel in CI.
+        run: tofu validate
