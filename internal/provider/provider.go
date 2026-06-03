@@ -36,7 +36,7 @@ func (p *IaasProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp 
 }
 
 // Configure is a stub; client configuration is wired in a later task.
-func (p *IaasProvider) Configure(_ context.Context, _ provider.ConfigureRequest, _ *provider.ConfigureResponse) {
+func (p *IaasProvider) Configure(_ context.Context, _ provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 }
 
 // Resources returns the list of resources provided (populated in later tasks).
