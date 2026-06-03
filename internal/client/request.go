@@ -42,6 +42,24 @@ func (c *Client) doItem(ctx context.Context, method, path string, body any, key 
 	return decodeItem(raw, key)
 }
 
+// doItemWithHeaders is doItem with optional per-request extra headers. It is the
+// idempotent-write seam: create paths that must carry an Idempotency-Key header
+// (so the Master's idempotency.user middleware deduplicates a retried create)
+// pass it here. Header application, retry/backoff, error mapping (responseError),
+// the 200+success:false check (decodeItem), and envelope unwrapping are all
+// identical to doItem — the only difference is the extra headers reach the
+// transport.
+func (c *Client) doItemWithHeaders(ctx context.Context, method, path string, body any, key string, extraHeaders map[string]string) (map[string]any, error) {
+	resp, raw, err := c.doWithHeaders(ctx, method, path, body, extraHeaders)
+	if err != nil {
+		return nil, err
+	}
+	if err := responseError(resp, raw); err != nil {
+		return nil, err
+	}
+	return decodeItem(raw, key)
+}
+
 // doList performs the request, maps a non-2xx response to *APIError, then
 // unwraps a list (Laravel paginator {"data":[...]} or a bare top-level array).
 // A 200 response carrying success:false is surfaced as an error.

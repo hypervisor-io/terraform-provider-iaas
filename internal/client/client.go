@@ -93,6 +93,22 @@ func New(endpoint, token string, timeout time.Duration, insecure bool) *Client {
 //   - On the final attempt the last response is returned as-is so callers can
 //     inspect the status; callers call responseError to turn it into an error.
 func (c *Client) do(ctx context.Context, method, path string, body any) (*http.Response, []byte, error) {
+	return c.doWithHeaders(ctx, method, path, body, nil)
+}
+
+// doWithHeaders is do with optional per-request extra headers. The fixed
+// transport headers (Authorization, Accept, Content-Type) are always set; the
+// extra headers are applied on top (and may override them, by design — callers
+// only pass application headers such as Idempotency-Key). The retry/backoff and
+// body-handling semantics are identical to do.
+//
+// This is the minimal seam the create path uses to attach an Idempotency-Key
+// header: the Master's idempotency.user middleware reads the "Idempotency-Key"
+// request header and replays the cached 2xx response for 24h, so a retried
+// create that reuses the same key is deduplicated server-side. Every extra
+// header is re-applied on each retry attempt (a fresh request is built per
+// attempt), so the idempotency key survives a 429/5xx retry.
+func (c *Client) doWithHeaders(ctx context.Context, method, path string, body any, extraHeaders map[string]string) (*http.Response, []byte, error) {
 	rawURL := c.baseURL + path
 
 	// Pre-marshal the body once; each attempt creates a new bytes.Reader.
@@ -146,6 +162,11 @@ func (c *Client) do(ctx context.Context, method, path string, body any) (*http.R
 		req.Header.Set("Accept", "application/json")
 		if encoded != nil {
 			req.Header.Set("Content-Type", "application/json")
+		}
+		// Apply optional per-request headers (e.g. Idempotency-Key) AFTER the
+		// fixed headers so a fresh request per retry attempt always carries them.
+		for k, v := range extraHeaders {
+			req.Header.Set(k, v)
 		}
 
 		resp, err := c.httpClient.Do(req)
