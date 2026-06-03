@@ -231,6 +231,8 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewDNSZoneResource,
 		resources.NewDNSRecordSetResource,
 		resources.NewDNSRecordResource,
+		resources.NewManagedDatabaseResource,
+		resources.NewDBReplicaResource,
 	}
 }
 
