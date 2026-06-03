@@ -243,6 +243,7 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewAutoscalingGroupResource,
 		resources.NewAutoscalingPolicyResource,
 		resources.NewKubernetesClusterResource,
+		resources.NewKubernetesNodePoolResource,
 	}
 }
 
