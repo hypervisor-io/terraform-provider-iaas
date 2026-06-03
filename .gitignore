@@ -1,0 +1,28 @@
+# Provider binary
+terraform-provider-iaas
+terraform-provider-iaas.exe
+*.exe
+
+# Build artifacts
+dist/
+
+# Terraform artifacts
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraformrc
+terraform.rc
+
+# Vendor directory (optional — omit if you vendor dependencies)
+# vendor/
+
+# Editor / OS cruft
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
