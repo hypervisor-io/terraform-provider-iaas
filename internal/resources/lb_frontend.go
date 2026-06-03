@@ -89,12 +89,21 @@ func (r *lbFrontendResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			},
 			"port": schema.Int64Attribute{
 				Required: true,
+				// Deliberately NOT RequiresReplace: changing a frontend port is a listener
+				// rebind that the API handles in place via updateFrontend (PATCH). This is
+				// asymmetric with iaas_lb_target's target_port, which IS RequiresReplace
+				// because changing a target's IP/port denotes a different backend server and
+				// the API does not support mutating the key fields in place.
 				Description: "Port the listener binds to. Together with protocol it must be unique " +
 					"per load balancer. Updatable in place.",
 			},
 			"protocol": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
+				// Deliberately NOT RequiresReplace: the API supports a protocol change (e.g.
+				// http → https) as an in-place listener rebind via updateFrontend (PATCH).
+				// Contrast with iaas_lb_target's target_ip/target_port, which are
+				// RequiresReplace because they identify the physical backend server.
 				Description: "Listener protocol: \"http\" (default), \"https\", \"tcp\" or \"udp\". " +
 					"Together with port it must be unique per load balancer. Updatable in place.",
 			},

@@ -43,7 +43,7 @@ resource "iaas_lb_routing_rule" "api" {
   backend_id = iaas_lb_backend.api.id
 
   # How match_value is compared: "path_prefix" (default), "path_exact", "host",
-  # "header" or "any".
+  # "header", "sni", "path_beg" or "hdr_host".
   match_type  = "path_prefix"
   match_value = "/api"
 
@@ -75,7 +75,7 @@ resource "iaas_lb_routing_rule" "api" {
 - `enabled` (Boolean) Whether the rule is active. Defaults to true. Updatable in place.
 - `match_header_name` (String) Optional header name to match against (used when match_type is "header"). Updatable in place.
 - `match_host` (String) Optional host to additionally match (Host header). Updatable in place.
-- `match_type` (String) How match_value is compared: "path_prefix" (default), "path_exact", "host", "header" or "any". Updatable in place.
+- `match_type` (String) How match_value is compared: "path_prefix" (default), "path_exact", "host", "header", "sni", "path_beg" or "hdr_host". Updatable in place.
 - `priority` (Number) Evaluation priority (lower wins; default 100). Updatable in place.
 
 ### Read-Only

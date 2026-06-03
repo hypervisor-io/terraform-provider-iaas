@@ -25,7 +25,7 @@ import (
 // IMPORTANT field-name deviation vs the controller's #[BodyParam] annotation: the
 // annotation documents "condition_type", "condition_value" and "backend_id", but
 // the real service (LoadBalancerService::storeRoutingRule / updateRoutingRule)
-// reads the columns "match_type" (enum path_prefix|path_exact|host|header|any),
+// reads the columns "match_type" (enum path_prefix|path_exact|host|header|sni|path_beg|hdr_host),
 // "match_value", "match_host", "match_header_name", and the backend FK
 // "lb_backend_id".
 //

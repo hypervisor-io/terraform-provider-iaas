@@ -28,7 +28,7 @@ resource "iaas_lb_routing_rule" "api" {
   backend_id = iaas_lb_backend.api.id
 
   # How match_value is compared: "path_prefix" (default), "path_exact", "host",
-  # "header" or "any".
+  # "header", "sni", "path_beg" or "hdr_host".
   match_type  = "path_prefix"
   match_value = "/api"
 

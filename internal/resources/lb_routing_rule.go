@@ -103,7 +103,8 @@ func (r *lbRoutingRuleResource) Schema(_ context.Context, _ resource.SchemaReque
 				Optional: true,
 				Computed: true,
 				Description: "How match_value is compared: \"path_prefix\" (default), \"path_exact\", " +
-					"\"host\", \"header\" or \"any\". Updatable in place.",
+					"\"host\", \"header\", \"sni\", \"path_beg\" or \"hdr_host\". " +
+					"Updatable in place.",
 			},
 			"match_value": schema.StringAttribute{
 				Required:    true,
