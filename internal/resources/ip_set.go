@@ -72,10 +72,11 @@ type ipSetModel struct {
 
 // ipSetEntryModel maps a single nested entry object inside the entries set.
 //
-// Cidr is the natural unique key (the server normalises a bare IP to /32 or /128
-// and enforces uniqueness by cidr). Comment is the optional per-entry description
-// (sent to the API as "description"). ID is the server-assigned entry UUID, needed
-// to delete this exact entry on update.
+// Cidr is the server-enforced unique key (the server normalises a bare IP to
+// /32 or /128 and enforces uniqueness by cidr), but the in-provider diff key is
+// cidr+comment, so a comment-only edit becomes a delete+add. Comment is the
+// optional per-entry description (sent to the API as "description"). ID is the
+// server-assigned entry UUID, needed to delete this exact entry on update.
 type ipSetEntryModel struct {
 	ID      types.String `tfsdk:"id"`
 	Cidr    types.String `tfsdk:"cidr"`
@@ -334,6 +335,16 @@ func (r *ipSetResource) Update(ctx context.Context, req resource.UpdateRequest, 
 			continue
 		}
 		if e.ID.IsNull() || e.ID.IsUnknown() || e.ID.ValueString() == "" {
+			resp.Diagnostics.AddWarning(
+				"IP set entry could not be deleted: server id unknown",
+				fmt.Sprintf(
+					"Entry with cidr %q was removed from config but its server-assigned id "+
+						"is not present in state, so the provider cannot issue a delete request. "+
+						"The entry may still exist on the server. Manual cleanup or "+
+						"`terraform import` may be needed to reconcile.",
+					e.Cidr.ValueString(),
+				),
+			)
 			continue // nothing to delete server-side
 		}
 		if err := r.client.DeleteIPSetEntry(ctx, id, e.ID.ValueString()); err != nil {
@@ -459,7 +470,7 @@ func entrySetFromAPI(raw any, prior types.Set) (types.Set, diag.Diagnostics) {
 		if !ok {
 			continue
 		}
-		idVal := stringFromAPI(eo, "id", types.StringNull())
+		idVal := optionalStringFromAPI(eo, "id", types.StringNull())
 		cidrVal := stringFromAPI(eo, "cidr", types.StringNull())
 		commentVal := optionalStringFromAPI(eo, "description", types.StringNull())
 

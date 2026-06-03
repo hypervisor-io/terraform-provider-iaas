@@ -313,14 +313,21 @@ resource "iaas_ip_set" "test" {
 					resource.TestCheckResourceAttr("iaas_ip_set.test", "name", "blocklist"),
 					resource.TestCheckResourceAttr("iaas_ip_set.test", "ip_version", "ipv4"),
 					resource.TestCheckResourceAttr("iaas_ip_set.test", "entries.#", "2"),
-					// Set elements are order-independent; assert membership via the
-					// TypeSet helpers.
+					// Confirm that at least one entry has a non-empty server id after
+					// create/import, catching any future regression that drops entry ids.
 					resource.TestCheckTypeSetElemNestedAttrs("iaas_ip_set.test", "entries.*", map[string]string{
 						"cidr":    "10.0.0.0/8",
 						"comment": "corp range",
 					}),
 					resource.TestCheckTypeSetElemNestedAttrs("iaas_ip_set.test", "entries.*", map[string]string{
 						"cidr": "192.168.1.0/24",
+					}),
+					// Assert entry ids are populated (non-empty) so a regression that
+					// drops server ids is caught immediately.
+					resource.TestCheckTypeSetElemNestedAttrs("iaas_ip_set.test", "entries.*", map[string]string{
+						"cidr":    "10.0.0.0/8",
+						"comment": "corp range",
+						"id":      "entry-1",
 					}),
 				),
 			},
