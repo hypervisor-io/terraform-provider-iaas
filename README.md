@@ -4,16 +4,39 @@ A Terraform / OpenTofu provider for managing virtual machine infrastructure via 
 
 ## Authentication
 
-> **Important:** This provider authenticates using an **IP-locked Bearer token**. The token only works from the IP address it was registered with. Requests from any other IP will be rejected.
+> **Important — IP-locked token:** This provider authenticates using a **Bearer token that is
+> validated against the IP address it was registered with.** Requests from any other egress IP
+> are rejected. Run `tofu`/`terraform` from a static CI runner, bastion host, or workstation
+> whose IP matches the token registration. Dynamic-IP CI environments are **not supported.**
+> The token may also be scoped to a subuser with limited permissions.
 
-Set the `IAAS_API_TOKEN` environment variable to your token before running Terraform:
+### Environment variables (recommended)
+
+Avoid hardcoding credentials. Set these before running Terraform/OpenTofu:
 
 ```sh
+export IAAS_API_ENDPOINT="https://panel.example.com/api"
 export IAAS_API_TOKEN="your-token-here"
-terraform apply
+tofu apply
 ```
 
-Full provider configuration and resource documentation will be added as the provider matures.
+### Inline configuration
+
+```hcl
+provider "iaas" {
+  endpoint = "https://panel.example.com/api"
+  # token is sensitive — prefer IAAS_API_TOKEN env var
+}
+```
+
+## Provider configuration
+
+| Attribute         | Env var              | Required | Description                                              |
+|-------------------|----------------------|----------|----------------------------------------------------------|
+| `endpoint`        | `IAAS_API_ENDPOINT`  | yes      | Base API URL including the `/api` path suffix            |
+| `token`           | `IAAS_API_TOKEN`     | yes      | Bearer token (IP-locked — see Authentication above)      |
+| `request_timeout` | —                    | no       | HTTP timeout in seconds (default: 30)                    |
+| `insecure`        | —                    | no       | Skip TLS verification — staging only, never production   |
 
 ## Development
 
@@ -29,7 +52,16 @@ make vet
 
 # Format source
 make fmt
+
+# Install doc-generation tool (tfplugindocs)
+make tools
+
+# Regenerate reference docs under docs/
+make docs
 ```
+
+Reference docs are generated via [tfplugindocs](https://github.com/hashicorp/terraform-plugin-docs)
+and committed under `docs/` so they can be published to the Terraform Registry.
 
 ## License
 

@@ -16,6 +16,10 @@ vet:
 fmt:
 	gofmt -w .
 
+.PHONY: tools
+tools:
+	go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest
+
 .PHONY: docs
 docs:
-	tfplugindocs generate
+	tfplugindocs generate --provider-name iaas

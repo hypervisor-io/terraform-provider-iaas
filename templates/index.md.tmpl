@@ -1,0 +1,20 @@
+---
+page_title: "iaas Provider"
+description: |-
+  Manage your platform resources as Infrastructure-as-Code over the user REST API.
+---
+
+# iaas Provider
+
+> **IMPORTANT — IP-locked token:** Authentication uses a Bearer API token that is
+> validated against the IP address it was registered with. `tofu`/`terraform` must
+> run from that same egress IP (a static CI runner, bastion, or workstation).
+> Dynamic-IP CI is not supported. The token may also be scoped or belong to a
+> subuser with limited permissions.
+
+Configure the provider with `endpoint` and `token` (or the `IAAS_API_ENDPOINT` /
+`IAAS_API_TOKEN` environment variables).
+
+{{ tffile "examples/provider/provider.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
