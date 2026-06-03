@@ -544,9 +544,9 @@ func dbpStateFromAPI(obj map[string]any, prior dbBackupPolicyModel) (dbBackupPol
 		FullBackupTime:           stringFromAPI(obj, "full_backup_time", prior.FullBackupTime),
 		FullBackupDay:            optionalInt64FromAPI(obj, "full_backup_day"),
 		IncrementalFrequency:     stringFromAPI(obj, "incremental_frequency", prior.IncrementalFrequency),
-		RetentionFullCount:       optionalInt64FromAPI(obj, "retention_full_count"),
-		RetentionIncrementalDays: optionalInt64FromAPI(obj, "retention_incremental_days"),
-		RetentionPitrHours:       optionalInt64FromAPI(obj, "retention_pitr_hours"),
+		RetentionFullCount:       requiredInt64FromAPI(obj, "retention_full_count", prior.RetentionFullCount),
+		RetentionIncrementalDays: requiredInt64FromAPI(obj, "retention_incremental_days", prior.RetentionIncrementalDays),
+		RetentionPitrHours:       requiredInt64FromAPI(obj, "retention_pitr_hours", prior.RetentionPitrHours),
 		Status:                   stringFromAPI(obj, "status", prior.Status),
 
 		// Credentials are $hidden by the model — preserve prior values so Terraform
@@ -555,11 +555,12 @@ func dbpStateFromAPI(obj map[string]any, prior dbBackupPolicyModel) (dbBackupPol
 		S3SecretKey: prior.S3SecretKey,
 	}
 
-	// Optional path prefix.
+	// Optional path prefix: map empty/absent to null so removing the prefix in
+	// config clears it in state rather than perpetually falling back to prior.
 	if v, ok := obj["s3_path_prefix"].(string); ok && v != "" {
 		m.S3PathPrefix = types.StringValue(v)
 	} else {
-		m.S3PathPrefix = prior.S3PathPrefix
+		m.S3PathPrefix = types.StringNull()
 	}
 
 	// Boolean fields: fall back to prior when absent.

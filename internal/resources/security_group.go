@@ -754,3 +754,24 @@ func optionalInt64FromAPI(obj map[string]any, key string) types.Int64 {
 		return types.Int64Null()
 	}
 }
+
+// requiredInt64FromAPI reads a REQUIRED integer field from an API object map.
+// Unlike optionalInt64FromAPI, an absent or null key falls back to prior so
+// that a Required schema attribute never ends up null in state (which would
+// cause an "inconsistent result after apply" error from the framework).
+func requiredInt64FromAPI(obj map[string]any, key string, prior types.Int64) types.Int64 {
+	raw, ok := obj[key]
+	if !ok || raw == nil {
+		return prior
+	}
+	switch v := raw.(type) {
+	case float64:
+		return types.Int64Value(int64(v))
+	case int64:
+		return types.Int64Value(v)
+	case int:
+		return types.Int64Value(int64(v))
+	default:
+		return prior
+	}
+}

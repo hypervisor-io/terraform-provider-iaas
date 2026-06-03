@@ -383,8 +383,8 @@ func ibpStateFromAPI(obj map[string]any, prior instanceBackupPolicyModel) (insta
 		FullBackupFrequency: stringFromAPI(obj, "full_backup_frequency", prior.FullBackupFrequency),
 		FullBackupTime:      stringFromAPI(obj, "full_backup_time", prior.FullBackupTime),
 		FullBackupDay:       optionalInt64FromAPI(obj, "full_backup_day"),
-		MaxIncrementalChain: optionalInt64FromAPI(obj, "max_incremental_chain"),
-		RetentionCount:      optionalInt64FromAPI(obj, "retention_count"),
+		MaxIncrementalChain: requiredInt64FromAPI(obj, "max_incremental_chain", prior.MaxIncrementalChain),
+		RetentionCount:      requiredInt64FromAPI(obj, "retention_count", prior.RetentionCount),
 		BackupDevice:        stringFromAPI(obj, "backup_device", prior.BackupDevice),
 		Status:              stringFromAPI(obj, "status", prior.Status),
 	}

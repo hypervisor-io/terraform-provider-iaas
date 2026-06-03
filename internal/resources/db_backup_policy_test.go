@@ -400,3 +400,163 @@ resource "iaas_db_backup_policy" "test" {
 		t.Error("expected an attach call to carry managed_database_id=db-a")
 	}
 }
+
+// ---------------------------------------------------------------------------
+// TestUnitDBBackupPolicy_s3PathPrefixClear — verifies that removing
+// s3_path_prefix from config (so the server returns "" or omits it) causes
+// the attribute to become null in state rather than perpetually retaining the
+// prior value.
+// ---------------------------------------------------------------------------
+func TestUnitDBBackupPolicy_s3PathPrefixClear(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+
+	const policyID = "77777777-7777-7777-7777-777777777777"
+
+	store := &dbpMockServer{
+		attached: map[string]struct{}{},
+	}
+
+	// The mock always returns whatever s3PathPrefix is set to (empty = omitted
+	// via the standard policyObject logic which encodes "" as "").
+	srv.Handle("POST", "/networking/db-backup-policies", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		store.mu.Lock()
+		defer store.mu.Unlock()
+		if v, ok := body["name"].(string); ok {
+			store.name = v
+		}
+		if v, ok := body["s3_endpoint"].(string); ok {
+			store.s3Endpoint = v
+		}
+		if v, ok := body["s3_bucket"].(string); ok {
+			store.s3Bucket = v
+		}
+		if v, ok := body["s3_region"].(string); ok {
+			store.s3Region = v
+		}
+		if v, ok := body["s3_path_prefix"].(string); ok {
+			store.s3PathPrefix = v
+		}
+		if v, ok := body["full_backup_frequency"].(string); ok {
+			store.fullBackupFrequency = v
+		}
+		if v, ok := body["full_backup_time"].(string); ok {
+			store.fullBackupTime = v
+		}
+		if v, ok := body["incremental_frequency"].(string); ok {
+			store.incrementalFrequency = v
+		}
+		if v, ok := body["retention_full_count"].(float64); ok {
+			store.retentionFullCount = int(v)
+		}
+		if v, ok := body["retention_incremental_days"].(float64); ok {
+			store.retentionIncrementalDays = int(v)
+		}
+		if v, ok := body["retention_pitr_hours"].(float64); ok {
+			store.retentionPitrHours = int(v)
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"message": "Backup policy created successfully.",
+			"policy":  store.policyObject(policyID),
+		})
+	})
+
+	srv.Handle("GET", "/networking/db-backup-policy/"+policyID, func(w http.ResponseWriter, r *http.Request) {
+		store.mu.Lock()
+		defer store.mu.Unlock()
+		writeJSON(w, http.StatusOK, map[string]any{
+			"policy":              store.policyObject(policyID),
+			"available_databases": []any{},
+		})
+	})
+
+	srv.Handle("PATCH", "/networking/db-backup-policy/"+policyID, func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		store.mu.Lock()
+		defer store.mu.Unlock()
+		// When s3_path_prefix is removed from config it is not sent in the body;
+		// simulate the server clearing the field.
+		if v, ok := body["s3_path_prefix"].(string); ok {
+			store.s3PathPrefix = v
+		} else {
+			store.s3PathPrefix = ""
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"message": "Backup policy updated successfully.",
+			"policy":  store.policyObject(policyID),
+		})
+	})
+
+	srv.Handle("DELETE", "/networking/db-backup-policy/"+policyID, func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "Deleted."})
+	})
+
+	providerCfg := acctest.ProviderConfig(srv.Endpoint())
+	const (
+		accessKey = "AKIAIOSFODNN7EXAMPLE"
+		secretKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	)
+
+	// Step 1: create with s3_path_prefix set.
+	withPrefix := providerCfg + `
+resource "iaas_db_backup_policy" "ptest" {
+  name                       = "prefix-test"
+  s3_endpoint                = "s3.example.com"
+  s3_bucket                  = "my-backups"
+  s3_region                  = "us-east-1"
+  s3_access_key              = "` + accessKey + `"
+  s3_secret_key              = "` + secretKey + `"
+  s3_path_prefix             = "backups/prod"
+  full_backup_frequency      = "daily"
+  full_backup_time           = "01:00"
+  incremental_frequency      = "6h"
+  retention_full_count       = 7
+  retention_incremental_days = 14
+  retention_pitr_hours       = 72
+}
+`
+
+	// Step 2: remove s3_path_prefix — it must become null, not keep "backups/prod".
+	withoutPrefix := providerCfg + `
+resource "iaas_db_backup_policy" "ptest" {
+  name                       = "prefix-test"
+  s3_endpoint                = "s3.example.com"
+  s3_bucket                  = "my-backups"
+  s3_region                  = "us-east-1"
+  s3_access_key              = "` + accessKey + `"
+  s3_secret_key              = "` + secretKey + `"
+  full_backup_frequency      = "daily"
+  full_backup_time           = "01:00"
+  incremental_frequency      = "6h"
+  retention_full_count       = 7
+  retention_incremental_days = 14
+  retention_pitr_hours       = 72
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: withPrefix,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("iaas_db_backup_policy.ptest", "id", policyID),
+					resource.TestCheckResourceAttr("iaas_db_backup_policy.ptest", "s3_path_prefix", "backups/prod"),
+				),
+			},
+			{
+				// Removing the prefix from config must not cause a perpetual diff.
+				Config: withoutPrefix,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckNoResourceAttr("iaas_db_backup_policy.ptest", "s3_path_prefix"),
+				),
+			},
+		},
+	})
+}
