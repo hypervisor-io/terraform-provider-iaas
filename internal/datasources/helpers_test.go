@@ -63,6 +63,21 @@ func isOpenTofu(t *testing.T, path string) bool {
 	return strings.Contains(strings.ToLower(string(out)), "opentofu")
 }
 
+// envOrSkip returns the value of the named environment variable, skipping the
+// test (cleanly, not failing) when it is unset. Live data-source acceptance
+// tests use it to gate on the catalog filter / parent id they need from a real
+// staging panel (mirrors envOrSkip in internal/resources). Combined with
+// resource.Test (which itself no-ops without TF_ACC) this keeps the data-source
+// TestAcc* skeletons auto-skipping in CI.
+func envOrSkip(t *testing.T, key string) string {
+	t.Helper()
+	v := os.Getenv(key)
+	if v == "" {
+		t.Skipf("%s not set; skipping live acceptance test", key)
+	}
+	return v
+}
+
 // writeJSON encodes v as a JSON response with the given status.
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
