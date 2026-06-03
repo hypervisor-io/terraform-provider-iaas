@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 
 	"github.com/iaas/terraform-provider-iaas/internal/acctest"
 )
@@ -353,4 +354,86 @@ resource "iaas_alert_rule" "test" {
 	if len(updatedChanIDs) != 2 {
 		t.Errorf("update body[channel_ids] len = %d; want 2", len(updatedChanIDs))
 	}
+	if updateBody["enabled"] != false {
+		t.Errorf("update body[enabled] = %v; want false", updateBody["enabled"])
+	}
+}
+
+// ---------------------------------------------------------------------------
+// TestUnitAlertRule_noChannelsNoChurn — verifies that omitting channel_ids in
+// the config does not produce a perpetual diff when the API returns an empty
+// channels array. The post-apply refresh must result in an empty plan (null
+// channel_ids in config stays null in state after read).
+// ---------------------------------------------------------------------------
+
+func TestUnitAlertRule_noChannelsNoChurn(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+
+	const ruleID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"
+
+	store := newARMock()
+
+	// CREATE — POST /alert-rules (no channel_ids in body)
+	srv.Handle("POST", "/alert-rules", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		store.mu.Lock()
+		defer store.mu.Unlock()
+		store.applyBody(body)
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success":    true,
+			"alert_rule": store.ruleObject(ruleID),
+		})
+	})
+
+	// SHOW — GET /alert-rule/{id} — returns empty channels array
+	srv.Handle("GET", "/alert-rule/"+ruleID, func(w http.ResponseWriter, r *http.Request) {
+		store.mu.Lock()
+		defer store.mu.Unlock()
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success":    true,
+			"alert_rule": store.ruleObject(ruleID),
+		})
+	})
+
+	// DELETE — DELETE /alert-rule/{id}
+	srv.Handle("DELETE", "/alert-rule/"+ruleID, func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+		})
+	})
+
+	providerCfg := acctest.ProviderConfig(srv.Endpoint())
+
+	// Config omits channel_ids entirely.
+	cfg := providerCfg + `
+resource "iaas_alert_rule" "nochurn" {
+  name          = "No-channel rule"
+  resource_type = "instance"
+  metric        = "cpu_pct"
+  operator      = "gt"
+  threshold     = 90
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				// Apply the config, then confirm no diff on the next plan.
+				Config: cfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("iaas_alert_rule.nochurn", "id", ruleID),
+					resource.TestCheckNoResourceAttr("iaas_alert_rule.nochurn", "channel_ids.#"),
+				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
 }

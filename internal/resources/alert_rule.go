@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -420,7 +421,7 @@ func alertRuleFromAPI(ctx context.Context, obj map[string]any, prior alertRuleMo
 	// channel_ids: extract the ids from the embedded "channels" array.
 	// The SHOW/Create/Update response includes channels:[{id,name,type,...}].
 	// We store only the ids as an order-independent set of strings.
-	m.ChannelIDs = alertRuleChannelsToSet(ctx, obj, prior.ChannelIDs)
+	m.ChannelIDs = alertRuleChannelsToSet(obj, prior.ChannelIDs)
 
 	return m
 }
@@ -428,7 +429,13 @@ func alertRuleFromAPI(ctx context.Context, obj map[string]any, prior alertRuleMo
 // alertRuleChannelsToSet extracts the channel UUIDs from the embedded channels
 // array in the API response and returns them as a types.Set(String). Falls back
 // to the prior set when the key is absent or malformed.
-func alertRuleChannelsToSet(ctx context.Context, obj map[string]any, prior types.Set) types.Set {
+//
+// When the API returns an empty channels array AND the prior channel_ids was
+// null/unknown (user omitted the attribute), the result stays null so that an
+// omitted config does not produce a perpetual diff (config null ≠ state []).
+// When the prior was an explicit empty set, an empty (non-null) set is returned,
+// preserving the managed-but-empty distinction.
+func alertRuleChannelsToSet(obj map[string]any, prior types.Set) types.Set {
 	raw, ok := obj["channels"]
 	if !ok {
 		return prior
@@ -438,24 +445,22 @@ func alertRuleChannelsToSet(ctx context.Context, obj map[string]any, prior types
 		return prior
 	}
 
-	ids := make([]string, 0, len(arr))
+	elems := make([]attr.Value, 0, len(arr))
 	for _, v := range arr {
 		ch, ok := v.(map[string]any)
 		if !ok {
 			continue
 		}
 		if id, ok := ch["id"].(string); ok && id != "" {
-			ids = append(ids, id)
+			elems = append(elems, types.StringValue(id))
 		}
 	}
 
-	set, diags := types.SetValueFrom(ctx, types.StringType, ids)
-	if diags.HasError() {
+	if len(elems) == 0 {
 		if prior.IsNull() || prior.IsUnknown() {
-			empty, _ := types.SetValue(types.StringType, nil)
-			return empty
+			return types.SetNull(types.StringType) // omitted config → stay null, no churn
 		}
-		return prior
+		return mustSetValue(types.StringType, []attr.Value{}) // explicit [] → managed-but-empty
 	}
-	return set
+	return mustSetValue(types.StringType, elems)
 }
