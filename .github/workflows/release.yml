@@ -21,7 +21,9 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
+          # 'stable' = latest patched Go (>= the go.mod floor) so the published
+          # release binary ships with current stdlib security fixes (security review T8).
+          go-version: 'stable'
           cache: true
 
       - name: Import GPG key

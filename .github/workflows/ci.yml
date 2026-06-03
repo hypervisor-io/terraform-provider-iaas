@@ -17,7 +17,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: "go.mod"
+          # 'stable' = latest patched Go (>= the go.mod floor). Builds with the
+          # current stdlib so net/http, crypto/tls, crypto/x509 security fixes
+          # are always picked up (provider security review T8).
+          go-version: "stable"
 
       - name: go mod tidy is clean
         run: |
@@ -59,7 +62,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: "go.mod"
+          # 'stable' = latest patched Go (>= the go.mod floor). Builds with the
+          # current stdlib so net/http, crypto/tls, crypto/x509 security fixes
+          # are always picked up (provider security review T8).
+          go-version: "stable"
 
       - name: Set up OpenTofu
         uses: opentofu/setup-opentofu@v1
