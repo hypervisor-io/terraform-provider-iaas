@@ -216,6 +216,7 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewProjectResource,
 		resources.NewStaticIPResource,
 		resources.NewIPSetResource,
+		resources.NewSecurityGroupResource,
 	}
 }
 
