@@ -423,3 +423,113 @@ func TestDeleteVolumeSnapshot_EmptyIDs(t *testing.T) {
 		t.Fatal("DeleteVolumeSnapshot: expected error for empty snapshotID")
 	}
 }
+
+// ---------------------------------------------------------------------------
+// GetVolumeSnapshot / FindVolumeSnapshotByName (scan the parent volume SHOW)
+// ---------------------------------------------------------------------------
+
+// TestGetVolumeSnapshot_Found verifies GetVolumeSnapshot resolves a snapshot by
+// id from the parent volume's embedded snapshots[] array (no individual SHOW).
+func TestGetVolumeSnapshot_Found(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"volume":{"id":"vol-1","status":"available","snapshots":[{"id":"snap-1","name":"s1","status":"available"},{"id":"snap-2","name":"s2","status":"pending"}]}}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	obj, err := c.GetVolumeSnapshot(context.Background(), "vol-1", "snap-2")
+	if err != nil {
+		t.Fatalf("GetVolumeSnapshot returned error: %v", err)
+	}
+	if obj["id"] != "snap-2" {
+		t.Errorf("obj[id] = %v; want snap-2", obj["id"])
+	}
+	if obj["status"] != "pending" {
+		t.Errorf("obj[status] = %v; want pending", obj["status"])
+	}
+}
+
+// TestGetVolumeSnapshot_NotFound verifies an absent id yields a 404 *APIError.
+func TestGetVolumeSnapshot_NotFound(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"volume":{"id":"vol-1","status":"available","snapshots":[]}}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	_, err := c.GetVolumeSnapshot(context.Background(), "vol-1", "missing")
+	if err == nil {
+		t.Fatal("GetVolumeSnapshot: expected error for absent snapshot, got nil")
+	}
+	if !IsNotFound(err) {
+		t.Errorf("IsNotFound = false; want true (err: %v)", err)
+	}
+}
+
+// TestGetVolumeSnapshot_VolumeGone verifies a 404 on the parent volume propagates
+// (the snapshot is gone with its volume).
+func TestGetVolumeSnapshot_VolumeGone(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"Volume not found"}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	_, err := c.GetVolumeSnapshot(context.Background(), "vol-1", "snap-1")
+	if err == nil || !IsNotFound(err) {
+		t.Fatalf("GetVolumeSnapshot: expected propagated 404, got %v", err)
+	}
+}
+
+// TestFindVolumeSnapshotByName verifies the snapshot is resolved by name (the
+// snapshot CREATE returns only a queue, so the resource resolves the new id by
+// the unique name it supplied).
+func TestFindVolumeSnapshotByName(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"volume":{"id":"vol-1","snapshots":[{"id":"snap-9","name":"nightly","status":"available"}]}}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	obj, err := c.FindVolumeSnapshotByName(context.Background(), "vol-1", "nightly")
+	if err != nil {
+		t.Fatalf("FindVolumeSnapshotByName returned error: %v", err)
+	}
+	if obj["id"] != "snap-9" {
+		t.Errorf("obj[id] = %v; want snap-9", obj["id"])
+	}
+}
+
+func TestFindVolumeSnapshotByName_NotFound(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"volume":{"id":"vol-1","snapshots":[]}}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	_, err := c.FindVolumeSnapshotByName(context.Background(), "vol-1", "nope")
+	if err == nil || !IsNotFound(err) {
+		t.Fatalf("FindVolumeSnapshotByName: expected 404, got %v", err)
+	}
+}
+
+func TestVolumeSnapshotResolvers_EmptyIDs(t *testing.T) {
+	c := New("http://localhost/api", "tok", 10*time.Second, false)
+	if _, err := c.GetVolumeSnapshot(context.Background(), "", "s"); err == nil {
+		t.Fatal("GetVolumeSnapshot: expected error for empty volumeID")
+	}
+	if _, err := c.GetVolumeSnapshot(context.Background(), "v", ""); err == nil {
+		t.Fatal("GetVolumeSnapshot: expected error for empty snapshotID")
+	}
+	if _, err := c.FindVolumeSnapshotByName(context.Background(), "", "n"); err == nil {
+		t.Fatal("FindVolumeSnapshotByName: expected error for empty volumeID")
+	}
+	if _, err := c.FindVolumeSnapshotByName(context.Background(), "v", ""); err == nil {
+		t.Fatal("FindVolumeSnapshotByName: expected error for empty name")
+	}
+}

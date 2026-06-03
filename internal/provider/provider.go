@@ -218,6 +218,7 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewIPSetResource,
 		resources.NewSecurityGroupResource,
 		resources.NewVolumeResource,
+		resources.NewVolumeSnapshotResource,
 	}
 }
 

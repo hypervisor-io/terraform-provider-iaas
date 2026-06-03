@@ -153,3 +153,72 @@ func (c *Client) DeleteVolumeSnapshot(ctx context.Context, volumeID, snapshotID 
 	path := "/storage/volume/" + url.PathEscape(volumeID) + "/snapshot/" + url.PathEscape(snapshotID)
 	return c.doVoid(ctx, "DELETE", path, nil)
 }
+
+// GetVolumeSnapshot resolves a single snapshot by scanning the parent volume's
+// embedded snapshots[] array (there is NO individual snapshot SHOW route — the
+// SHOW endpoint embeds the snapshots). It returns the matching snapshot object
+// or a 404-shaped *APIError (IsNotFound = true) when the id is absent (e.g. the
+// snapshot was deleted, or its delete-queue finished). This doubles as the
+// async poll source for snapshot create (scan for status="available") and the
+// 404 signal for snapshot delete.
+func (c *Client) GetVolumeSnapshot(ctx context.Context, volumeID, snapshotID string) (map[string]any, error) {
+	if volumeID == "" {
+		return nil, fmt.Errorf("GetVolumeSnapshot: empty volumeID")
+	}
+	if snapshotID == "" {
+		return nil, fmt.Errorf("GetVolumeSnapshot: empty snapshotID")
+	}
+	vol, err := c.GetVolume(ctx, volumeID)
+	if err != nil {
+		// A 404 on the parent volume propagates (the snapshot is gone too).
+		return nil, err
+	}
+	for _, s := range snapshotsOf(vol) {
+		if id, ok := s["id"].(string); ok && id == snapshotID {
+			return s, nil
+		}
+	}
+	return nil, &APIError{Status: 404, Message: "volume snapshot not found"}
+}
+
+// FindVolumeSnapshotByName resolves a snapshot by NAME from the parent volume's
+// embedded snapshots[] array. The snapshot CREATE endpoint returns the backup
+// QUEUE (not the snapshot id), so the resource resolves the freshly-created
+// snapshot by the unique name it supplied. When several snapshots share a name
+// the most recently created (last in the array, which the SHOW orders desc — so
+// first) is ambiguous; callers MUST use unique names. Returns a 404-shaped
+// *APIError when no snapshot with that name exists yet.
+func (c *Client) FindVolumeSnapshotByName(ctx context.Context, volumeID, name string) (map[string]any, error) {
+	if volumeID == "" {
+		return nil, fmt.Errorf("FindVolumeSnapshotByName: empty volumeID")
+	}
+	if name == "" {
+		return nil, fmt.Errorf("FindVolumeSnapshotByName: empty name")
+	}
+	vol, err := c.GetVolume(ctx, volumeID)
+	if err != nil {
+		return nil, err
+	}
+	for _, s := range snapshotsOf(vol) {
+		if n, ok := s["name"].(string); ok && n == name {
+			return s, nil
+		}
+	}
+	return nil, &APIError{Status: 404, Message: "volume snapshot not found by name"}
+}
+
+// snapshotsOf extracts the embedded snapshots[] array from a volume SHOW object,
+// coercing each element to a map. A missing/empty/malformed array yields nil.
+func snapshotsOf(vol map[string]any) []map[string]any {
+	raw, ok := vol["snapshots"].([]any)
+	if !ok {
+		return nil
+	}
+	out := make([]map[string]any, 0, len(raw))
+	for _, e := range raw {
+		if m, ok := e.(map[string]any); ok {
+			out = append(out, m)
+		}
+	}
+	return out
+}
