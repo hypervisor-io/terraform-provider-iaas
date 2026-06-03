@@ -233,6 +233,7 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewDNSRecordResource,
 		resources.NewManagedDatabaseResource,
 		resources.NewDBReplicaResource,
+		resources.NewDBParameterGroupResource,
 	}
 }
 
