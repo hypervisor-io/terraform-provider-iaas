@@ -236,6 +236,8 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewDBParameterGroupResource,
 		resources.NewS3BucketResource,
 		resources.NewS3AccessKeyResource,
+		resources.NewInstanceBackupPolicyResource,
+		resources.NewDBBackupPolicyResource,
 	}
 }
 
