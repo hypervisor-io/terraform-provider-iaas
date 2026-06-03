@@ -111,10 +111,18 @@ resource "iaas_ssh_key" "test" {
 // ---------------------------------------------------------------------------
 // TestUnitSSHKey_lifecycle — MOCK-backed lifecycle proof.
 //
-// Drives the full create → read → update → import-read → delete flow against
-// canned API responses, with no live panel. resource.UnitTest needs a
-// terraform/opentofu binary on PATH or via TF_ACC_TERRAFORM_PATH; if none is
-// found the framework fails the test with a clear binary-not-found message.
+// Drives the full resource lifecycle against canned API responses, with no
+// live panel. The Steps execute in this order:
+//
+//  1. Create + read-back — applies createCfg; checks id, fingerprint, comments, name.
+//  2. Import — imports the resource by UUID and verifies state matches the prior step.
+//  3. Update — applies updateCfg (renamed name); checks id and new name.
+//
+// Delete is implicit teardown after the final step, not an explicit Step.
+//
+// resource.UnitTest needs a terraform/opentofu binary on PATH or via
+// TF_ACC_TERRAFORM_PATH; if none is found the test is skipped with a clear
+// binary-not-found message (see ensureTFBinary).
 // ---------------------------------------------------------------------------
 func TestUnitSSHKey_lifecycle(t *testing.T) {
 	ensureTFBinary(t)

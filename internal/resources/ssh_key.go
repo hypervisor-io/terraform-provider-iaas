@@ -81,6 +81,11 @@ func (r *sshKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 			"fingerprint": schema.StringAttribute{
 				Computed:    true,
 				Description: "Fingerprint of the public key, computed by the API.",
+				// UseStateForUnknown is safe here because this computed value is
+				// stable after create. Only apply UseStateForUnknown to computed
+				// fields that the server does NOT mutate post-create; for
+				// server-mutable computed fields, omit it so the plan shows the
+				// refreshed value (otherwise drift is masked).
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -89,6 +94,11 @@ func (r *sshKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Computed: true,
 				Description: "Comment associated with the key, derived by the API from the " +
 					"key's natural trailing comment. Server-managed.",
+				// UseStateForUnknown is safe here because this computed value is
+				// stable after create. Only apply UseStateForUnknown to computed
+				// fields that the server does NOT mutate post-create; for
+				// server-mutable computed fields, omit it so the plan shows the
+				// refreshed value (otherwise drift is masked).
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -157,6 +167,12 @@ func (r *sshKeyResource) Read(ctx context.Context, req resource.ReadRequest, res
 
 // Update changes mutable fields. Only name is user-settable (public_key forces
 // replacement; comments is computed), so only name is sent.
+//
+// This relies on the UPDATE (PATCH) response being a FULL resource object
+// (same shape as SHOW), which lets us rehydrate all computed fields from it.
+// When copying this template: if a resource's UPDATE response is partial/thinner
+// than SHOW, call Read after a successful update instead of mapping the PATCH
+// response directly — otherwise computed fields get dropped from state.
 func (r *sshKeyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan sshKeyModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
