@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -18,9 +19,9 @@ const defaultTimeout = 30 * time.Second
 
 // Client is the HTTP transport for the IaaS REST API.
 type Client struct {
-	baseURL string
-	token   string
-	http    *http.Client
+	baseURL    string
+	token      string
+	httpClient *http.Client
 }
 
 // New constructs a Client.
@@ -37,15 +38,15 @@ func New(endpoint, token string, timeout time.Duration, insecure bool) *Client {
 
 	var transport http.RoundTripper
 	if insecure {
-		transport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // intentional; caller opts in
-		}
+		base := http.DefaultTransport.(*http.Transport).Clone()
+		base.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //nolint:gosec // intentional; caller opts in
+		transport = base
 	}
 
 	return &Client{
 		baseURL: strings.TrimRight(endpoint, "/"),
 		token:   token,
-		http: &http.Client{
+		httpClient: &http.Client{
 			Timeout:   timeout,
 			Transport: transport,
 		},
@@ -64,20 +65,20 @@ func New(endpoint, token string, timeout time.Duration, insecure bool) *Client {
 // for diagnostics (http.Header.Get is case-insensitive, so both
 // "X-Request-Id" and "X-Request-ID" are accessible).
 func (c *Client) do(ctx context.Context, method, path string, body any) (*http.Response, []byte, error) {
-	url := c.baseURL + path
+	rawURL := c.baseURL + path
 
 	var reqBody io.Reader
 	if body != nil {
 		encoded, err := json.Marshal(body)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("marshalling request body: %w", err)
 		}
 		reqBody = bytes.NewReader(encoded)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
+	req, err := http.NewRequestWithContext(ctx, method, rawURL, reqBody)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("building request %s %s: %w", method, rawURL, err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+c.token)
@@ -86,15 +87,15 @@ func (c *Client) do(ctx context.Context, method, path string, body any) (*http.R
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	resp, err := c.http.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("executing request %s %s: %w", method, rawURL, err)
 	}
 	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return resp, nil, err
+		return nil, nil, fmt.Errorf("reading response body: %w", err)
 	}
 
 	// Return the response with its headers intact (including X-Request-Id).
