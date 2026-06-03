@@ -10,18 +10,34 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"net/http"
 	"strings"
 	"time"
 )
 
-const defaultTimeout = 30 * time.Second
+const (
+	defaultTimeout        = 30 * time.Second
+	defaultRetryBaseDelay = 500 * time.Millisecond
+
+	// maxRetryAttempts is the total number of attempts (1 initial + up to 3 retries).
+	maxRetryAttempts = 4
+
+	// maxRetryDelay caps the sleep between retries regardless of backoff calculation.
+	maxRetryDelay = 30 * time.Second
+)
 
 // Client is the HTTP transport for the IaaS REST API.
 type Client struct {
 	baseURL    string
 	token      string
 	httpClient *http.Client
+
+	// retryBaseDelay is the base sleep between retry attempts.
+	// Exposed as an unexported field so tests can set it to a tiny value
+	// (e.g. 1 ms) to keep the suite fast without sleeping for real seconds.
+	// New() sets it to defaultRetryBaseDelay (500 ms).
+	retryBaseDelay time.Duration
 }
 
 // New constructs a Client.
@@ -50,6 +66,7 @@ func New(endpoint, token string, timeout time.Duration, insecure bool) *Client {
 			Timeout:   timeout,
 			Transport: transport,
 		},
+		retryBaseDelay: defaultRetryBaseDelay,
 	}
 }
 
@@ -64,44 +81,96 @@ func New(endpoint, token string, timeout time.Duration, insecure bool) *Client {
 // The response's X-Request-Id header is preserved on the returned *http.Response
 // for diagnostics (http.Header.Get is case-insensitive, so both
 // "X-Request-Id" and "X-Request-ID" are accessible).
+//
+// Retry behaviour (C6):
+//   - HTTP 429 and 5xx responses are retried with exponential back-off + jitter,
+//     up to maxRetryAttempts total tries (1 initial + 3 retries).
+//   - The back-off sleep is cancellable via ctx.
+//   - On the final attempt the last response is returned as-is so callers can
+//     inspect the status; callers call responseError to turn it into an error.
+//   - All other status codes (including 401/403) are NOT retried.
 func (c *Client) do(ctx context.Context, method, path string, body any) (*http.Response, []byte, error) {
 	rawURL := c.baseURL + path
 
-	var reqBody io.Reader
+	// Pre-marshal the body once; each attempt creates a new bytes.Reader.
+	var encoded []byte
 	if body != nil {
-		encoded, err := json.Marshal(body)
+		var err error
+		encoded, err = json.Marshal(body)
 		if err != nil {
 			return nil, nil, fmt.Errorf("marshalling request body: %w", err)
 		}
-		reqBody = bytes.NewReader(encoded)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, rawURL, reqBody)
-	if err != nil {
-		return nil, nil, fmt.Errorf("building request %s %s: %w", method, rawURL, err)
+	for attempt := 0; attempt < maxRetryAttempts; attempt++ {
+		// If this is a retry, sleep with exponential back-off + jitter,
+		// but honour ctx cancellation.
+		if attempt > 0 {
+			// delay = base * 2^(attempt-1) + small jitter, capped at maxRetryDelay.
+			shift := attempt - 1
+			if shift > 10 {
+				shift = 10 // guard against overflow for large maxRetryAttempts
+			}
+			delay := c.retryBaseDelay * (1 << uint(shift))
+			if delay > maxRetryDelay {
+				delay = maxRetryDelay
+			}
+			// Add up to 10 % jitter (deterministic range; tiny base makes it negligible in tests).
+			jitter := time.Duration(rand.Int64N(int64(delay/10) + 1))
+			delay += jitter
+
+			timer := time.NewTimer(delay)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return nil, nil, ctx.Err()
+			case <-timer.C:
+			}
+		}
+
+		// Build a fresh request for each attempt (body reader must be reset).
+		var reqBody io.Reader
+		if encoded != nil {
+			reqBody = bytes.NewReader(encoded)
+		}
+
+		req, err := http.NewRequestWithContext(ctx, method, rawURL, reqBody)
+		if err != nil {
+			return nil, nil, fmt.Errorf("building request %s %s: %w", method, rawURL, err)
+		}
+
+		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set("Accept", "application/json")
+		if encoded != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, nil, fmt.Errorf("executing request %s %s: %w", method, rawURL, err)
+		}
+
+		data, readErr := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if readErr != nil {
+			return nil, nil, fmt.Errorf("reading response body: %w", readErr)
+		}
+
+		// Replace the drained body with an empty reader so callers that close
+		// resp.Body don't panic.
+		resp.Body = io.NopCloser(bytes.NewReader(nil))
+
+		// Decide whether to retry.
+		isRetryable := resp.StatusCode == http.StatusTooManyRequests || // 429
+			(resp.StatusCode >= 500 && resp.StatusCode < 600) // 5xx
+
+		if !isRetryable || attempt == maxRetryAttempts-1 {
+			// Either not retryable, or this was the final attempt — return.
+			return resp, data, nil
+		}
+		// Retryable and more attempts remain — loop.
 	}
 
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Accept", "application/json")
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, nil, fmt.Errorf("executing request %s %s: %w", method, rawURL, err)
-	}
-	defer resp.Body.Close()
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, nil, fmt.Errorf("reading response body: %w", err)
-	}
-
-	// Return the response with its headers intact (including X-Request-Id).
-	// Body is already drained; replace it with an empty reader so callers
-	// that close resp.Body don't panic.
-	resp.Body = io.NopCloser(bytes.NewReader(nil))
-
-	return resp, data, nil
+	// Unreachable (loop always returns on last attempt), but satisfies compiler.
+	return nil, nil, fmt.Errorf("do: exhausted %d attempts for %s %s", maxRetryAttempts, method, rawURL)
 }
