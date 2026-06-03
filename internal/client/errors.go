@@ -73,15 +73,23 @@ func responseError(resp *http.Response, body []byte) error {
 		RequestID: resp.Header.Get("X-Request-Id"),
 	}
 
-	// Try to parse the body as JSON to extract message / errors.
+	// Try to parse the body as JSON to extract message / errors. Most
+	// controllers return the Laravel-standard {"message":…} envelope, but a few
+	// (notably the Kubernetes KubeconfigController) return {"error":…} instead —
+	// fall back to that key when "message" is absent so the specific text is not
+	// lost.
 	var parsed struct {
 		Message string                     `json:"message"`
+		Error   string                     `json:"error"`
 		Errors  map[string]json.RawMessage `json:"errors"`
 	}
 	_ = json.Unmarshal(body, &parsed) // best-effort; ignore unmarshal failures
 
 	// Base message from the parsed body, or a status-based fallback.
 	msg := parsed.Message
+	if msg == "" {
+		msg = parsed.Error
+	}
 	if msg == "" {
 		msg = http.StatusText(resp.StatusCode)
 		if msg == "" {
