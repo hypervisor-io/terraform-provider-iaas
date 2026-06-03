@@ -210,6 +210,7 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		resources.NewSSHKeyResource,
 		resources.NewVPCResource,
+		resources.NewVPCSubnetResource,
 	}
 }
 
