@@ -171,6 +171,23 @@ func withPageParam(path string, page int) (string, error) {
 	return u.String(), nil
 }
 
+// doRaw performs the request and returns the RAW response body as a string,
+// mapping a non-2xx response to *APIError. Unlike doItem/doList/doVoid it does
+// NOT JSON-decode the body or check a success flag — it is for endpoints whose
+// SUCCESS payload is not JSON (e.g. a text/plain file download such as the VPN
+// peer WireGuard .conf). Error responses are still JSON, so responseError parses
+// the body's "message"/"errors" normally; only the 2xx body is returned verbatim.
+func (c *Client) doRaw(ctx context.Context, method, path string) (string, error) {
+	resp, raw, err := c.do(ctx, method, path, nil)
+	if err != nil {
+		return "", err
+	}
+	if err := responseError(resp, raw); err != nil {
+		return "", err
+	}
+	return string(raw), nil
+}
+
 // doVoid performs the request expecting no object in the response. It maps a
 // non-2xx response to *APIError and treats a 200 response carrying
 // success:false as an error (C3). Used by delete-style endpoints.
