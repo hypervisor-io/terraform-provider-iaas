@@ -85,10 +85,14 @@ func TestResponseError_401_Hint(t *testing.T) {
 		t.Errorf("RequestID = %q; want %q", apiErr.RequestID, "req-401")
 	}
 
-	// The Error() string must contain the IP-lock hint.
+	// The Error() string must contain both the IP-locked phrasing and the
+	// scope/subuser phrasing from ipLockHint, so truncation regressions are caught.
 	errStr := apiErr.Error()
-	if !strings.Contains(errStr, "IP") {
-		t.Errorf("Error() = %q; expected IP-lock hint substring", errStr)
+	if !strings.Contains(errStr, "IP-locked") {
+		t.Errorf("Error() = %q; expected IP-locked hint substring", errStr)
+	}
+	if !strings.Contains(errStr, "subuser") {
+		t.Errorf("Error() = %q; expected subuser hint substring", errStr)
 	}
 }
 
@@ -109,9 +113,13 @@ func TestResponseError_403_Hint(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected *APIError; got %T", err)
 	}
+	// Both the IP-locked phrasing and the scope/subuser phrasing must be present.
 	errStr := apiErr.Error()
-	if !strings.Contains(errStr, "IP") {
-		t.Errorf("Error() = %q; expected IP-lock hint substring", errStr)
+	if !strings.Contains(errStr, "IP-locked") {
+		t.Errorf("Error() = %q; expected IP-locked hint substring", errStr)
+	}
+	if !strings.Contains(errStr, "subuser") {
+		t.Errorf("Error() = %q; expected subuser hint substring", errStr)
 	}
 }
 

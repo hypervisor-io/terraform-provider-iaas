@@ -2,8 +2,10 @@ package client
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 )
 
@@ -36,8 +38,13 @@ type APIError struct {
 func (e *APIError) Error() string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "%d: %s", e.Status, e.Message)
-	for field, msgs := range e.FieldErrors {
-		fmt.Fprintf(&sb, "; %s: [%s]", field, strings.Join(msgs, ", "))
+	fields := make([]string, 0, len(e.FieldErrors))
+	for f := range e.FieldErrors {
+		fields = append(fields, f)
+	}
+	sort.Strings(fields)
+	for _, f := range fields {
+		fmt.Fprintf(&sb, "; %s: [%s]", f, strings.Join(e.FieldErrors[f], ", "))
 	}
 	if e.RequestID != "" {
 		fmt.Fprintf(&sb, " (request id: %s)", e.RequestID)
@@ -110,36 +117,6 @@ func responseError(resp *http.Response, body []byte) error {
 // Resource Read handlers use this to remove a resource from state when the API
 // returns 404 (resource destroyed outside Terraform).
 func IsNotFound(err error) bool {
-	if err == nil {
-		return false
-	}
-	var apiErr *APIError
-	if !isAPIError(err, &apiErr) {
-		return false
-	}
-	return apiErr.Status == http.StatusNotFound
-}
-
-// isAPIError is a thin wrapper around errors.As for *APIError.
-// It exists so future helpers (IsAuthError, etc.) don't repeat the import dance.
-func isAPIError(err error, target **APIError) bool {
-	if err == nil || target == nil {
-		return false
-	}
-	// Walk the error chain manually without importing "errors" in this file —
-	// use a type assertion loop consistent with errors.As semantics.
-	type unwrapper interface{ Unwrap() error }
-	cur := err
-	for cur != nil {
-		if ae, ok := cur.(*APIError); ok {
-			*target = ae
-			return true
-		}
-		if u, ok := cur.(unwrapper); ok {
-			cur = u.Unwrap()
-		} else {
-			break
-		}
-	}
-	return false
+	var e *APIError
+	return errors.As(err, &e) && e.Status == http.StatusNotFound
 }

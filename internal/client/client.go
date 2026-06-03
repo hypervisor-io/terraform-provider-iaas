@@ -83,12 +83,15 @@ func New(endpoint, token string, timeout time.Duration, insecure bool) *Client {
 // "X-Request-Id" and "X-Request-ID" are accessible).
 //
 // Retry behaviour (C6):
-//   - HTTP 429 and 5xx responses are retried with exponential back-off + jitter,
-//     up to maxRetryAttempts total tries (1 initial + 3 retries).
+//   - Retries apply to HTTP 429 and 5xx responses only; all other status codes
+//     (including 401/403/404) are returned immediately without retry.
+//     Transport-level errors (e.g. connection refused, TLS failure) are also
+//     returned immediately without retry.
+//   - Retried requests use exponential back-off + jitter, up to maxRetryAttempts
+//     total tries (1 initial + 3 retries).
 //   - The back-off sleep is cancellable via ctx.
 //   - On the final attempt the last response is returned as-is so callers can
 //     inspect the status; callers call responseError to turn it into an error.
-//   - All other status codes (including 401/403) are NOT retried.
 func (c *Client) do(ctx context.Context, method, path string, body any) (*http.Response, []byte, error) {
 	rawURL := c.baseURL + path
 
