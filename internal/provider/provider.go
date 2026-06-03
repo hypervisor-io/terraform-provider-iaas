@@ -228,6 +228,9 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewLBCertificateResource,
 		resources.NewVPNGatewayResource,
 		resources.NewVPNPeerResource,
+		resources.NewDNSZoneResource,
+		resources.NewDNSRecordSetResource,
+		resources.NewDNSRecordResource,
 	}
 }
 
