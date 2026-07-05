@@ -111,16 +111,18 @@ func TestUnitManagedDatabase_lifecycle(t *testing.T) {
 	var mu sync.Mutex
 	deleted := false
 	curPlan := planID
+	curVersion := "8.0"
 
 	showDB := func() map[string]any {
 		mu.Lock()
 		p := curPlan
+		v := curVersion
 		mu.Unlock()
 		return map[string]any{
 			"id":                  dbID,
 			"name":                dbName,
 			"engine":              "mysql",
-			"engine_version":      "8.0",
+			"engine_version":      v,
 			"status":              "active",
 			"db_plan_id":          p,
 			"vpc_id":              vpcID,
@@ -130,6 +132,12 @@ func TestUnitManagedDatabase_lifecycle(t *testing.T) {
 			"admin_user":          "dbadmin",
 			"role":                "primary",
 			"public_ip":           map[string]any{"id": "ip-1", "ip": pubIP},
+			// last_error/error_acknowledged (T9): healthy defaults, matching the
+			// real column defaults (last_error nullable/null, error_acknowledged
+			// default true — see 2026_03_09_000001_add_error_notification_to_
+			// managed_databases.php).
+			"last_error":         nil,
+			"error_acknowledged": true,
 		}
 	}
 
@@ -292,6 +300,202 @@ resource "iaas_managed_database" "test" {
 	}
 
 	// Assert the DELETE fired exactly once.
+	if dels := srv.Requests("DELETE", itemPath); len(dels) != 1 {
+		t.Fatalf("expected exactly 1 DELETE %s, got %d", itemPath, len(dels))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// TestUnitManagedDatabase_versionUpgrade — MOCK-backed proof of T9's in-place
+// engine_version upgrade.
+//
+// Drives create-at-8.0 → update-to-8.4 against canned responses with no live
+// panel:
+//
+//  1. Create — POST /databases returns status="deploying"; SHOW immediately
+//     reports status="active", engine_version="8.0" (ready on the first poll).
+//  2. Update — engine_version 8.0 → 8.4 in config triggers exactly one POST
+//     /database/{id}/upgrade with body {target_version:"8.4"}; the mock
+//     upgrade handler flips its internal engine_version (mirroring the
+//     Master's synchronous engine_version write) so the next SHOW already
+//     reports "8.4" — the waiter converges on the very first poll, matching
+//     the real API's documented timing (see UpgradeManagedDatabase).
+//  3. Asserts the final state's engine_version == "8.4" and that resize/
+//     reset-password/resync-replicas were NOT invoked by an unrelated
+//     engine_version-only change.
+//
+// The IAAS_INSTANCE_POLL_INTERVAL seam is tiny so the waiter cannot hang.
+// ---------------------------------------------------------------------------
+func TestUnitManagedDatabase_versionUpgrade(t *testing.T) {
+	ensureTFBinary(t)
+	t.Setenv("IAAS_INSTANCE_POLL_INTERVAL", "1ms")
+
+	srv := acctest.NewMockServer(t)
+
+	const (
+		dbID     = "11111111-2222-3333-4444-555555555555"
+		planID   = "66666666-7777-8888-9999-000000000000"
+		vpcID    = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+		subnetID = "ffffffff-0000-1111-2222-333333333333"
+		dbName   = "app-db-upgrade"
+		pubIP    = "203.0.113.30"
+		basePath = "/databases"
+	)
+	itemPath := "/database/" + dbID
+
+	var mu sync.Mutex
+	curVersion := "8.0"
+
+	showDB := func() map[string]any {
+		mu.Lock()
+		v := curVersion
+		mu.Unlock()
+		return map[string]any{
+			"id":                  dbID,
+			"name":                dbName,
+			"engine":              "mysql",
+			"engine_version":      v,
+			"status":              "active",
+			"db_plan_id":          planID,
+			"vpc_id":              vpcID,
+			"vpc_subnet_id":       subnetID,
+			"hypervisor_group_id": "",
+			"port":                float64(3306),
+			"admin_user":          "dbadmin",
+			"role":                "primary",
+			"public_ip":           map[string]any{"id": "ip-1", "ip": pubIP},
+			"last_error":          nil,
+			"error_acknowledged":  true,
+		}
+	}
+
+	// CREATE — record the row; create response carries status "deploying".
+	srv.Handle("POST", basePath, func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"message": "Managed database deployment initiated.",
+			"managed_database": map[string]any{
+				"id":             dbID,
+				"name":           dbName,
+				"engine":         "mysql",
+				"engine_version": "8.0",
+				"status":         "deploying",
+				"db_plan_id":     planID,
+			},
+		})
+	})
+
+	// UPGRADE — mirrors ManagedDatabaseService::upgradeVersion writing
+	// engine_version onto the row synchronously, before the (unobservable) async
+	// upgrade even runs on the box.
+	srv.Handle("POST", itemPath+"/upgrade", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		target, _ := body["target_version"].(string)
+		if target != "" {
+			mu.Lock()
+			curVersion = target
+			mu.Unlock()
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"message": fmt.Sprintf("Database upgrade to mysql %s initiated.", target),
+		})
+	})
+
+	// SHOW — 404 once delete has been enqueued.
+	var mu2 sync.Mutex
+	deleted := false
+	srv.Handle("GET", itemPath, func(w http.ResponseWriter, r *http.Request) {
+		mu2.Lock()
+		gone := deleted
+		mu2.Unlock()
+		if gone {
+			writeJSON(w, http.StatusNotFound, map[string]any{"error": "Managed Database not found"})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "managed_database": showDB()})
+	})
+
+	// DELETE — implicit teardown at the end of the test.
+	srv.Handle("DELETE", itemPath, func(w http.ResponseWriter, r *http.Request) {
+		mu2.Lock()
+		deleted = true
+		mu2.Unlock()
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "Managed database deleted."})
+	})
+
+	providerCfg := acctest.ProviderConfig(srv.Endpoint())
+
+	createCfg := providerCfg + `
+resource "iaas_managed_database" "test" {
+  name           = "` + dbName + `"
+  engine         = "mysql"
+  engine_version = "8.0"
+  db_plan_id     = "` + planID + `"
+  vpc_id         = "` + vpcID + `"
+  vpc_subnet_id  = "` + subnetID + `"
+}
+`
+	upgradeCfg := providerCfg + `
+resource "iaas_managed_database" "test" {
+  name           = "` + dbName + `"
+  engine         = "mysql"
+  engine_version = "8.4"
+  db_plan_id     = "` + planID + `"
+  vpc_id         = "` + vpcID + `"
+  vpc_subnet_id  = "` + subnetID + `"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: createCfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("iaas_managed_database.test", "id", dbID),
+					resource.TestCheckResourceAttr("iaas_managed_database.test", "engine_version", "8.0"),
+					resource.TestCheckResourceAttr("iaas_managed_database.test", "status", "active"),
+					resource.TestCheckResourceAttr("iaas_managed_database.test", "error_acknowledged", "true"),
+				),
+			},
+			{
+				Config: upgradeCfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("iaas_managed_database.test", "engine_version", "8.4"),
+					resource.TestCheckResourceAttr("iaas_managed_database.test", "status", "active"),
+				),
+			},
+		},
+	})
+
+	// Assert the upgrade endpoint fired EXACTLY once, with the target version.
+	upgrades := srv.Requests("POST", itemPath+"/upgrade")
+	if len(upgrades) != 1 {
+		t.Fatalf("expected exactly 1 POST %s/upgrade, got %d", itemPath, len(upgrades))
+	}
+	var upgradeBody map[string]any
+	if err := json.Unmarshal(upgrades[0].Body, &upgradeBody); err != nil {
+		t.Fatalf("decoding upgrade body: %v", err)
+	}
+	if upgradeBody["target_version"] != "8.4" {
+		t.Errorf("upgrade body target_version = %v; want 8.4", upgradeBody["target_version"])
+	}
+
+	// Assert an engine_version-only change did NOT also fire resize/reset-password/
+	// resync-replicas (they were never configured in this test).
+	if rs := srv.Requests("PATCH", itemPath+"/resize"); len(rs) != 0 {
+		t.Errorf("expected 0 PATCH %s/resize from an engine_version-only change, got %d", itemPath, len(rs))
+	}
+	if rs := srv.Requests("POST", itemPath+"/reset-password"); len(rs) != 0 {
+		t.Errorf("expected 0 POST %s/reset-password from an engine_version-only change, got %d", itemPath, len(rs))
+	}
+	if rs := srv.Requests("POST", itemPath+"/resync-replicas"); len(rs) != 0 {
+		t.Errorf("expected 0 POST %s/resync-replicas from an engine_version-only change, got %d", itemPath, len(rs))
+	}
+
+	// Assert the DELETE fired exactly once (implicit teardown).
 	if dels := srv.Requests("DELETE", itemPath); len(dels) != 1 {
 		t.Fatalf("expected exactly 1 DELETE %s, got %d", itemPath, len(dels))
 	}

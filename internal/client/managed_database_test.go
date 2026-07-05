@@ -395,6 +395,202 @@ func TestResetManagedDatabasePassword_EmptyID(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// UpgradeManagedDatabase
+// ---------------------------------------------------------------------------
+
+// TestUpgradeManagedDatabase_Success verifies the upgrade route is POST
+// /database/{id}/upgrade and the {target_version} body is sent verbatim.
+func TestUpgradeManagedDatabase_Success(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"message":"Database upgrade to mysql 8.4 initiated."}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	if err := c.UpgradeManagedDatabase(context.Background(), "db-1", "8.4"); err != nil {
+		t.Fatalf("UpgradeManagedDatabase returned error: %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %s; want POST", gotMethod)
+	}
+	if gotPath != "/api/database/db-1/upgrade" {
+		t.Errorf("path = %s; want /api/database/db-1/upgrade", gotPath)
+	}
+	if gotBody["target_version"] != "8.4" {
+		t.Errorf("upgrade body target_version = %v; want 8.4", gotBody["target_version"])
+	}
+}
+
+// TestUpgradeManagedDatabase_Failure verifies a rejected upgrade (e.g. target not
+// higher than the current version) surfaces as an error (C3).
+func TestUpgradeManagedDatabase_Failure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":false,"message":"Target version must be higher than current version (8.0)."}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	err := c.UpgradeManagedDatabase(context.Background(), "db-1", "8.0")
+	if err == nil {
+		t.Fatal("UpgradeManagedDatabase: expected error for success:false, got nil")
+	}
+	if !contains(err.Error(), "must be higher") {
+		t.Errorf("error = %q; want the version-guard message", err.Error())
+	}
+}
+
+func TestUpgradeManagedDatabase_EmptyID(t *testing.T) {
+	c := New("http://localhost/api", "tok", 10*time.Second, false)
+	if err := c.UpgradeManagedDatabase(context.Background(), "", "8.4"); err == nil {
+		t.Fatal("UpgradeManagedDatabase: expected error for empty id, got nil")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// RetryManagedDatabase
+// ---------------------------------------------------------------------------
+
+func TestRetryManagedDatabase_Success(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"message":"Managed database retry initiated.","task_id":"task-1"}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	if err := c.RetryManagedDatabase(context.Background(), "db-1"); err != nil {
+		t.Fatalf("RetryManagedDatabase returned error: %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %s; want POST", gotMethod)
+	}
+	if gotPath != "/api/database/db-1/retry" {
+		t.Errorf("path = %s; want /api/database/db-1/retry", gotPath)
+	}
+}
+
+// TestRetryManagedDatabase_StillDeploying verifies the "still deploying, please
+// wait" guard (success:false, not an actual failure state) surfaces as an error.
+func TestRetryManagedDatabase_StillDeploying(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":false,"message":"Database is still deploying. Please wait a few minutes."}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	err := c.RetryManagedDatabase(context.Background(), "db-1")
+	if err == nil {
+		t.Fatal("RetryManagedDatabase: expected error for success:false, got nil")
+	}
+	if !contains(err.Error(), "still deploying") {
+		t.Errorf("error = %q; want the still-deploying message", err.Error())
+	}
+}
+
+func TestRetryManagedDatabase_EmptyID(t *testing.T) {
+	c := New("http://localhost/api", "tok", 10*time.Second, false)
+	if err := c.RetryManagedDatabase(context.Background(), ""); err == nil {
+		t.Fatal("RetryManagedDatabase: expected error for empty id, got nil")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// AcknowledgeManagedDatabaseError
+// ---------------------------------------------------------------------------
+
+func TestAcknowledgeManagedDatabaseError_Success(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	if err := c.AcknowledgeManagedDatabaseError(context.Background(), "db-1"); err != nil {
+		t.Fatalf("AcknowledgeManagedDatabaseError returned error: %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %s; want POST", gotMethod)
+	}
+	if gotPath != "/api/database/db-1/acknowledge-error" {
+		t.Errorf("path = %s; want /api/database/db-1/acknowledge-error", gotPath)
+	}
+}
+
+func TestAcknowledgeManagedDatabaseError_EmptyID(t *testing.T) {
+	c := New("http://localhost/api", "tok", 10*time.Second, false)
+	if err := c.AcknowledgeManagedDatabaseError(context.Background(), ""); err == nil {
+		t.Fatal("AcknowledgeManagedDatabaseError: expected error for empty id, got nil")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ResyncManagedDatabaseReplicas
+// ---------------------------------------------------------------------------
+
+func TestResyncManagedDatabaseReplicas_Success(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"message":"All replicas are resyncing."}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	if err := c.ResyncManagedDatabaseReplicas(context.Background(), "db-1"); err != nil {
+		t.Fatalf("ResyncManagedDatabaseReplicas returned error: %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %s; want POST", gotMethod)
+	}
+	if gotPath != "/api/database/db-1/resync-replicas" {
+		t.Errorf("path = %s; want /api/database/db-1/resync-replicas", gotPath)
+	}
+}
+
+// TestResyncManagedDatabaseReplicas_Failure verifies a wholesale rejection (not a
+// primary / not active / no eligible replicas) surfaces as an error (C3).
+func TestResyncManagedDatabaseReplicas_Failure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":false,"message":"No replicas available to resync."}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	err := c.ResyncManagedDatabaseReplicas(context.Background(), "db-1")
+	if err == nil {
+		t.Fatal("ResyncManagedDatabaseReplicas: expected error for success:false, got nil")
+	}
+	if !contains(err.Error(), "No replicas available") {
+		t.Errorf("error = %q; want the no-replicas message", err.Error())
+	}
+}
+
+func TestResyncManagedDatabaseReplicas_EmptyID(t *testing.T) {
+	c := New("http://localhost/api", "tok", 10*time.Second, false)
+	if err := c.ResyncManagedDatabaseReplicas(context.Background(), ""); err == nil {
+		t.Fatal("ResyncManagedDatabaseReplicas: expected error for empty id, got nil")
+	}
+}
+
+// ---------------------------------------------------------------------------
 // CreateDatabaseReplica
 // ---------------------------------------------------------------------------
 

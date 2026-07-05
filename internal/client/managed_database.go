@@ -11,7 +11,8 @@ import (
 //
 // This file covers the managed database ITSELF (create/show/list/destroy +
 // async deploy convergence) AND its in-place / action mutations (resize,
-// restart, reset-password) AND read-replica create (the replica is its own
+// restart, reset-password, version upgrade, retry, acknowledge-error,
+// resync-replicas) AND read-replica create (the replica is its own
 // ManagedDatabase row, so it reuses GetManagedDatabase/DeleteManagedDatabase).
 //
 // ROUTES (controller-verified — all wrapped in the billing.enabled middleware):
@@ -31,6 +32,17 @@ import (
 //	                                                     managed_database}
 //	RESTART POST   /database/{id}/restart               → {success,message}
 //	RESETPW POST   /database/{id}/reset-password        → {success,message,password:"<cleartext>"}
+//	UPGRADE POST   /database/{id}/upgrade               body {target_version (req)} → {success,message};
+//	                                                     T9 (subuser.permission:databases.manage) — see
+//	                                                     UpgradeManagedDatabase for the async-timing caveat.
+//	RETRY   POST   /database/{id}/retry                 → {success,message,task_id}; T9 — see
+//	                                                     RetryManagedDatabase (rebuilds destructively;
+//	                                                     implemented + tested, deliberately unwired).
+//	ACKERR  POST   /database/{id}/acknowledge-error     → {success:true}; T9 — see
+//	                                                     AcknowledgeManagedDatabaseError (non-destructive;
+//	                                                     implemented + tested, deliberately unwired).
+//	RESYNC  POST   /database/{id}/resync-replicas       → {success,message[,errors]}; T9 — see
+//	                                                     ResyncManagedDatabaseReplicas.
 //	REPLICA POST   /database/{id}/replica               body {name?, db_plan_id (req),
 //	                                                     vpc_subnet_id (req)} → {success,message,
 //	                                                     replica:{id,status:"deploying",...}}
@@ -47,10 +59,15 @@ import (
 //     (deploy failed). Ready="active"; fail="error". GetManagedDatabase IS the poll.
 //   - REPLICA create is identically ASYNC: the replica is its OWN managed_databases
 //     row with status="deploying" → poll GetManagedDatabase(replicaID) until active.
-//   - RESIZE / RESTART / RESET-PASSWORD are SYNC from the API's view: the controller
-//     updates the row and dispatches a fire-and-forget slave task, returning
-//     immediately. (resize updates db_plan_id in place; restart/reset-password are
-//     stateless actions.) No waiter is needed for them.
+//   - RESIZE / RESTART / RESET-PASSWORD / RESYNC-REPLICAS are SYNC from the API's
+//     view: the controller updates the row and dispatches a fire-and-forget slave
+//     task, returning immediately. No waiter is needed for them.
+//   - UPGRADE is a HYBRID: validation + the engine_version column write are
+//     SYNCHRONOUS (the row already shows the target version once the call
+//     returns success), but the actual engine upgrade on the box runs
+//     asynchronously afterwards with no independently observable completion
+//     signal through this API (see UpgradeManagedDatabase). The resource still
+//     polls once via the shared waiter for consistency/fast-failure detection.
 //   - DELETE flips status→"destroying", bills the final hours, destroys the backing
 //     instance (releasing its public IP), and soft-deletes the row, so a subsequent
 //     SHOW 404s. A failure (e.g. instance destroy threw, or a primary with replicas)
@@ -176,6 +193,99 @@ func (c *Client) ResetManagedDatabasePassword(ctx context.Context, id string) (m
 		return nil, fmt.Errorf("ResetManagedDatabasePassword: empty id")
 	}
 	return c.doItem(ctx, "POST", "/database/"+url.PathEscape(id)+"/reset-password", nil, "")
+}
+
+// UpgradeManagedDatabase performs an in-place engine version upgrade via POST
+// /database/{id}/upgrade, body {target_version (req, string)}. Controller-verified
+// (ManagedDatabaseService::upgradeVersion): the target must be a version offered
+// for the database's engine AND version_compare() strictly HIGHER than the
+// current engine_version (no downgrade, no re-apply of the same version); a
+// backing instance must exist, and a pre-upgrade backup is taken first (its
+// failure aborts the upgrade before anything is sent to the hypervisor).
+//
+// CRITICAL timing note (documented concern, not a bug in this provider): the
+// row's engine_version column is updated to the target SYNCHRONOUSLY, the
+// moment the hypervisor ACCEPTS the upgrade command — not once the engine
+// upgrade actually finishes running on the box. There is no task_id in the
+// response and the UserApi SHOW does not eager-load the tasks[] relation (unlike
+// iaas_kubernetes_cluster's upgrade, which polls an embedded task), so real
+// completion on the box is NOT independently observable through this API: a
+// slave-side failure only surfaces later, asynchronously, as last_error /
+// error_acknowledged=false on a subsequent SHOW (see last_error/error_acknowledged
+// on managedDatabaseModel). A synchronous validation failure (unsupported/
+// not-higher version, missing instance, backup failure, hypervisor rejects the
+// command) surfaces immediately as success:false (doVoid/C3).
+func (c *Client) UpgradeManagedDatabase(ctx context.Context, id, targetVersion string) error {
+	if id == "" {
+		return fmt.Errorf("UpgradeManagedDatabase: empty id")
+	}
+	return c.doVoid(ctx, "POST", "/database/"+url.PathEscape(id)+"/upgrade", map[string]any{
+		"target_version": targetVersion,
+	})
+}
+
+// RetryManagedDatabase retries a failed deployment via POST /database/{id}/retry.
+// Controller-verified (ManagedDatabaseService::retryDeploy): despite the name,
+// this is NOT a "resume the stuck step" operation — it rebuilds the backing
+// instance from scratch (the same cloud-init rebuild code path as an instance
+// reinstall: deployed=0, status=0, fresh cloudcfg, a new deploy task with
+// rebuild=true), flips the database status back to "deploying" (and, for a
+// replica, replication_status back to "syncing"). It refuses (success:false,
+// no rebuild) if the database entered "deploying" less than 10 minutes ago
+// (still legitimately deploying, not stuck).
+//
+// Implemented + unit-tested for T9 but DELIBERATELY LEFT UNWIRED from any
+// automatic invocation (mirrors T7's kubernetes_cluster upgrade/retry
+// precedent — see wave-bc-t7-report.md): auto-invoking this from a waiter fail
+// path would silently destroy and rebuild a database that may still be
+// perfectly healthy (e.g. a transient slave-side blip, or an unrelated
+// last_error), which is far more damaging than surfacing a clear Diagnostics
+// error and letting the operator decide.
+func (c *Client) RetryManagedDatabase(ctx context.Context, id string) error {
+	if id == "" {
+		return fmt.Errorf("RetryManagedDatabase: empty id")
+	}
+	return c.doVoid(ctx, "POST", "/database/"+url.PathEscape(id)+"/retry", nil)
+}
+
+// AcknowledgeManagedDatabaseError clears the database's alert state via POST
+// /database/{id}/acknowledge-error — controller-verified to unconditionally set
+// last_error=null, error_acknowledged=true and return {success:true}; it never
+// fails once the id resolves. Unlike RetryManagedDatabase this is NOT
+// destructive (it touches no infrastructure, only the notification flags), but
+// it is likewise implemented + unit-tested for T9 and left UNWIRED from
+// automatic invocation: last_error/error_acknowledged are surfaced as computed
+// attributes (see managed_database.go) precisely so an operator can see that
+// something failed, and silently auto-acknowledging the moment this resource
+// observes an error would erase that signal instead of just tidying up a
+// resolved condition. It is available for a future explicit acknowledge_error
+// trigger attribute (the reset_password/resync_replicas pattern) if wanted.
+func (c *Client) AcknowledgeManagedDatabaseError(ctx context.Context, id string) error {
+	if id == "" {
+		return fmt.Errorf("AcknowledgeManagedDatabaseError: empty id")
+	}
+	return c.doVoid(ctx, "POST", "/database/"+url.PathEscape(id)+"/acknowledge-error", nil)
+}
+
+// ResyncManagedDatabaseReplicas resyncs every eligible replica of a PRIMARY
+// database from the current primary snapshot, via POST
+// /database/{id}/resync-replicas (no body). Controller-verified
+// (ManagedDatabaseService::resyncReplicas): the target must be a primary,
+// "active", and have at least one replica that is not currently "deploying" or
+// already "syncing" — the primary's replication user is (re)configured if no
+// replica is currently active/syncing, then every eligible replica is sent a
+// resync command. SYNC from the API's view (mirrors resize/restart/
+// reset-password): it dispatches the per-replica slave tasks and returns once
+// every dispatch has been attempted, so no waiter is needed. A wholesale
+// rejection (not a primary, not active, no eligible replicas) or a partial
+// per-replica dispatch failure both surface as success:false (doVoid/C3); the
+// controller's message differs ("No replicas available to resync." vs "Some
+// replicas failed to resync.") but both are surfaced verbatim.
+func (c *Client) ResyncManagedDatabaseReplicas(ctx context.Context, id string) error {
+	if id == "" {
+		return fmt.Errorf("ResyncManagedDatabaseReplicas: empty id")
+	}
+	return c.doVoid(ctx, "POST", "/database/"+url.PathEscape(id)+"/resync-replicas", nil)
 }
 
 // CreateDatabaseReplica creates a read replica of the primary managed database

@@ -3,12 +3,12 @@
 page_title: "iaas_managed_database Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a managed database (MySQL, MariaDB, or PostgreSQL) backed by a dedicated instance, deployed into a VPC. Creation is ASYNCHRONOUS: the database record and its backing instance are created, then this resource waits for the status to become "active" (the lifecycle is deploying → active). The engine, version, name, and network placement are immutable (changing any forces a new resource); the plan can be changed in place (a resize). The connection password is never returned by the API on create or read (it is encrypted and hidden server-side); set/rotate it by changing reset_password, which invokes the reset-password action and exposes the new cleartext password in the (sensitive) password attribute. Managed databases are a billed add-on: if billing is disabled the create fails with HTTP 403; feature/quota limits (plan disabled, engine unsupported, quota reached, location not database-enabled, no free IP, NAT gateway required for a private subnet) fail with a clear message.
+  Manages a managed database (MySQL, MariaDB, or PostgreSQL) backed by a dedicated instance, deployed into a VPC. Creation is ASYNCHRONOUS: the database record and its backing instance are created, then this resource waits for the status to become "active" (the lifecycle is deploying → active). The engine, name, and network placement are immutable (changing any forces a new resource); the plan can be changed in place (a resize), and the engine_version can be changed in place (an in-place major-version upgrade, POST .../upgrade — see the engine_version attribute for the async-timing caveat). The connection password is never returned by the API on create or read (it is encrypted and hidden server-side); set/rotate it by changing reset_password, which invokes the reset-password action and exposes the new cleartext password in the (sensitive) password attribute. resync_replicas is a similar write-only trigger that resyncs this primary's replicas. Managed databases are a billed add-on: if billing is disabled the create fails with HTTP 403; feature/quota limits (plan disabled, engine unsupported, quota reached, location not database-enabled, no free IP, NAT gateway required for a private subnet) fail with a clear message.
 ---
 
 # iaas_managed_database (Resource)
 
-Manages a managed database (MySQL, MariaDB, or PostgreSQL) backed by a dedicated instance, deployed into a VPC. Creation is ASYNCHRONOUS: the database record and its backing instance are created, then this resource waits for the status to become "active" (the lifecycle is deploying → active). The engine, version, name, and network placement are immutable (changing any forces a new resource); the plan can be changed in place (a resize). The connection password is never returned by the API on create or read (it is encrypted and hidden server-side); set/rotate it by changing reset_password, which invokes the reset-password action and exposes the new cleartext password in the (sensitive) password attribute. Managed databases are a billed add-on: if billing is disabled the create fails with HTTP 403; feature/quota limits (plan disabled, engine unsupported, quota reached, location not database-enabled, no free IP, NAT gateway required for a private subnet) fail with a clear message.
+Manages a managed database (MySQL, MariaDB, or PostgreSQL) backed by a dedicated instance, deployed into a VPC. Creation is ASYNCHRONOUS: the database record and its backing instance are created, then this resource waits for the status to become "active" (the lifecycle is deploying → active). The engine, name, and network placement are immutable (changing any forces a new resource); the plan can be changed in place (a resize), and the engine_version can be changed in place (an in-place major-version upgrade, POST .../upgrade — see the engine_version attribute for the async-timing caveat). The connection password is never returned by the API on create or read (it is encrypted and hidden server-side); set/rotate it by changing reset_password, which invokes the reset-password action and exposes the new cleartext password in the (sensitive) password attribute. resync_replicas is a similar write-only trigger that resyncs this primary's replicas. Managed databases are a billed add-on: if billing is disabled the create fails with HTTP 403; feature/quota limits (plan disabled, engine unsupported, quota reached, location not database-enabled, no free IP, NAT gateway required for a private subnet) fail with a clear message.
 
 ## Example Usage
 
@@ -16,14 +16,16 @@ Manages a managed database (MySQL, MariaDB, or PostgreSQL) backed by a dedicated
 # A managed MySQL database deployed into a VPC subnet.
 #
 # Creation is asynchronous: the provider waits for the database to become
-# "active". The engine, version, name, and network placement are immutable
-# (changing any forces a new resource); the plan can be resized in place.
+# "active". The engine, name, and network placement are immutable (changing any
+# forces a new resource); the plan can be resized in place, and engine_version
+# can be raised in place (an in-place major-version upgrade — see the
+# engine_version attribute description for the async-timing caveat).
 #
 # Managed databases are a billed add-on — billing must be enabled on the account.
 resource "iaas_managed_database" "primary" {
   name           = "app-prod-db"
   engine         = "mysql" # mysql | mariadb | postgresql
-  engine_version = "8.0"
+  engine_version = "8.0"   # raise this in place to upgrade (target must be higher)
   db_plan_id     = "00000000-0000-0000-0000-000000000000" # an enabled db_plan supporting the engine
   vpc_id         = "11111111-1111-1111-1111-111111111111"
   vpc_subnet_id  = "22222222-2222-2222-2222-222222222222" # public subnet → public host; private subnet needs a NAT gateway
@@ -34,8 +36,14 @@ resource "iaas_managed_database" "primary" {
   # the provider to manage it.
   reset_password = "rotate-2026-06"
 
+  # Optional: changing this token resyncs every eligible replica of this primary
+  # (only meaningful once one or more iaas_db_replica children exist). Leave unset
+  # if you do not need the provider to trigger a resync.
+  # resync_replicas = "resync-2026-06"
+
   timeouts {
     create = "30m"
+    update = "15m" # sizes the engine_version upgrade wait
     delete = "30m"
   }
 }
@@ -57,6 +65,12 @@ output "db_password" {
   value     = iaas_managed_database.primary.password
   sensitive = true
 }
+
+# Alert state surfaced from the API (T9): last_error is non-empty and
+# error_acknowledged is false while an unacknowledged failure is outstanding.
+output "db_last_error" {
+  value = iaas_managed_database.primary.last_error
+}
 ```
 
 <!-- schema generated by tfplugindocs -->
@@ -66,7 +80,7 @@ output "db_password" {
 
 - `db_plan_id` (String) UUID of the database plan (CPU/RAM/storage sizing). Changeable IN PLACE via a resize — the new plan's storage must be >= the current plan's, and it must still support the engine.
 - `engine` (String) Database engine: "mysql", "mariadb", or "postgresql". Must be supported by db_plan_id. Immutable; changing it forces a new resource.
-- `engine_version` (String) Engine version (e.g. "8.0" for MySQL, "16" for PostgreSQL). Must be a version offered for the engine. Immutable; changing it forces a new resource.
+- `engine_version` (String) Engine version (e.g. "8.0" for MySQL, "16" for PostgreSQL). Must be a version offered for the engine. Changeable IN PLACE (T9): raising it invokes the upgrade action (POST /database/{id}/upgrade), which requires the target to be a version offered for the engine AND strictly higher than the current one (no downgrade, no re-apply), takes a pre-upgrade backup first, then upgrades the engine on the backing instance. CAVEAT: the API updates this field's value SYNCHRONOUSLY once the hypervisor accepts the upgrade command — not once the upgrade actually finishes running on the box — and exposes no independent completion signal, so a slave-side failure only surfaces later via last_error/error_acknowledged on a subsequent read/plan, not as a blocking apply-time error.
 - `name` (String) Name of the managed database. Immutable (there is no rename endpoint); changing it forces a new resource.
 - `vpc_id` (String) UUID of the VPC to deploy the database into. Immutable; changing it forces a new resource.
 - `vpc_subnet_id` (String) UUID of the VPC subnet to place the database in. A public subnet gives the database a public IP; a private subnet requires a NAT gateway. Immutable; changing it forces a new resource.
@@ -75,12 +89,15 @@ output "db_password" {
 
 - `hypervisor_group_id` (String) Optional UUID of the location (hypervisor group). When omitted it is derived from the VPC and returned by the API. Immutable; changing it forces a new resource.
 - `reset_password` (String) Write-only trigger token for rotating the admin password. On create it is echoed into state and (if set) the password is reset once after deploy; on update, changing this value re-runs the reset-password action and refreshes the (sensitive) password attribute. Its actual value is arbitrary — use a timestamp or version string to force a rotation. Not returned by the API.
+- `resync_replicas` (String) Write-only trigger token (T9): changing this value invokes the resync-replicas action (POST /database/{id}/resync-replicas), which resyncs every eligible replica of this PRIMARY database from the current primary snapshot. Only meaningful on a primary that already has one or more iaas_db_replica children and is "active" — a rejection (not a primary, not active, no eligible replicas) surfaces as an error. Its actual value is arbitrary — use a timestamp or version string to force a resync. Not returned by the API.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only
 
+- `error_acknowledged` (Boolean) Whether the last_error above has been acknowledged/dismissed. false while an unacknowledged error is outstanding. Server-mutable.
 - `host` (String) Connection host — the database's public IPv4 address (for public-subnet databases), extracted from the nested public_ip object. Empty for private-subnet databases (reachable only inside the VPC). Stable after create.
 - `id` (String) UUID of the managed database, assigned by the API.
+- `last_error` (String) The most recent action failure recorded for this database (deploy, backup, upgrade, resync, health check, ...), or empty when none is outstanding. Cleared by a successful subsequent action, or explicitly via the acknowledge-error action (AcknowledgeManagedDatabaseError in the client — implemented but not invoked by this resource; see error_acknowledged). Server-mutable.
 - `password` (String, Sensitive) Cleartext admin password. The API NEVER returns the password on create or read (it is encrypted and hidden server-side), so this is empty until you rotate it by changing reset_password — the reset-password action returns the new password, which is captured here. Marked sensitive so it is never shown in plan/CLI output.
 - `port` (Number) Connection port (3306 for MySQL/MariaDB, 5432 for PostgreSQL). Stable after create.
 - `role` (String) Replication role: "primary" for a standalone/primary database. Server-mutable (a replica promotion can change it).
