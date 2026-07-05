@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/hypervisor-io/terraform-provider-iaas/internal/client"
+	"github.com/hypervisor-io/terraform-provider-iaas/client"
 	"github.com/hypervisor-io/terraform-provider-iaas/internal/tfdiag"
 )
 
