@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hypervisor-io/terraform-provider-iaas/internal/waiter"
+	"github.com/hypervisor-io/terraform-provider-iaas/waiter"
 )
 
 // ─── helpers ─────────────────────────────────────────────────────────────────

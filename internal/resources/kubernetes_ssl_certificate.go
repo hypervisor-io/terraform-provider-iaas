@@ -18,7 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/hypervisor-io/terraform-provider-iaas/internal/client"
+	"github.com/hypervisor-io/terraform-provider-iaas/client"
 )
 
 // Interface assertions - iaas_kubernetes_ssl_certificate is a CHILD resource of
