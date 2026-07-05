@@ -1,69 +1,64 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="terraform-provider-iaas - Infrastructure as code for the Hypervisor.io IaaS platform">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-label="terraform-provider-iaas - Infrastructure as code for the Hypervisor.io IaaS platform">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#1b1710"/>
-      <stop offset="1" stop-color="#100d08"/>
+      <stop offset="0" stop-color="#1c1810"/>
+      <stop offset="1" stop-color="#0f0c07"/>
     </linearGradient>
     <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#ffb020"/>
       <stop offset="1" stop-color="#6fe3d8"/>
     </linearGradient>
-    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
-      <path d="M32 0H0V32" fill="none" stroke="#ffb020" stroke-opacity="0.06" stroke-width="1"/>
+    <radialGradient id="glow" cx="0.18" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#ffb020" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#ffb020" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="34" height="34" patternUnits="userSpaceOnUse">
+      <path d="M34 0H0V34" fill="none" stroke="#ffb020" stroke-opacity="0.05" stroke-width="1"/>
     </pattern>
     <style>
-      .mono { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
-      .sans { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      .mono { font-family: ui-monospace, "DejaVu Sans Mono", "SF Mono", Menlo, Consolas, monospace; }
+      .sans { font-family: "DejaVu Sans", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     </style>
   </defs>
 
-  <rect width="1280" height="320" rx="16" fill="url(#bg)"/>
-  <rect width="1280" height="320" rx="16" fill="url(#grid)"/>
-  <rect x="0" y="0" width="1280" height="4" fill="url(#accent)"/>
+  <rect width="1280" height="360" rx="18" fill="url(#bg)"/>
+  <rect width="1280" height="360" rx="18" fill="url(#grid)"/>
+  <rect width="1280" height="360" rx="18" fill="url(#glow)"/>
+  <rect width="1280" height="5" fill="url(#accent)"/>
 
   <!-- provider mark: rounded hexagon with a code caret -->
-  <g transform="translate(64,96)">
-    <path d="M64 0 L118 32 L118 96 L64 128 L10 96 L10 32 Z" fill="none" stroke="url(#accent)" stroke-width="3"/>
-    <text x="64" y="82" text-anchor="middle" class="mono" font-size="46" font-weight="700" fill="#ffb020">&gt;_</text>
+  <g transform="translate(72,124)">
+    <path d="M66 4 L124 37 L124 103 L66 136 L8 103 L8 37 Z" fill="none" stroke="url(#accent)" stroke-width="3.5"/>
+    <text x="66" y="88" text-anchor="middle" class="mono" font-size="50" font-weight="700" fill="#ffb020">&gt;_</text>
   </g>
 
-  <!-- title + tagline -->
-  <g transform="translate(224,120)">
-    <text x="0" y="0" class="mono" font-size="46" font-weight="700" fill="#fbf8ef">terraform-provider-iaas</text>
-    <text x="2" y="40" class="sans" font-size="21" fill="#c9bfa6">Infrastructure as code for the Hypervisor.io IaaS platform</text>
-    <text x="2" y="70" class="sans" font-size="16" fill="#8a8069">OpenTofu &amp; Terraform &#183; 56 resources and data sources &#183; one IP-locked API token</text>
-  </g>
+  <!-- title -->
+  <text x="238" y="158" class="mono" font-size="52" font-weight="700" fill="#fbf8ef" letter-spacing="-1">terraform-provider-iaas</text>
+
+  <!-- tagline -->
+  <text x="240" y="200" class="sans" font-size="23" fill="#cbc1a7">Infrastructure as code for the Hypervisor.io IaaS platform</text>
+
+  <!-- meta line -->
+  <text x="240" y="234" class="sans" font-size="16" fill="#8a8069">OpenTofu &amp; Terraform &#160;&#183;&#160; 56 resources and data sources &#160;&#183;&#160; one IP-locked API token</text>
 
   <!-- capability chips -->
-  <g transform="translate(224,214)" class="mono" font-size="14">
-    <g fill="#6fe3d8">
-      <rect x="0"   y="0" width="104" height="30" rx="15" fill="none" stroke="#6fe3d8" stroke-opacity="0.5"/>
-      <text x="52"  y="20" text-anchor="middle">Instances</text>
-      <rect x="116" y="0" width="70"  height="30" rx="15" fill="none" stroke="#6fe3d8" stroke-opacity="0.5"/>
-      <text x="151" y="20" text-anchor="middle">VPC</text>
-      <rect x="198" y="0" width="116" height="30" rx="15" fill="none" stroke="#6fe3d8" stroke-opacity="0.5"/>
-      <text x="256" y="20" text-anchor="middle">Kubernetes</text>
-      <rect x="326" y="0" width="110" height="30" rx="15" fill="none" stroke="#6fe3d8" stroke-opacity="0.5"/>
-      <text x="381" y="20" text-anchor="middle">Databases</text>
+  <g transform="translate(240,266)" class="mono" font-size="14.5" fill="#e9efee">
+    <g fill="none" stroke="#6fe3d8" stroke-opacity="0.45">
+      <rect x="0"   y="0" width="106" height="32" rx="16"/>
+      <rect x="118" y="0" width="66"  height="32" rx="16"/>
+      <rect x="196" y="0" width="120" height="32" rx="16"/>
+      <rect x="328" y="0" width="112" height="32" rx="16"/>
+      <rect x="452" y="0" width="152" height="32" rx="16"/>
+      <rect x="616" y="0" width="94"  height="32" rx="16"/>
     </g>
-    <g fill="#ffb020">
-      <rect x="448" y="0" width="150" height="30" rx="15" fill="none" stroke="#ffb020" stroke-opacity="0.5"/>
-      <text x="523" y="20" text-anchor="middle">Load Balancers</text>
-    </g>
+    <text x="53"  y="21" text-anchor="middle" fill="#e9efee">Instances</text>
+    <text x="151" y="21" text-anchor="middle" fill="#e9efee">VPC</text>
+    <text x="256" y="21" text-anchor="middle" fill="#e9efee">Kubernetes</text>
+    <text x="384" y="21" text-anchor="middle" fill="#e9efee">Databases</text>
+    <text x="528" y="21" text-anchor="middle" fill="#e9efee">Load Balancers</text>
+    <text x="663" y="21" text-anchor="middle" fill="#e9efee">Storage</text>
   </g>
 
-  <!-- HCL snippet card -->
-  <g transform="translate(852,72)">
-    <rect x="0" y="0" width="364" height="176" rx="10" fill="#0d0b07" stroke="#ffb020" stroke-opacity="0.18"/>
-    <circle cx="20" cy="20" r="5" fill="#ff6b57"/>
-    <circle cx="38" cy="20" r="5" fill="#ffb020"/>
-    <circle cx="56" cy="20" r="5" fill="#7ee787"/>
-    <g class="mono" font-size="14.5">
-      <text x="20" y="58"><tspan fill="#ffb020">resource</tspan> <tspan fill="#6fe3d8">"iaas_instance"</tspan> <tspan fill="#6fe3d8">"web"</tspan> <tspan fill="#c9bfa6">{</tspan></text>
-      <text x="40" y="82"><tspan fill="#c9bfa6">plan_id</tspan>  <tspan fill="#c9bfa6">=</tspan> <tspan fill="#8a8069">data.iaas_plan.std.id</tspan></text>
-      <text x="40" y="106"><tspan fill="#c9bfa6">image_id</tspan> <tspan fill="#c9bfa6">=</tspan> <tspan fill="#8a8069">data.iaas_image.deb.id</tspan></text>
-      <text x="40" y="130"><tspan fill="#c9bfa6">ssh_keys</tspan> <tspan fill="#c9bfa6">= [</tspan><tspan fill="#8a8069">iaas_ssh_key.me.id</tspan><tspan fill="#c9bfa6">]</tspan></text>
-      <text x="20" y="154"><tspan fill="#c9bfa6">}</tspan></text>
-    </g>
-  </g>
+  <!-- corner wordmark -->
+  <text x="1216" y="326" text-anchor="end" class="mono" font-size="14" fill="#6fe3d8" fill-opacity="0.8">hypervisor.io</text>
 </svg>

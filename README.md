@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="terraform-provider-iaas" width="100%">
+  <img src="assets/banner.png" alt="terraform-provider-iaas" width="100%">
 </p>
 
 # terraform-provider-iaas
