@@ -3,6 +3,7 @@ package resources_test
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -14,6 +15,65 @@ import (
 
 func TestAccKubernetesSecurityGroupRule_basic(t *testing.T) {
 	t.Skip("TestAccKubernetesSecurityGroupRule_basic: acceptance test runs only with TF_ACC + a real cluster id (manual staging gate)")
+}
+
+// TestUnitKubernetesSecurityGroupRule_rejectNoTarget is a NEGATIVE
+// ConfigValidators test: none of cidr/remote_group_id/ip_set_id set must be
+// rejected at PLAN time (mirrors the Master's SecurityGroupService::addRule
+// mutual-exclusivity rule) — no API call is ever made.
+func TestUnitKubernetesSecurityGroupRule_rejectNoTarget(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+	providerCfg := acctest.ProviderConfig(srv.Endpoint())
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: providerCfg + `
+resource "iaas_kubernetes_security_group_rule" "bad" {
+  cluster_id = "11111111-1111-1111-1111-111111111111"
+  scope      = "worker"
+  direction  = "ingress"
+  protocol   = "tcp"
+  ip_version = "ipv4"
+}
+`,
+				ExpectError: regexp.MustCompile(`(?i)exactly one of cidr, remote_group_id, or ip_set_id is required`),
+			},
+		},
+	})
+}
+
+// TestUnitKubernetesSecurityGroupRule_rejectMultipleTargets is a NEGATIVE
+// ConfigValidators test: setting BOTH cidr and remote_group_id must be
+// rejected at PLAN time — the two are mutually exclusive.
+func TestUnitKubernetesSecurityGroupRule_rejectMultipleTargets(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+	providerCfg := acctest.ProviderConfig(srv.Endpoint())
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: providerCfg + `
+resource "iaas_kubernetes_security_group_rule" "bad" {
+  cluster_id      = "11111111-1111-1111-1111-111111111111"
+  scope           = "worker"
+  direction       = "ingress"
+  protocol        = "tcp"
+  ip_version      = "ipv4"
+  cidr            = "10.0.0.0/8"
+  remote_group_id = "22222222-2222-2222-2222-222222222222"
+}
+`,
+				ExpectError: regexp.MustCompile(`(?i)mutually exclusive`),
+			},
+		},
+	})
 }
 
 // TestUnitKubernetesSecurityGroupRule_lifecycle drives the CHILD lifecycle (no

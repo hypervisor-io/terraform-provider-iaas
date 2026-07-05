@@ -43,9 +43,10 @@ import (
 //   - writes carry idempotency.user (Create AND Delete), same as
 //     iaas_kubernetes_ssl_certificate.
 var (
-	_ resource.Resource                = &kubernetesSecurityGroupRuleResource{}
-	_ resource.ResourceWithConfigure   = &kubernetesSecurityGroupRuleResource{}
-	_ resource.ResourceWithImportState = &kubernetesSecurityGroupRuleResource{}
+	_ resource.Resource                     = &kubernetesSecurityGroupRuleResource{}
+	_ resource.ResourceWithConfigure        = &kubernetesSecurityGroupRuleResource{}
+	_ resource.ResourceWithImportState      = &kubernetesSecurityGroupRuleResource{}
+	_ resource.ResourceWithConfigValidators = &kubernetesSecurityGroupRuleResource{}
 )
 
 // NewKubernetesSecurityGroupRuleResource is the resource constructor registered
@@ -228,6 +229,68 @@ func (r *kubernetesSecurityGroupRuleResource) Schema(_ context.Context, _ resour
 					"connectivity; this resource does not prevent it.",
 			},
 		},
+	}
+}
+
+// ConfigValidators enforces the store endpoint's mutual-exclusivity rule
+// (SecurityGroupService::addRule): exactly one of cidr, remote_group_id, or
+// ip_set_id must be set — mirrors kubernetes_ssl_certificate.go's
+// source-conditional validators.
+func (r *kubernetesSecurityGroupRuleResource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		&kubernetesSecurityGroupRuleTargetValidator{},
+	}
+}
+
+// kubernetesSecurityGroupRuleTargetValidator implements resource.ConfigValidator.
+type kubernetesSecurityGroupRuleTargetValidator struct{}
+
+func (v *kubernetesSecurityGroupRuleTargetValidator) Description(_ context.Context) string {
+	return "Requires exactly one of cidr, remote_group_id, or ip_set_id (mirrors the Master API's " +
+		"SecurityGroupService::addRule mutual-exclusivity rule)."
+}
+
+func (v *kubernetesSecurityGroupRuleTargetValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v *kubernetesSecurityGroupRuleTargetValidator) ValidateResource(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var cfg kubernetesSecurityGroupRuleModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Don't evaluate presence checks against an unknown value (e.g. derived
+	// from another resource) — defer to a later validation pass.
+	if cfg.Cidr.IsUnknown() || cfg.RemoteGroupID.IsUnknown() || cfg.IPSetID.IsUnknown() {
+		return
+	}
+
+	hasCidr := !cfg.Cidr.IsNull() && cfg.Cidr.ValueString() != ""
+	hasRemoteGroup := !cfg.RemoteGroupID.IsNull() && cfg.RemoteGroupID.ValueString() != ""
+	hasIPSet := !cfg.IPSetID.IsNull() && cfg.IPSetID.ValueString() != ""
+
+	count := 0
+	for _, set := range []bool{hasCidr, hasRemoteGroup, hasIPSet} {
+		if set {
+			count++
+		}
+	}
+
+	switch {
+	case count == 0:
+		resp.Diagnostics.AddError(
+			"Missing Required Field",
+			"exactly one of cidr, remote_group_id, or ip_set_id is required (mirrors the Master "+
+				"API's SecurityGroupService::addRule rule).",
+		)
+	case count > 1:
+		resp.Diagnostics.AddError(
+			"Invalid Field Combination",
+			"cidr, remote_group_id, and ip_set_id are mutually exclusive — set exactly one (mirrors "+
+				"the Master API's SecurityGroupService::addRule rule).",
+		)
 	}
 }
 

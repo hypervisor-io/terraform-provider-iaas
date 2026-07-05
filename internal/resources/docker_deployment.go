@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -376,6 +377,15 @@ func (r *dockerDeploymentResource) Configure(_ context.Context, req resource.Con
 //  4. WaitFor polls GetDockerDeployment's status until "running" (fail on
 //     "error"/"failed").
 //  5. A final GetDockerDeployment hydrates the computed fields.
+//
+// The install wait (step 1) and the deploy wait (step 4) are BOTH bounded by
+// a single createTimeout window overall, not createTimeout EACH: ctx is
+// wrapped with an absolute deadline (now + createTimeout) up front, so the
+// deploy wait's own waiter.WaitFor — which otherwise restarts a fresh
+// createTimeout-long relative timer from whenever it is called, see
+// internal/waiter.WaitFor — can never run past what the install wait already
+// spent. Without this, an install-then-deploy Create could take up to ~2x
+// createTimeout in the worst case (Docker not installed AND a slow deploy).
 func (r *dockerDeploymentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan dockerDeploymentModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -388,6 +398,15 @@ func (r *dockerDeploymentResource) Create(ctx context.Context, req resource.Crea
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// Bound the ENTIRE Create (install wait + deploy wait combined) to
+	// createTimeout via an absolute deadline on ctx. context.WithDeadline
+	// composes correctly with each waiter's own context.WithTimeout: the
+	// effective deadline any downstream call observes is always the EARLIER
+	// of the two, so this caps total wall time without needing to compute a
+	// remaining-time budget by hand for the second wait.
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(createTimeout))
+	defer cancel()
 
 	instanceID := plan.InstanceID.ValueString()
 

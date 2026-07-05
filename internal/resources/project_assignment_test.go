@@ -169,3 +169,94 @@ resource "iaas_project_assignment" "test" {
 		t.Errorf("teardown (unassign) body project_id = %v; want JSON null", pid)
 	}
 }
+
+// TestUnitProjectAssignment_deleteToleratesGoneTarget proves Delete no longer
+// errors when the assign-resource endpoint reports the target as gone via a
+// 200 success:false "not found"-shaped message rather than a genuine HTTP 404
+// — decodeItem/checkSuccessFlag (internal/client/decode.go) surface
+// success:false as a PLAIN error, which client.IsNotFound alone does not
+// recognise, so before this fix an out-of-band-deleted target would fail
+// Delete instead of being treated as a benign no-op.
+func TestUnitProjectAssignment_deleteToleratesGoneTarget(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+
+	const (
+		projectID  = "33333333-3333-3333-3333-333333333333"
+		instanceID = "44444444-4444-4444-4444-444444444444"
+	)
+
+	var mu sync.Mutex
+	var currentProjectID *string
+	unassignCalls := 0
+
+	srv.Handle("POST", "/project/assign-resource", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+
+		mu.Lock()
+		defer mu.Unlock()
+
+		pid, _ := body["project_id"].(string)
+		if pid != "" {
+			v := pid
+			currentProjectID = &v
+			writeJSON(w, http.StatusOK, map[string]any{
+				"success": true,
+				"message": "Resource assigned to project",
+			})
+			return
+		}
+
+		// Unassign: simulate the instance having been destroyed out of band.
+		// The endpoint reports this as HTTP 200 success:false with a
+		// "not found"-shaped message, NOT a genuine 404 — the exact shape
+		// isNotFoundLikeError must tolerate.
+		unassignCalls++
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": false,
+			"message": "Instance not found",
+		})
+	})
+
+	srv.Handle("GET", "/instance/"+instanceID, func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		var pid any
+		if currentProjectID != nil {
+			pid = *currentProjectID
+		}
+		mu.Unlock()
+		writeJSON(w, http.StatusOK, map[string]any{
+			"id":         instanceID,
+			"name":       "web-1",
+			"project_id": pid,
+		})
+	})
+
+	providerCfg := acctest.ProviderConfig(srv.Endpoint())
+
+	createCfg := providerCfg + `
+resource "iaas_project_assignment" "test" {
+  project_id    = "` + projectID + `"
+  resource_type = "instance"
+  resource_id   = "` + instanceID + `"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: createCfg,
+				Check:  resource.TestCheckResourceAttr("iaas_project_assignment.test", "resource_id", instanceID),
+			},
+		},
+	})
+
+	// The implicit teardown (Delete) must have hit the unassign path and NOT
+	// failed the test despite the success:false "not found" response.
+	if unassignCalls == 0 {
+		t.Fatal("expected at least one unassign call (project_id null) during teardown")
+	}
+}

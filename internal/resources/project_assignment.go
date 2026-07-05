@@ -278,7 +278,13 @@ func (r *projectAssignmentResource) Update(ctx context.Context, req resource.Upd
 // assign-resource endpoint with project_id = null (the controller's own doc
 // comment: "Set project_id to null to unassign") — there is no dedicated
 // detach/DELETE route. A 404 on the target resource (destroyed out of band)
-// is treated as a no-op success: there is nothing left to unassign.
+// is treated as a no-op success: there is nothing left to unassign. A 200
+// response carrying success:false with a "not found"-shaped message is
+// treated the same way (isNotFoundLikeError) — assign-resource's own error
+// path (checkSuccessFlag in internal/client/decode.go) surfaces success:false
+// as a PLAIN error, not an *APIError, so client.IsNotFound alone would not
+// catch a target that was deleted out of band but reported this way instead
+// of a genuine HTTP 404.
 func (r *projectAssignmentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state projectAssignmentModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -287,10 +293,28 @@ func (r *projectAssignmentResource) Delete(ctx context.Context, req resource.Del
 	}
 
 	err := r.client.AssignResourceToProject(ctx, state.ResourceType.ValueString(), state.ResourceID.ValueString(), "")
-	if err != nil && !client.IsNotFound(err) {
+	if err != nil && !isNotFoundLikeError(err) {
 		resp.Diagnostics.Append(diagFromErr("Error unassigning resource from project", err))
 		return
 	}
+}
+
+// isNotFoundLikeError reports whether err represents the assign-resource
+// TARGET already being gone: either a genuine 404 (client.IsNotFound) or a
+// 200 response carrying success:false with a "not found"-shaped message
+// (decodeItem/checkSuccessFlag return that case as a plain fmt.Errorf(message),
+// not an *APIError, so it does not satisfy client.IsNotFound on its own).
+// Narrow by design — only a message containing "not found" is treated as
+// benign — so unrelated assign-resource failures (auth, validation, server
+// errors) still surface as real Delete errors instead of being swallowed.
+func isNotFoundLikeError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if client.IsNotFound(err) {
+		return true
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "not found")
 }
 
 // ImportState implements 3-PART COMPOSITE import:

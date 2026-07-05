@@ -46,6 +46,37 @@ resource "iaas_kubernetes_ssl_certificate" "bad" {
 	})
 }
 
+// TestUnitKubernetesSslCertificate_rejectLetsencryptWithForbiddenFields —
+// NEGATIVE ConfigValidators test. source = "letsencrypt" with name set must be
+// rejected at PLAN time: the server force-overrides name to "LE: <domain>"
+// for an ACME issuance, so echoing a practitioner-supplied name into state
+// (as Create does from the plan) would surface as an inconsistent-apply
+// crash the moment a subsequent Read observed the server's real value. No
+// API call is ever made.
+func TestUnitKubernetesSslCertificate_rejectLetsencryptWithForbiddenFields(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+	providerCfg := acctest.ProviderConfig(srv.Endpoint())
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: providerCfg + `
+resource "iaas_kubernetes_ssl_certificate" "bad" {
+  cluster_id = "11111111-1111-1111-1111-111111111111"
+  source     = "letsencrypt"
+  domain     = "api.example.com"
+  name       = "my-custom-name"
+}
+`,
+				ExpectError: regexp.MustCompile(`(?i)name is always set to`),
+			},
+		},
+	})
+}
+
 // TestUnitKubernetesSslCertificate_lifecycle drives the CHILD lifecycle (no
 // update — every field is RequiresReplace):
 //

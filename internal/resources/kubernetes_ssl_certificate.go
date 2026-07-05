@@ -163,8 +163,10 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 				Optional: true,
 				Computed: true,
 				Description: "Display name. Defaults to `domain` when omitted for source = \"custom\"; " +
-					"IGNORED (always set to \"LE: <domain>\" by the server) for source = \"letsencrypt\". " +
-					"Immutable; changing it forces a new resource.",
+					"REJECTED AT PLAN TIME for source = \"letsencrypt\" (enforced by ConfigValidators) — " +
+					"the server always force-overrides it to \"LE: <domain>\", so setting it would only " +
+					"ever surface as an inconsistent-apply error. Immutable; changing it forces a new " +
+					"resource.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 					stringplanmodifier.UseStateForUnknown(),
@@ -174,9 +176,11 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 				Optional:  true,
 				Sensitive: true,
 				Description: "PEM-encoded leaf certificate. Required when source = \"custom\" (enforced " +
-					"at plan time); ignored for source = \"letsencrypt\". WRITE-ONLY: the cluster " +
-					"ssl-certificates list never returns it, so it is taken from configuration and never " +
-					"refreshed. Immutable; changing it forces a new resource (rotation).",
+					"at plan time); REJECTED AT PLAN TIME for source = \"letsencrypt\" (enforced by " +
+					"ConfigValidators — the server ignores it in favour of the ACME-issued certificate). " +
+					"WRITE-ONLY: the cluster ssl-certificates list never returns it, so it is taken from " +
+					"configuration and never refreshed. Immutable; changing it forces a new resource " +
+					"(rotation).",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -185,9 +189,11 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 				Optional:  true,
 				Sensitive: true,
 				Description: "PEM-encoded private key. Required when source = \"custom\" (enforced at " +
-					"plan time); ignored for source = \"letsencrypt\". WRITE-ONLY and SENSITIVE: never " +
-					"returned by the API (private_key is $hidden model-wide), so it is taken from " +
-					"configuration and never refreshed. Immutable; changing it forces a new resource.",
+					"plan time); REJECTED AT PLAN TIME for source = \"letsencrypt\" (enforced by " +
+					"ConfigValidators — the server ignores it in favour of the ACME-issued key). " +
+					"WRITE-ONLY and SENSITIVE: never returned by the API (private_key is $hidden " +
+					"model-wide), so it is taken from configuration and never refreshed. Immutable; " +
+					"changing it forces a new resource.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -196,9 +202,10 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 				Optional:  true,
 				Sensitive: true,
 				Description: "Optional PEM-encoded intermediate certificate chain (source = \"custom\" " +
-					"only). WRITE-ONLY: the cluster ssl-certificates list never returns it, so it is " +
-					"taken from configuration and never refreshed. Immutable; changing it forces a new " +
-					"resource.",
+					"only — REJECTED AT PLAN TIME for source = \"letsencrypt\", enforced by " +
+					"ConfigValidators). WRITE-ONLY: the cluster ssl-certificates list never returns it, " +
+					"so it is taken from configuration and never refreshed. Immutable; changing it " +
+					"forces a new resource.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -206,8 +213,9 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 			"san_domains": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
-				Description: "Comma-separated SAN domains (optional, either source). Immutable; " +
-					"changing it forces a new resource.",
+				Description: "Comma-separated SAN domains (optional, either source — the server stores " +
+					"and uses san_domains for a \"letsencrypt\" issuance too, so this is NOT rejected for " +
+					"that source). Immutable; changing it forces a new resource.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 					stringplanmodifier.UseStateForUnknown(),
@@ -217,9 +225,10 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 				Optional: true,
 				Computed: true,
 				Description: "Certificate expiry (nullable date; source = \"custom\" only — accepted by " +
-					"the store validation though not documented on the endpoint). Null for a fresh " +
-					"\"letsencrypt\" cert until ACME issuance completes. Immutable; changing it forces a " +
-					"new resource.",
+					"the store validation though not documented on the endpoint — REJECTED AT PLAN TIME " +
+					"for source = \"letsencrypt\", enforced by ConfigValidators, since ACME issuance " +
+					"determines the real expiry). Null for a fresh \"letsencrypt\" cert until ACME " +
+					"issuance completes. Immutable; changing it forces a new resource.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 					stringplanmodifier.UseStateForUnknown(),
@@ -260,10 +269,13 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 // ConfigValidators enforces the store endpoint's required_if:source,custom rule
 // (StoreClusterSslCertRequest) at plan time: certificate + private_key must be
 // set when source = "custom". Both are ignored (and may be omitted) for
-// source = "letsencrypt".
+// source = "letsencrypt". The sibling validator below enforces the reverse
+// direction: name/certificate/private_key/chain/expires_at are REJECTED for
+// source = "letsencrypt", since the server force-overrides or ignores them.
 func (r *kubernetesSslCertResource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
 	return []resource.ConfigValidator{
 		&kubernetesSslCertCustomFieldsValidator{},
+		&kubernetesSslCertLetsencryptFieldsValidator{},
 	}
 }
 
@@ -312,6 +324,99 @@ func (v *kubernetesSslCertCustomFieldsValidator) ValidateResource(ctx context.Co
 			path.Root("private_key"),
 			"Missing Required Field",
 			"private_key is required when source = \"custom\".",
+		)
+	}
+}
+
+// kubernetesSslCertLetsencryptFieldsValidator implements resource.ConfigValidator.
+// It rejects name/certificate/private_key/chain/expires_at when
+// source = "letsencrypt": the server FORCE-OVERRIDES name to "LE: <domain>"
+// and IGNORES certificate/private_key/chain/expires_at entirely for an ACME
+// issuance (StoreClusterSslCertRequest only conditionally requires them for
+// source = "custom" — see kubernetesSslCertCustomFieldsValidator above).
+// Before this validator existed, only the "custom" branch was checked, so
+// setting any of these fields alongside source = "letsencrypt" reached Create,
+// which echoes them into state from the plan (kubernetesSslCertStateFromAPI) —
+// the very next Read/plan then observes the server's ACTUAL persisted values
+// (a force-overridden name, or certificate/private_key/chain/expires_at simply
+// absent from the list response) and crashes with "Provider produced
+// inconsistent result after apply". Rejecting them at plan time (mirrors
+// iaas_docker_deployment's forbid-list for source = "app") is cheaper and
+// clearer than papering over that mismatch. san_domains is deliberately NOT
+// forbidden: the server stores and uses san_domains for a "letsencrypt"
+// issuance too (it feeds the ACME SAN list), so it is a legitimate input for
+// either source.
+type kubernetesSslCertLetsencryptFieldsValidator struct{}
+
+func (v *kubernetesSslCertLetsencryptFieldsValidator) Description(_ context.Context) string {
+	return "Rejects name/certificate/private_key/chain/expires_at when source = \"letsencrypt\" " +
+		"(the server force-overrides or ignores them for an ACME issuance)."
+}
+
+func (v *kubernetesSslCertLetsencryptFieldsValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v *kubernetesSslCertLetsencryptFieldsValidator) ValidateResource(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var cfg kubernetesSslCertModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// source is Required; skip only if genuinely unknown (e.g. derived from
+	// another unknown value elsewhere in the config graph).
+	if cfg.Source.IsUnknown() || cfg.Source.IsNull() {
+		return
+	}
+	if cfg.Source.ValueString() != "letsencrypt" {
+		return
+	}
+
+	// Don't evaluate presence checks against an unknown value (e.g. derived
+	// from another resource) — defer to a later validation pass.
+	if cfg.Name.IsUnknown() || cfg.Certificate.IsUnknown() || cfg.PrivateKey.IsUnknown() ||
+		cfg.Chain.IsUnknown() || cfg.ExpiresAt.IsUnknown() {
+		return
+	}
+
+	if !cfg.Name.IsNull() && cfg.Name.ValueString() != "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("name"),
+			"Invalid Field for source = \"letsencrypt\"",
+			`name is always set to "LE: <domain>" by the server for source = "letsencrypt" and cannot `+
+				`be overridden; omit it, or use source = "custom" to set a custom name.`,
+		)
+	}
+	if !cfg.Certificate.IsNull() && cfg.Certificate.ValueString() != "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("certificate"),
+			"Invalid Field for source = \"letsencrypt\"",
+			`certificate is ignored by the server for source = "letsencrypt" (the ACME-issued `+
+				`certificate replaces it); omit it, or use source = "custom" to upload one.`,
+		)
+	}
+	if !cfg.PrivateKey.IsNull() && cfg.PrivateKey.ValueString() != "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("private_key"),
+			"Invalid Field for source = \"letsencrypt\"",
+			`private_key is ignored by the server for source = "letsencrypt" (the ACME-issued key `+
+				`replaces it); omit it, or use source = "custom" to upload one.`,
+		)
+	}
+	if !cfg.Chain.IsNull() && cfg.Chain.ValueString() != "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("chain"),
+			"Invalid Field for source = \"letsencrypt\"",
+			`chain is ignored by the server for source = "letsencrypt"; omit it, or use source = "custom" to upload one.`,
+		)
+	}
+	if !cfg.ExpiresAt.IsNull() && cfg.ExpiresAt.ValueString() != "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("expires_at"),
+			"Invalid Field for source = \"letsencrypt\"",
+			`expires_at is ignored by the server for source = "letsencrypt" (ACME issuance determines `+
+				`the real expiry); omit it, or use source = "custom" to set it.`,
 		)
 	}
 }

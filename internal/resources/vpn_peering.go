@@ -319,7 +319,13 @@ func (r *vpnPeeringResource) ImportState(ctx context.Context, req resource.Impor
 // == "vpc_peering"), falling back to the prior model's value for fields the
 // response omits. vpn_gateway_id is authoritative from the path;
 // remote_gateway_id comes from the object's own remote_gateway_id field (set
-// server-side to the OTHER gateway's id).
+// server-side to the OTHER gateway's id). tunnel_ip and allowed_ips are fully
+// COMPUTED, non-Optional attributes with NO fallback to prior (see
+// vpnPeeringTunnelIPFromAPI / vpnPeeringAllowedIPsFromAPI below) — on Create,
+// prior is the PLAN, whose Computed fields are Unknown until read back, so
+// falling back to prior for those two would leak an Unknown value into state
+// the instant the API ever omitted/emptied them, tripping Terraform's
+// "inconsistent result after apply" check.
 func vpnPeeringStateFromAPI(obj map[string]any, prior vpnPeeringModel) vpnPeeringModel {
 	m := vpnPeeringModel{
 		ID:              stringFromAPI(obj, "id", prior.ID),
@@ -329,31 +335,49 @@ func vpnPeeringStateFromAPI(obj map[string]any, prior vpnPeeringModel) vpnPeerin
 		Type:            stringFromAPI(obj, "type", prior.Type),
 		PublicKey:       stringFromAPI(obj, "public_key", prior.PublicKey),
 		Endpoint:        optionalStringFromAPI(obj, "endpoint", prior.Endpoint),
-		TunnelIP:        stringFromAPI(obj, "tunnel_ip", prior.TunnelIP),
+		TunnelIP:        vpnPeeringTunnelIPFromAPI(obj),
 		DNS:             optionalStringFromAPI(obj, "dns", prior.DNS),
 		Keepalive:       int64FromAPI(obj, "keepalive", prior.Keepalive),
 		Enabled:         boolFromIntAPI(obj, "enabled", prior.Enabled),
 	}
-	m.AllowedIPs = vpnPeeringAllowedIPsFromAPI(obj["allowed_ips"], prior.AllowedIPs)
+	m.AllowedIPs = vpnPeeringAllowedIPsFromAPI(obj["allowed_ips"])
 	return m
 }
 
+// vpnPeeringTunnelIPFromAPI reads "tunnel_ip" — a fully COMPUTED, non-Optional
+// attribute — resolving purely from the API response (mirrors
+// letsencryptDomainsFromAPI in kubernetes_ssl_certificate.go: no "prior"
+// fallback at all). An absent/null value settles to a KNOWN "" rather than a
+// stale/Unknown prior value.
+func vpnPeeringTunnelIPFromAPI(obj map[string]any) types.String {
+	raw, ok := obj["tunnel_ip"]
+	if !ok || raw == nil {
+		return types.StringValue("")
+	}
+	if s, ok := raw.(string); ok {
+		return types.StringValue(s)
+	}
+	return types.StringValue(fmt.Sprintf("%v", raw))
+}
+
 // vpnPeeringAllowedIPsFromAPI converts the embedded "allowed_ips" JSON array of
-// CIDR strings into a types.Set. An absent/empty array falls back to the prior
-// set (Computed, so it should always be present once the server derives it).
-func vpnPeeringAllowedIPsFromAPI(raw any, prior types.Set) types.Set {
+// CIDR strings into a types.Set. This is a fully COMPUTED, non-Optional
+// attribute, so — mirroring stringSetKnown in instance_vpc_attachment.go — an
+// absent/malformed/empty array settles to a KNOWN EMPTY set rather than
+// falling back to "prior": on Create, prior is the PLAN, whose Computed
+// fields are Unknown until read back, so returning it here would leak an
+// Unknown value into state the moment the API ever omitted/emptied
+// allowed_ips. Behavior is unchanged when the API returns a populated array.
+func vpnPeeringAllowedIPsFromAPI(raw any) types.Set {
 	arr, ok := raw.([]any)
 	if !ok {
-		return prior
+		return mustSetValue(types.StringType, []attr.Value{})
 	}
 	elems := make([]attr.Value, 0, len(arr))
 	for _, item := range arr {
 		if s, ok := item.(string); ok && s != "" {
 			elems = append(elems, types.StringValue(s))
 		}
-	}
-	if len(elems) == 0 {
-		return prior
 	}
 	return mustSetValue(types.StringType, elems)
 }
