@@ -159,6 +159,33 @@ func (c *Client) SearchK8sVpcs(ctx context.Context, hypervisorGroupID, query str
 	return decodeSelect2(raw)
 }
 
+// SearchK8sSubnets lists subnets within a single VPC. vpcID is REQUIRED (the
+// server returns an empty set for an empty or foreign vpc_id). subnetType, when
+// non-empty, filters to "private" or "public"; query is an optional name/CIDR
+// substring filter. Each FLAT Select2 row carries id, text, name, cidr and type.
+func (c *Client) SearchK8sSubnets(ctx context.Context, vpcID, subnetType, query string) ([]map[string]any, error) {
+	if vpcID == "" {
+		return nil, fmt.Errorf("SearchK8sSubnets: empty vpcID")
+	}
+	params := url.Values{"vpc_id": {vpcID}}
+	if subnetType != "" {
+		params.Set("type", subnetType)
+	}
+	if query != "" {
+		params.Set("search", query)
+	}
+	path := "/kubernetes/search/subnets?" + params.Encode()
+
+	resp, raw, err := c.do(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+	if err := responseError(resp, raw); err != nil {
+		return nil, err
+	}
+	return decodeSelect2(raw)
+}
+
 // searchK8sSelect2 is the shared body of every k8s catalog search: it issues the
 // GET with the optional ?search= filter and flattens the FLAT Select2 envelope
 // via decodeSelect2. An empty query is omitted from the URL so the controller

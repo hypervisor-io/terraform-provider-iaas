@@ -266,5 +266,6 @@ func (p *IaasProvider) DataSources(_ context.Context) []func() datasource.DataSo
 		datasources.NewKubernetesRegionDataSource,
 		datasources.NewKubernetesPlanDataSource,
 		datasources.NewKubernetesVPCDataSource,
+		datasources.NewKubernetesSubnetDataSource,
 	}
 }
