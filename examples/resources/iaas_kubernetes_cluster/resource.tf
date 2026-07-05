@@ -9,9 +9,9 @@
 #   - cp_vpc_subnet_id must be a PRIVATE subnet,
 #   - control_node_count must be 1 or 3 (3 is required when lb_ha_enabled = true).
 #
-# This is the CORE cluster only. Node pools, worker scaling, version upgrades,
-# kubeconfig download, and per-cluster security/SSL config are managed by SEPARATE
-# resources / data sources.
+# This is the CORE cluster (+ its in-place version-upgrade lifecycle). Node
+# pools, worker scaling, kubeconfig download, and per-cluster security/SSL
+# config are managed by SEPARATE resources / data sources.
 
 resource "iaas_kubernetes_cluster" "prod" {
   name = "prod"
@@ -23,7 +23,11 @@ resource "iaas_kubernetes_cluster" "prod" {
   cp_vpc_subnet_id     = "44444444-4444-4444-4444-444444444444" # MUST be private
   worker_vpc_subnet_id = "55555555-5555-5555-5555-555555555555"
 
-  # Kubernetes version + control-plane topology.
+  # Kubernetes version (WORKER baseline; the control plane's own current
+  # version is tracked read-only as cp_kubernetes_version_id/
+  # cp_kubernetes_version). UPDATABLE IN PLACE: bumping this drives a staged
+  # in-place upgrade (control plane, then workers, then an optional CCM
+  # redeploy) instead of replacing the cluster.
   kubernetes_version_id = "66666666-6666-6666-6666-666666666666"
   control_node_count    = 3                    # 1 (single CP) or 3 (HA CP)
   endpoint_mode         = "public_and_private" # or "private"
@@ -44,17 +48,25 @@ resource "iaas_kubernetes_cluster" "prod" {
   # lb_ha_enabled                  = true # requires control_node_count = 3 + an HA region
   # pod_security_admission_default = "baseline" # privileged | baseline | restricted
 
-  # K8s provisioning is slow; tune the async waits if needed.
+  # Optional version-bump upgrade knobs (only consulted when
+  # kubernetes_version_id changes; sensible defaults apply):
+  # upgrade_drain_grace_period = 120  # seconds before draining each old node (0-3600)
+  # upgrade_max_surge          = 1    # extra workers provisioned ahead of draining
+  # upgrade_ccm                = true # redeploy the CCM after the worker stage completes
+
+  # K8s provisioning (and version-bump upgrades) are slow; tune the async
+  # waits if needed.
   timeouts {
     create = "45m"
+    update = "45m"
     delete = "30m"
   }
 }
 
-# Only name, description, and project_id are mutable in place. Changing slug, the
-# version, the plans, the CIDRs, the subnets, control_node_count, endpoint_mode,
-# or worker_count forces a new cluster (use the dedicated upgrade / worker-scale
-# workflows for in-place topology changes).
+# name, description, project_id, and kubernetes_version_id are mutable in
+# place. Changing slug, the plans, the CIDRs, the subnets, control_node_count,
+# endpoint_mode, or worker_count forces a new cluster (use the dedicated
+# worker-scale workflow for in-place worker-count changes).
 
 # The lifecycle state and the (non-secret) API server endpoints are exported:
 output "k8s_state" {
@@ -62,7 +74,11 @@ output "k8s_state" {
 }
 
 output "k8s_version" {
-  value = iaas_kubernetes_cluster.prod.kubernetes_version # e.g. "1.30.2"
+  value = iaas_kubernetes_cluster.prod.kubernetes_version # WORKER baseline, e.g. "1.30.2"
+}
+
+output "k8s_cp_version" {
+  value = iaas_kubernetes_cluster.prod.cp_kubernetes_version # control-plane's current version
 }
 
 output "k8s_api_endpoint" {

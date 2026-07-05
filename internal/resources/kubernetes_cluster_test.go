@@ -73,7 +73,7 @@ resource "iaas_kubernetes_cluster" "test" {
 				ResourceName:            "iaas_kubernetes_cluster.test",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"timeouts"},
+				ImportStateVerifyIgnore: []string{"timeouts", "upgrade_drain_grace_period", "upgrade_max_surge", "upgrade_ccm"},
 			},
 		},
 	})
@@ -155,6 +155,14 @@ func TestUnitKubernetesCluster_lifecycle(t *testing.T) {
 			"endpoint_url_public":            "https://203.0.113.5",
 			"endpoint_url_private":           "https://10.0.0.5",
 			"kubernetes_version":             map[string]any{"id": verID, "semantic_version": "1.30.2"},
+			// cp_kubernetes_version_id/cp_kubernetes_version: the Master
+			// initialises these equal to the worker baseline at create
+			// (ClusterService::create sets cp_kubernetes_version_id ==
+			// kubernetes_version_id); this test never bumps the version, so
+			// they stay pinned to verID/1.30.2 throughout (see
+			// TestUnitKubernetesCluster_versionUpgrade for the bump path).
+			"cp_kubernetes_version_id": verID,
+			"cp_kubernetes_version":    map[string]any{"id": verID, "semantic_version": "1.30.2"},
 		}
 	}
 
@@ -251,7 +259,7 @@ resource "iaas_kubernetes_cluster" "test" {
 				ImportState:             true,
 				ImportStateId:           clusterID,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"timeouts"},
+				ImportStateVerifyIgnore: []string{"timeouts", "upgrade_drain_grace_period", "upgrade_max_surge", "upgrade_ccm"},
 			},
 			// Update — rename in place (PATCH).
 			{
