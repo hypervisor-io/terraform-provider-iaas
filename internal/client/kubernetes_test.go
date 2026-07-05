@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -306,6 +307,246 @@ func TestDeleteKubernetesCluster_AlreadyDestroyed(t *testing.T) {
 func TestDeleteKubernetesCluster_EmptyID(t *testing.T) {
 	c := New("http://unused/api", "tok", time.Second, false)
 	if err := c.DeleteKubernetesCluster(context.Background(), "", "k"); err == nil {
+		t.Fatal("expected error for empty id")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// UpgradeK8sClusterControlPlane / UpgradeK8sClusterWorkers / UpgradeK8sClusterCCM
+// / RetryK8sClusterUpgrade (T7/id-G8: in-place version upgrade)
+// ---------------------------------------------------------------------------
+
+// TestUpgradeK8sClusterControlPlane_Success verifies the route
+// (POST .../upgrade/cp), that the body round-trips verbatim, the
+// Idempotency-Key header is attached, and the BARE {task_id,...} envelope (no
+// "cluster"/"success" wrapper) is returned unwrapped.
+func TestUpgradeK8sClusterControlPlane_Success(t *testing.T) {
+	var gotMethod, gotPath, gotIdemKey string
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotIdemKey = r.Header.Get("Idempotency-Key")
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"task_id":"cp-task-1","target_version_id":"ver-2","current_version_id":"ver-1","planned_waves":[1,1]}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	obj, err := c.UpgradeK8sClusterControlPlane(context.Background(), "k8s-uuid-1", map[string]any{
+		"target_version_id":  "ver-2",
+		"drain_grace_period": 120,
+	}, "idem-cp")
+	if err != nil {
+		t.Fatalf("UpgradeK8sClusterControlPlane returned error: %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %s; want POST", gotMethod)
+	}
+	if gotPath != "/api/kubernetes/cluster/k8s-uuid-1/upgrade/cp" {
+		t.Errorf("path = %s; want /api/kubernetes/cluster/k8s-uuid-1/upgrade/cp", gotPath)
+	}
+	if gotIdemKey != "idem-cp" {
+		t.Errorf("Idempotency-Key = %q; want idem-cp", gotIdemKey)
+	}
+	if gotBody["target_version_id"] != "ver-2" {
+		t.Errorf("body target_version_id = %v; want ver-2", gotBody["target_version_id"])
+	}
+	if obj["task_id"] != "cp-task-1" {
+		t.Errorf("returned task_id = %v; want cp-task-1", obj["task_id"])
+	}
+}
+
+// TestUpgradeK8sClusterControlPlane_TargetRejected verifies a 422
+// {"code":"target_not_active"} InvalidUpgradeTargetException surfaces as an error.
+func TestUpgradeK8sClusterControlPlane_TargetRejected(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"code":"target_not_active","message":"target version is not active"}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	_, err := c.UpgradeK8sClusterControlPlane(context.Background(), "k8s-uuid-1", map[string]any{"target_version_id": "bad"}, "k")
+	if err == nil {
+		t.Fatal("expected error for 422 target rejection, got nil")
+	}
+}
+
+// TestUpgradeK8sClusterControlPlane_EmptyID guards the empty-id path argument.
+func TestUpgradeK8sClusterControlPlane_EmptyID(t *testing.T) {
+	c := New("http://unused/api", "tok", time.Second, false)
+	if _, err := c.UpgradeK8sClusterControlPlane(context.Background(), "", map[string]any{}, "k"); err == nil {
+		t.Fatal("expected error for empty id")
+	}
+}
+
+// TestUpgradeK8sClusterWorkers_Success verifies the route
+// (POST .../upgrade/workers) and that max_surge/target_version_id/
+// drain_grace_period round-trip.
+func TestUpgradeK8sClusterWorkers_Success(t *testing.T) {
+	var gotPath string
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"task_id":"wk-task-1","target_version_id":"ver-2","current_version_id":"ver-1","planned_waves":[2,2]}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	obj, err := c.UpgradeK8sClusterWorkers(context.Background(), "k8s-uuid-1", map[string]any{
+		"target_version_id":  "ver-2",
+		"max_surge":          1,
+		"drain_grace_period": 120,
+	}, "idem-wk")
+	if err != nil {
+		t.Fatalf("UpgradeK8sClusterWorkers returned error: %v", err)
+	}
+	if gotPath != "/api/kubernetes/cluster/k8s-uuid-1/upgrade/workers" {
+		t.Errorf("path = %s; want /api/kubernetes/cluster/k8s-uuid-1/upgrade/workers", gotPath)
+	}
+	if gotBody["max_surge"] != float64(1) {
+		t.Errorf("body max_surge = %v; want 1", gotBody["max_surge"])
+	}
+	if obj["task_id"] != "wk-task-1" {
+		t.Errorf("returned task_id = %v; want wk-task-1", obj["task_id"])
+	}
+}
+
+// TestUpgradeK8sClusterWorkers_ExceedsCPVersion verifies a 422
+// {"code":"target_exceeds_cp_version"} surfaces as an error.
+func TestUpgradeK8sClusterWorkers_ExceedsCPVersion(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"code":"target_exceeds_cp_version","message":"worker target exceeds CP version; upgrade control plane first"}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	_, err := c.UpgradeK8sClusterWorkers(context.Background(), "k8s-uuid-1", map[string]any{"target_version_id": "ver-99"}, "k")
+	if err == nil {
+		t.Fatal("expected error for 422 target_exceeds_cp_version, got nil")
+	}
+	if !contains(err.Error(), "upgrade control plane first") {
+		t.Errorf("error = %v; want it to mention the CP-first message", err)
+	}
+}
+
+// TestUpgradeK8sClusterWorkers_EmptyID guards the empty-id path argument.
+func TestUpgradeK8sClusterWorkers_EmptyID(t *testing.T) {
+	c := New("http://unused/api", "tok", time.Second, false)
+	if _, err := c.UpgradeK8sClusterWorkers(context.Background(), "", map[string]any{}, "k"); err == nil {
+		t.Fatal("expected error for empty id")
+	}
+}
+
+// TestUpgradeK8sClusterCCM_Success verifies the route (POST .../upgrade/ccm),
+// that NO body is sent, and that the synchronous {"success":true,...} response
+// (no task_id) is treated as success (nil error).
+func TestUpgradeK8sClusterCCM_Success(t *testing.T) {
+	var gotPath string
+	var gotBodyBytes []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotBodyBytes, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"message":"CCM redeployed"}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	if err := c.UpgradeK8sClusterCCM(context.Background(), "k8s-uuid-1", "idem-ccm"); err != nil {
+		t.Fatalf("UpgradeK8sClusterCCM returned error: %v", err)
+	}
+	if gotPath != "/api/kubernetes/cluster/k8s-uuid-1/upgrade/ccm" {
+		t.Errorf("path = %s; want /api/kubernetes/cluster/k8s-uuid-1/upgrade/ccm", gotPath)
+	}
+	if trimmed := string(gotBodyBytes); trimmed != "null" && trimmed != "" {
+		t.Errorf("expected an empty/null body, got %q", trimmed)
+	}
+}
+
+// TestUpgradeK8sClusterCCM_NotRunning verifies a 409 (cluster not running)
+// surfaces as an error.
+func TestUpgradeK8sClusterCCM_NotRunning(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"success":false,"message":"cluster is not running"}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	err := c.UpgradeK8sClusterCCM(context.Background(), "k8s-uuid-1", "k")
+	if err == nil {
+		t.Fatal("expected error for 409 not-running, got nil")
+	}
+}
+
+// TestUpgradeK8sClusterCCM_EmptyID guards the empty-id path argument.
+func TestUpgradeK8sClusterCCM_EmptyID(t *testing.T) {
+	c := New("http://unused/api", "tok", time.Second, false)
+	if err := c.UpgradeK8sClusterCCM(context.Background(), "", "k"); err == nil {
+		t.Fatal("expected error for empty id")
+	}
+}
+
+// TestRetryK8sClusterUpgrade_Success verifies the route
+// (POST .../upgrade/retry) and that the {success,task_id,cleanup_errors}
+// envelope is returned unwrapped.
+func TestRetryK8sClusterUpgrade_Success(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"task_id":"retry-task-1","cleanup_errors":[]}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	obj, err := c.RetryK8sClusterUpgrade(context.Background(), "k8s-uuid-1", "idem-retry")
+	if err != nil {
+		t.Fatalf("RetryK8sClusterUpgrade returned error: %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %s; want POST", gotMethod)
+	}
+	if gotPath != "/api/kubernetes/cluster/k8s-uuid-1/upgrade/retry" {
+		t.Errorf("path = %s; want /api/kubernetes/cluster/k8s-uuid-1/upgrade/retry", gotPath)
+	}
+	if obj["task_id"] != "retry-task-1" {
+		t.Errorf("returned task_id = %v; want retry-task-1", obj["task_id"])
+	}
+}
+
+// TestRetryK8sClusterUpgrade_NotInErrorState verifies the 422 gate (cluster not
+// in "error" state) surfaces as an error — the ground-truth behavior that makes
+// this endpoint unsuitable as an automatic fail path for a failed CP/worker
+// rolling upgrade (which leaves cluster.state=="running", never "error").
+func TestRetryK8sClusterUpgrade_NotInErrorState(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"success":false,"message":"Retry is only available for clusters in 'error' state (current: running)."}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	_, err := c.RetryK8sClusterUpgrade(context.Background(), "k8s-uuid-1", "k")
+	if err == nil {
+		t.Fatal("expected error for 422 not-in-error-state, got nil")
+	}
+	if !contains(err.Error(), "only available for clusters in 'error' state") {
+		t.Errorf("error = %v; want it to mention the error-state gate", err)
+	}
+}
+
+// TestRetryK8sClusterUpgrade_EmptyID guards the empty-id path argument.
+func TestRetryK8sClusterUpgrade_EmptyID(t *testing.T) {
+	c := New("http://unused/api", "tok", time.Second, false)
+	if _, err := c.RetryK8sClusterUpgrade(context.Background(), "", "k"); err == nil {
 		t.Fatal("expected error for empty id")
 	}
 }
