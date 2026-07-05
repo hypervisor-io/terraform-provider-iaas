@@ -244,14 +244,15 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewAutoscalingPolicyResource,
 		resources.NewKubernetesClusterResource,
 		resources.NewKubernetesNodePoolResource,
+		resources.NewUserScriptResource,
 	}
 }
 
 // DataSources returns the list of data sources provided. These are the
 // instance-essential catalog lookups (location, plan, image, iso), the VPN peer
 // config download, and the Kubernetes data sources (kubeconfig + autoscaler
-// manifest downloads, plus the cluster-create catalog lookups for version /
-// region / plan).
+// manifest downloads, the cluster-create catalog lookups for version / region /
+// plan, and the vpc / subnet catalog lookups used to resolve vpc_id / subnet_id).
 func (p *IaasProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		datasources.NewLocationDataSource,
@@ -264,5 +265,7 @@ func (p *IaasProvider) DataSources(_ context.Context) []func() datasource.DataSo
 		datasources.NewKubernetesVersionDataSource,
 		datasources.NewKubernetesRegionDataSource,
 		datasources.NewKubernetesPlanDataSource,
+		datasources.NewKubernetesVPCDataSource,
+		datasources.NewKubernetesSubnetDataSource,
 	}
 }
