@@ -249,6 +249,7 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewUserScriptResource,
 		resources.NewImageResource,
 		resources.NewInstanceVpcAttachmentResource,
+		resources.NewDockerDeploymentResource,
 	}
 }
 
