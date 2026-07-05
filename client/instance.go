@@ -44,6 +44,18 @@ import (
 // Every write path returns HTTP 200 even on failure and branches on the "success"
 // flag, so doItem/doVoid (which surface success:false as an error) are reused.
 
+// ListCSInstances returns every instance visible to the token. The INDEX route
+// GET /instances returns a raw Laravel paginator ({data:[...], current_page,
+// last_page, ...}), so doList auto-paginates and accumulates all pages. There
+// is no envelope key and no success flag on this read path.
+//
+// This read has no matching Terraform resource/data-source (the provider works
+// per-id), so it exists purely for the MCP server's user.instance.list tool;
+// it is additive and referenced by nothing else in the provider.
+func (c *Client) ListCSInstances(ctx context.Context) ([]map[string]any, error) {
+	return c.doList(ctx, "GET", "/instances", nil)
+}
+
 // CreateCSInstance performs PHASE 1: it records the instance row from the
 // supplied body and returns the full instance object (with its id) under key
 // "instance". This call is synchronous and does NOT deploy an OS - call
