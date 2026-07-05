@@ -2,6 +2,7 @@ name: Deploy documentation site to GitHub Pages
 
 # Publishes the self-contained docs page in site/ to GitHub Pages.
 # One-time setup: repo Settings -> Pages -> Source: "GitHub Actions".
+# Re-run: push a change under site/ or this file, or use the Actions tab.
 
 on:
   push:
