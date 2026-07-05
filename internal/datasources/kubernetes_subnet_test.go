@@ -17,7 +17,13 @@ func TestUnitKubernetesSubnet_lookupByName(t *testing.T) {
 	ensureTFBinary(t)
 
 	srv := acctest.NewMockServer(t)
-	srv.Handle("GET", "/kubernetes/search/subnets", func(w http.ResponseWriter, _ *http.Request) {
+	srv.Handle("GET", "/kubernetes/search/subnets", func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("vpc_id"); got != "vpc-1" {
+			t.Errorf("query[vpc_id] = %q; want %q (the required vpc_id must be sent)", got, "vpc-1")
+		}
+		if got := r.URL.Query().Get("search"); got != "cp-subnet" {
+			t.Errorf("query[search] = %q; want %q (the name filter must be forwarded)", got, "cp-subnet")
+		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(k8sSubnetsBody))
 	})
@@ -26,6 +32,43 @@ func TestUnitKubernetesSubnet_lookupByName(t *testing.T) {
 data "iaas_kubernetes_subnet" "t" {
   vpc_id = "vpc-1"
   name   = "cp-subnet"
+}
+`
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.iaas_kubernetes_subnet.t", "id", "sn-1"),
+					resource.TestCheckResourceAttr("data.iaas_kubernetes_subnet.t", "cidr", "10.0.1.0/24"),
+					resource.TestCheckResourceAttr("data.iaas_kubernetes_subnet.t", "type", "private"),
+				),
+			},
+		},
+	})
+}
+
+func TestUnitKubernetesSubnet_lookupByNameAndType(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+	srv.Handle("GET", "/kubernetes/search/subnets", func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("vpc_id"); got != "vpc-1" {
+			t.Errorf("query[vpc_id] = %q; want %q (the required vpc_id must be sent)", got, "vpc-1")
+		}
+		if got := r.URL.Query().Get("type"); got != "private" {
+			t.Errorf("query[type] = %q; want %q (the type filter must be forwarded)", got, "private")
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(k8sSubnetsBody))
+	})
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+data "iaas_kubernetes_subnet" "t" {
+  vpc_id = "vpc-1"
+  name   = "cp-subnet"
+  type   = "private"
 }
 `
 	resource.UnitTest(t, resource.TestCase{

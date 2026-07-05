@@ -82,8 +82,11 @@ func (r *userScriptResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				},
 			},
 			"content": schema.StringAttribute{
-				Required:    true,
-				Description: "The script body. Stored encrypted at rest by the API.",
+				Required:  true,
+				Sensitive: true,
+				Description: "The script body. Stored encrypted at rest by the API and returned " +
+					"decrypted on read. The API normalizes line endings to LF (`\\r\\n` becomes " +
+					"`\\n`); author content with LF line endings to avoid a perpetual plan diff.",
 			},
 		},
 	}

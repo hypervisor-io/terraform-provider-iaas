@@ -17,7 +17,10 @@ func TestUnitKubernetesVPC_lookupByName(t *testing.T) {
 	ensureTFBinary(t)
 
 	srv := acctest.NewMockServer(t)
-	srv.Handle("GET", "/kubernetes/search/vpcs", func(w http.ResponseWriter, _ *http.Request) {
+	srv.Handle("GET", "/kubernetes/search/vpcs", func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("search"); got != "prod-vpc" {
+			t.Errorf("query[search] = %q; want %q (the name filter must be forwarded)", got, "prod-vpc")
+		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(k8sVpcsBody))
 	})
@@ -36,6 +39,41 @@ data "iaas_kubernetes_vpc" "t" {
 					resource.TestCheckResourceAttr("data.iaas_kubernetes_vpc.t", "id", "vpc-1"),
 					resource.TestCheckResourceAttr("data.iaas_kubernetes_vpc.t", "cidr", "10.0.0.0/16"),
 					resource.TestCheckResourceAttr("data.iaas_kubernetes_vpc.t", "has_nat_gateway", "true"),
+				),
+			},
+		},
+	})
+}
+
+func TestUnitKubernetesVPC_lookupByNameAndHypervisorGroupID(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+	srv.Handle("GET", "/kubernetes/search/vpcs", func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("search"); got != "prod-vpc" {
+			t.Errorf("query[search] = %q; want %q (the name filter must be forwarded)", got, "prod-vpc")
+		}
+		if got := r.URL.Query().Get("hypervisor_group_id"); got != "hg-1" {
+			t.Errorf("query[hypervisor_group_id] = %q; want %q", got, "hg-1")
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(k8sVpcsBody))
+	})
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+data "iaas_kubernetes_vpc" "t" {
+  name                = "prod-vpc"
+  hypervisor_group_id = "hg-1"
+}
+`
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.iaas_kubernetes_vpc.t", "id", "vpc-1"),
+					resource.TestCheckResourceAttr("data.iaas_kubernetes_vpc.t", "cidr", "10.0.0.0/16"),
 				),
 			},
 		},

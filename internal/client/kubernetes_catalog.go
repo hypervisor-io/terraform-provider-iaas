@@ -94,7 +94,7 @@ func (c *Client) GetAutoscalerManifest(ctx context.Context, clusterID string) (s
 // semantic_version); pass "" to list all active versions. The text field carries
 // the semantic version (e.g. "1.31.4").
 func (c *Client) SearchK8sVersions(ctx context.Context, query string) ([]map[string]any, error) {
-	return c.searchK8sSelect2(ctx, "/kubernetes/search/versions", query)
+	return c.searchK8sSelect2(ctx, "/kubernetes/search/versions", query, nil)
 }
 
 // SearchK8sRegions lists hypervisor groups eligible to host a Kubernetes cluster
@@ -103,7 +103,7 @@ func (c *Client) SearchK8sVersions(ctx context.Context, query string) ([]map[str
 // optional ?search= substring filter (matched against region name OR slug). The
 // text field carries the region name; slug is also returned.
 func (c *Client) SearchK8sRegions(ctx context.Context, query string) ([]map[string]any, error) {
-	return c.searchK8sSelect2(ctx, "/kubernetes/search/regions", query)
+	return c.searchK8sSelect2(ctx, "/kubernetes/search/regions", query, nil)
 }
 
 // SearchK8sWorkerPlans lists enabled instance plans available for the WORKER pool
@@ -112,7 +112,7 @@ func (c *Client) SearchK8sRegions(ctx context.Context, query string) ([]map[stri
 // text field is "<name> - <cpu> CPU, <ram> MB, <storage> GB" and name/cpu_cores/
 // ram/storage/credit_value are returned alongside.
 func (c *Client) SearchK8sWorkerPlans(ctx context.Context, query string) ([]map[string]any, error) {
-	return c.searchK8sSelect2(ctx, "/kubernetes/search/plans", query)
+	return c.searchK8sSelect2(ctx, "/kubernetes/search/plans", query, nil)
 }
 
 // SearchK8sControlPlanePlans lists enabled instance plans available for the
@@ -120,7 +120,7 @@ func (c *Client) SearchK8sWorkerPlans(ctx context.Context, query string) ([]map[
 // SearchK8sWorkerPlans (same instancePlans source); the dedicated route exists
 // for semantic clarity. Same row shape as the worker plans.
 func (c *Client) SearchK8sControlPlanePlans(ctx context.Context, query string) ([]map[string]any, error) {
-	return c.searchK8sSelect2(ctx, "/kubernetes/search/cp-plans", query)
+	return c.searchK8sSelect2(ctx, "/kubernetes/search/cp-plans", query, nil)
 }
 
 // SearchK8sLoadBalancerPlans lists enabled LB plans available for the
@@ -128,7 +128,7 @@ func (c *Client) SearchK8sControlPlanePlans(ctx context.Context, query string) (
 // "<name> - <cpu> CPU, <ram> MB" and name/cpu_cores/ram/credit_value are returned
 // (NO storage — LB plans have none).
 func (c *Client) SearchK8sLoadBalancerPlans(ctx context.Context, query string) ([]map[string]any, error) {
-	return c.searchK8sSelect2(ctx, "/kubernetes/search/lb-plans", query)
+	return c.searchK8sSelect2(ctx, "/kubernetes/search/lb-plans", query, nil)
 }
 
 // SearchK8sVpcs lists VPCs the account owner can attach a Kubernetes cluster to,
@@ -137,26 +137,11 @@ func (c *Client) SearchK8sLoadBalancerPlans(ctx context.Context, query string) (
 // FLAT Select2 row carries id, text ("name (cidr)"), name, cidr,
 // hypervisor_group_id, has_nat_gateway and nat_public_ip.
 func (c *Client) SearchK8sVpcs(ctx context.Context, hypervisorGroupID, query string) ([]map[string]any, error) {
-	params := url.Values{}
+	extra := url.Values{}
 	if hypervisorGroupID != "" {
-		params.Set("hypervisor_group_id", hypervisorGroupID)
+		extra.Set("hypervisor_group_id", hypervisorGroupID)
 	}
-	if query != "" {
-		params.Set("search", query)
-	}
-	path := "/kubernetes/search/vpcs"
-	if len(params) > 0 {
-		path += "?" + params.Encode()
-	}
-
-	resp, raw, err := c.do(ctx, "GET", path, nil)
-	if err != nil {
-		return nil, err
-	}
-	if err := responseError(resp, raw); err != nil {
-		return nil, err
-	}
-	return decodeSelect2(raw)
+	return c.searchK8sSelect2(ctx, "/kubernetes/search/vpcs", query, extra)
 }
 
 // SearchK8sSubnets lists subnets within a single VPC. vpcID is REQUIRED (the
@@ -167,32 +152,28 @@ func (c *Client) SearchK8sSubnets(ctx context.Context, vpcID, subnetType, query 
 	if vpcID == "" {
 		return nil, fmt.Errorf("SearchK8sSubnets: empty vpcID")
 	}
-	params := url.Values{"vpc_id": {vpcID}}
+	extra := url.Values{"vpc_id": {vpcID}}
 	if subnetType != "" {
-		params.Set("type", subnetType)
+		extra.Set("type", subnetType)
+	}
+	return c.searchK8sSelect2(ctx, "/kubernetes/search/subnets", query, extra)
+}
+
+// searchK8sSelect2 is the shared body of every k8s catalog search: it merges the
+// optional ?search= filter into extra (any other query params the specific
+// endpoint requires, e.g. vpc_id/type/hypervisor_group_id), issues the GET and
+// flattens the FLAT Select2 envelope via decodeSelect2. extra may be nil. An
+// empty query is omitted so the controller lists everything for that filter.
+func (c *Client) searchK8sSelect2(ctx context.Context, path, query string, extra url.Values) ([]map[string]any, error) {
+	params := extra
+	if params == nil {
+		params = url.Values{}
 	}
 	if query != "" {
 		params.Set("search", query)
 	}
-	path := "/kubernetes/search/subnets?" + params.Encode()
-
-	resp, raw, err := c.do(ctx, "GET", path, nil)
-	if err != nil {
-		return nil, err
-	}
-	if err := responseError(resp, raw); err != nil {
-		return nil, err
-	}
-	return decodeSelect2(raw)
-}
-
-// searchK8sSelect2 is the shared body of every k8s catalog search: it issues the
-// GET with the optional ?search= filter and flattens the FLAT Select2 envelope
-// via decodeSelect2. An empty query is omitted from the URL so the controller
-// lists everything.
-func (c *Client) searchK8sSelect2(ctx context.Context, path, query string) ([]map[string]any, error) {
-	if query != "" {
-		path += "?" + url.Values{"search": {query}}.Encode()
+	if len(params) > 0 {
+		path += "?" + params.Encode()
 	}
 
 	resp, raw, err := c.do(ctx, "GET", path, nil)
