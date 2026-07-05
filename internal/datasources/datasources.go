@@ -96,3 +96,21 @@ func int64Field(obj map[string]any, key string) int64 {
 		return 0
 	}
 }
+
+// boolField reads a boolean field from an API object map. JSON booleans decode
+// to bool; a present numeric 1/0 (some endpoints emit int flags) is coerced.
+// Absent/other yields false.
+func boolField(obj map[string]any, key string) bool {
+	raw, ok := obj[key]
+	if !ok || raw == nil {
+		return false
+	}
+	switch v := raw.(type) {
+	case bool:
+		return v
+	case float64:
+		return v != 0
+	default:
+		return false
+	}
+}

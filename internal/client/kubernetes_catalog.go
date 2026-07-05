@@ -131,6 +131,34 @@ func (c *Client) SearchK8sLoadBalancerPlans(ctx context.Context, query string) (
 	return c.searchK8sSelect2(ctx, "/kubernetes/search/lb-plans", query)
 }
 
+// SearchK8sVpcs lists VPCs the account owner can attach a Kubernetes cluster to,
+// optionally constrained to one region (hypervisorGroupID) and/or filtered by a
+// name/CIDR substring (query). Both filters are optional; pass "" to omit. Each
+// FLAT Select2 row carries id, text ("name (cidr)"), name, cidr,
+// hypervisor_group_id, has_nat_gateway and nat_public_ip.
+func (c *Client) SearchK8sVpcs(ctx context.Context, hypervisorGroupID, query string) ([]map[string]any, error) {
+	params := url.Values{}
+	if hypervisorGroupID != "" {
+		params.Set("hypervisor_group_id", hypervisorGroupID)
+	}
+	if query != "" {
+		params.Set("search", query)
+	}
+	path := "/kubernetes/search/vpcs"
+	if len(params) > 0 {
+		path += "?" + params.Encode()
+	}
+
+	resp, raw, err := c.do(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+	if err := responseError(resp, raw); err != nil {
+		return nil, err
+	}
+	return decodeSelect2(raw)
+}
+
 // searchK8sSelect2 is the shared body of every k8s catalog search: it issues the
 // GET with the optional ?search= filter and flattens the FLAT Select2 envelope
 // via decodeSelect2. An empty query is omitted from the URL so the controller
