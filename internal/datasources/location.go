@@ -11,7 +11,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/tfdiag"
 )
 
-// Interface assertions — location is the golden data source and implements the
+// Interface assertions - location is the golden data source and implements the
 // Configure-capable data-source contract every later data source copies.
 var (
 	_ datasource.DataSource              = &locationDataSource{}

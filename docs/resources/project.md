@@ -13,7 +13,7 @@ Manages a project in your IaaS account. Projects are logical groupings that allo
 ## Example Usage
 
 ```terraform
-# Minimal project — only name is required.
+# Minimal project - only name is required.
 resource "iaas_project" "minimal" {
   name = "production"
 }

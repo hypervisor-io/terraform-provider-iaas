@@ -3,7 +3,7 @@
 page_title: "iaas_notification_channel Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a notification channel — a delivery target (Slack, Discord, Telegram, or generic webhook) that alert rules dispatch through.
+  Manages a notification channel - a delivery target (Slack, Discord, Telegram, or generic webhook) that alert rules dispatch through.
   The channel type determines which config keys are required:
   slack / discord: webhook_url (required)telegram: bot_token + chat_id (both required)webhook: url (required), plus optional method, secret, connect_timeout, timeout, verify_ssl ("1"/"0")
   All config values are stored encrypted at rest but returned decrypted by the API, so the config map always round-trips correctly. The map is marked Sensitive to prevent webhook URLs and tokens from appearing in plan/apply output.
@@ -13,7 +13,7 @@ description: |-
 
 # iaas_notification_channel (Resource)
 
-Manages a notification channel — a delivery target (Slack, Discord, Telegram, or generic webhook) that alert rules dispatch through.
+Manages a notification channel - a delivery target (Slack, Discord, Telegram, or generic webhook) that alert rules dispatch through.
 
 The channel type determines which config keys are required:
   - **slack / discord**: `webhook_url` (required)
@@ -81,13 +81,13 @@ resource "iaas_notification_channel" "webhook_custom" {
 - `config` (Map of String, Sensitive) Per-type configuration map. All values are strings. Required keys depend on the channel type:
   - **slack / discord**: `webhook_url` (incoming webhook URL)
   - **telegram**: `bot_token` (bot API token), `chat_id` (target chat ID)
-  - **webhook**: `url` (destination URL); optional: `method` (POST or PUT), `secret` (HMAC signing secret), `connect_timeout` (1–30 s), `timeout` (1–60 s), `verify_ssl` (`"1"` to enable / `"0"` to disable — the API's boolean rule only accepts 1/0 as strings)
+  - **webhook**: `url` (destination URL); optional: `method` (POST or PUT), `secret` (HMAC signing secret), `connect_timeout` (1-30 s), `timeout` (1-60 s), `verify_ssl` (`"1"` to enable / `"0"` to disable - the API's boolean rule only accepts 1/0 as strings)
 
 Note: the `headers` key requires an array value and cannot be set via this resource's flat string config map in v1; configure it via the panel or API directly (a future typed config block may add support).
 
 The map is marked Sensitive so webhook URLs, tokens, and secrets never appear in plan/apply output. The API returns the config on every read (encrypted at rest, decrypted in response), so this attribute always round-trips correctly. Non-string values (booleans, integers) from the API are coerced to strings for storage.
 - `name` (String) Friendly display name for the channel. Maximum 255 characters. Updatable in place.
-- `type` (String) Channel delivery type. One of: `slack`, `discord`, `telegram`, `webhook`. Updatable in place — changing the type does not force a new resource; supply a matching config map for the new type.
+- `type` (String) Channel delivery type. One of: `slack`, `discord`, `telegram`, `webhook`. Updatable in place - changing the type does not force a new resource; supply a matching config map for the new type.
 
 ### Optional
 

@@ -11,7 +11,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/tfdiag"
 )
 
-// Interface assertions — kubernetes_autoscaler_manifest is a DIRECT FETCH by
+// Interface assertions - kubernetes_autoscaler_manifest is a DIRECT FETCH by
 // cluster id, like kubernetes_kubeconfig.
 var (
 	_ datasource.DataSource              = &kubernetesAutoscalerManifestDataSource{}
@@ -47,7 +47,7 @@ func (d *kubernetesAutoscalerManifestDataSource) Metadata(_ context.Context, req
 func (d *kubernetesAutoscalerManifestDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Renders the self-contained cluster-autoscaler manifest for a managed " +
-			"Kubernetes cluster — apply it with `kubectl apply -f -`. The manifest embeds a " +
+			"Kubernetes cluster - apply it with `kubectl apply -f -`. The manifest embeds a " +
 			"freshly-minted controller JWT base64-encoded inline as a Kubernetes Secret, so " +
 			"the `manifest` output is marked sensitive; every read ROTATES the active token " +
 			"(the running autoscaler picks the new token up on its next reload). The cluster " +

@@ -31,7 +31,7 @@ func NewDBBackupPolicyResource() resource.Resource {
 	return &dbBackupPolicyResource{}
 }
 
-// dbBackupPolicyResource manages an iaas_db_backup_policy — an off-host S3
+// dbBackupPolicyResource manages an iaas_db_backup_policy - an off-host S3
 // backup configuration for managed databases, with schedule, PITR, and
 // retention settings.
 //
@@ -59,7 +59,7 @@ func NewDBBackupPolicyResource() resource.Resource {
 //	                → {policy:{...,managed_databases:[{id,...}]},
 //	                   available_databases:[...]}
 //	                NOTE: s3_access_key,s3_secret_key,encryption_key are
-//	                $hidden on the model — never returned by SHOW.
+//	                $hidden on the model - never returned by SHOW.
 //	UPDATE  PATCH  /networking/db-backup-policy/{id}          (singular)
 //	                body same as CREATE (all "sometimes|required")
 //	                → {success,message,policy:{...}}
@@ -68,7 +68,7 @@ func NewDBBackupPolicyResource() resource.Resource {
 //	ATTACH  POST   /networking/db-backup-policy/{id}/attach   body {managed_database_id}
 //	DETACH  POST   /networking/db-backup-policy/{id}/detach   body {managed_database_id}
 //
-// KEY FINDING — WRITE-ONLY CREDENTIALS:
+// KEY FINDING - WRITE-ONLY CREDENTIALS:
 //   - s3_access_key, s3_secret_key are $hidden on the DbBackupPolicy model.
 //     SHOW never returns them. They are sent on Create (required) and
 //     optionally on Update (empty values are stripped by the service,
@@ -116,7 +116,7 @@ func (r *dbBackupPolicyResource) Metadata(_ context.Context, req resource.Metada
 // Schema describes the iaas_db_backup_policy resource.
 func (r *dbBackupPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a database backup policy — an off-host S3-based backup " +
+		Description: "Manages a database backup policy - an off-host S3-based backup " +
 			"configuration for managed databases. The policy specifies the target S3 " +
 			"bucket (credentials, path prefix), the full/incremental backup schedule, " +
 			"optional point-in-time recovery (PITR), and retention settings. Managed " +
@@ -154,7 +154,7 @@ func (r *dbBackupPolicyResource) Schema(_ context.Context, _ resource.SchemaRequ
 				Required:  true,
 				Sensitive: true,
 				Description: "S3 access key ID. Stored encrypted on the server and never " +
-					"returned by the API — preserved in Terraform state between refreshes. " +
+					"returned by the API - preserved in Terraform state between refreshes. " +
 					"Set to update the credentials (empty string is treated as no-change by " +
 					"the server). Sensitive.",
 				PlanModifiers: []planmodifier.String{
@@ -165,7 +165,7 @@ func (r *dbBackupPolicyResource) Schema(_ context.Context, _ resource.SchemaRequ
 				Required:  true,
 				Sensitive: true,
 				Description: "S3 secret access key. Stored encrypted on the server and never " +
-					"returned by the API — preserved in Terraform state between refreshes. " +
+					"returned by the API - preserved in Terraform state between refreshes. " +
 					"Set to update the credentials (empty string is treated as no-change by " +
 					"the server). Sensitive.",
 				PlanModifiers: []planmodifier.String{
@@ -208,15 +208,15 @@ func (r *dbBackupPolicyResource) Schema(_ context.Context, _ resource.SchemaRequ
 			},
 			"retention_full_count": schema.Int64Attribute{
 				Required:    true,
-				Description: "Number of full backups to retain (1–365).",
+				Description: "Number of full backups to retain (1-365).",
 			},
 			"retention_incremental_days": schema.Int64Attribute{
 				Required:    true,
-				Description: "Number of days to retain incremental backups (1–365).",
+				Description: "Number of days to retain incremental backups (1-365).",
 			},
 			"retention_pitr_hours": schema.Int64Attribute{
 				Required: true,
-				Description: "Number of hours of PITR (WAL/binlog) history to retain (1–720). " +
+				Description: "Number of hours of PITR (WAL/binlog) history to retain (1-720). " +
 					"Only used when pitr_enabled is true.",
 			},
 			"encryption_enabled": schema.BoolAttribute{
@@ -338,7 +338,7 @@ func (r *dbBackupPolicyResource) Create(ctx context.Context, req resource.Create
 }
 
 // Read refreshes state from the API. A 404 means the policy was deleted
-// out of band — remove it from state so Terraform plans a recreate.
+// out of band - remove it from state so Terraform plans a recreate.
 func (r *dbBackupPolicyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state dbBackupPolicyModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -549,7 +549,7 @@ func dbpStateFromAPI(obj map[string]any, prior dbBackupPolicyModel) (dbBackupPol
 		RetentionPitrHours:       requiredInt64FromAPI(obj, "retention_pitr_hours", prior.RetentionPitrHours),
 		Status:                   stringFromAPI(obj, "status", prior.Status),
 
-		// Credentials are $hidden by the model — preserve prior values so Terraform
+		// Credentials are $hidden by the model - preserve prior values so Terraform
 		// does not see spurious drift and does not blank them on the next apply.
 		S3AccessKey: prior.S3AccessKey,
 		S3SecretKey: prior.S3SecretKey,

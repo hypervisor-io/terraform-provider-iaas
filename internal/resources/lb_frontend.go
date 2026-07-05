@@ -30,7 +30,7 @@ func NewLBFrontendResource() resource.Resource {
 	return &lbFrontendResource{}
 }
 
-// lbFrontendResource manages an iaas_lb_frontend — a listener of a load balancer.
+// lbFrontendResource manages an iaas_lb_frontend - a listener of a load balancer.
 type lbFrontendResource struct {
 	client *client.Client
 }

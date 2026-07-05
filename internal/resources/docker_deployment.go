@@ -24,20 +24,20 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/waiter"
 )
 
-// Interface assertions — iaas_docker_deployment (Gap G2, the largest of the
+// Interface assertions - iaas_docker_deployment (Gap G2, the largest of the
 // waves B/C gaps) manages a Docker app deployment on an instance:
 //
 //   - the parent instance_id lives in the URL path → Required + RequiresReplace;
 //   - TWO create shapes share one resource, selected by `source`:
 //     "app" (catalog app, POST .../docker, body app_slug) or "compose"
-//     (POST .../docker/custom, body compose_url + app_name) — enforced by
+//     (POST .../docker/custom, body compose_url + app_name) - enforced by
 //     ConfigValidators exactly like iaas_kubernetes_ssl_certificate's
 //     source = "letsencrypt"|"custom" split;
 //   - DOCKER-NOT-INSTALLED GATE: deploy/deployCustom 422 unless
 //     instance.docker_enabled == 1. Create checks DockerEnabled first and,
 //     if false, calls InstallDockerEngine then polls DockerEnabled to
-//     converge (install is itself async and NOT idempotent — calling it
-//     while already enabled 422s — hence the check-first, not call-always,
+//     converge (install is itself async and NOT idempotent - calling it
+//     while already enabled 422s - hence the check-first, not call-always,
 //     shape);
 //   - ASYNC deploy: create returns the row synchronously (status
 //     "deploying") and this resource waits for "running" (ready) or
@@ -86,13 +86,13 @@ var dockerPortMappingAttrTypes = map[string]attr.Type{
 //   - source/slug/compose_url: create-shape selector + its two conditional
 //     inputs, enforced by ConfigValidators. All Required-or-conditionally-
 //     required + RequiresReplace (no update route).
-//   - name: Optional+Computed — REQUIRED input for source = "compose" (sent
+//   - name: Optional+Computed - REQUIRED input for source = "compose" (sent
 //     as app_name); FORBIDDEN for source = "app" (the server always derives
-//     it from the catalog entry — allowing it there risks an
+//     it from the catalog entry - allowing it there risks an
 //     inconsistent-apply error the moment the server's resolved value
 //     differs from a practitioner-supplied one, so ConfigValidators rejects
 //     it outright rather than silently ignoring it).
-//   - env/port_mappings: WRITE-ONLY (never refreshed from the API — see
+//   - env/port_mappings: WRITE-ONLY (never refreshed from the API - see
 //     docker.go) + RequiresReplace.
 //   - status/project_name/error_message/deployed_at: server-managed computed.
 type dockerDeploymentModel struct {
@@ -132,7 +132,7 @@ func (r *dockerDeploymentResource) Metadata(_ context.Context, req resource.Meta
 // Schema describes the iaas_docker_deployment resource.
 func (r *dockerDeploymentResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a Docker app deployment on an instance — either a catalog app " +
+		Description: "Manages a Docker app deployment on an instance - either a catalog app " +
 			"(source = \"app\", via app_slug) or a custom Docker Compose deployment fetched from a " +
 			"remote URL (source = \"compose\", via compose_url + name). If the instance does not yet " +
 			"have the Docker engine installed, Create installs it automatically and waits for the " +
@@ -179,7 +179,7 @@ func (r *dockerDeploymentResource) Schema(ctx context.Context, _ resource.Schema
 			"compose_url": schema.StringAttribute{
 				Optional: true,
 				Description: "HTTPS URL of a docker-compose.yml to deploy. The compose file is FETCHED " +
-					"SERVER-SIDE via an SSRF-guarded request — this is a URL, not literal compose " +
+					"SERVER-SIDE via an SSRF-guarded request - this is a URL, not literal compose " +
 					"content. Required when source = \"compose\"; must be omitted for source = \"app\". " +
 					"Immutable; changing it forces a new resource.",
 				PlanModifiers: []planmodifier.String{
@@ -308,7 +308,7 @@ func (v *dockerDeploymentSourceValidator) ValidateResource(ctx context.Context, 
 	}
 
 	// Don't evaluate presence checks against an unknown value (e.g. derived
-	// from another resource) — defer to a later validation pass.
+	// from another resource) - defer to a later validation pass.
 	if cfg.Slug.IsUnknown() || cfg.ComposeURL.IsUnknown() || cfg.Name.IsUnknown() {
 		return
 	}
@@ -381,9 +381,9 @@ func (r *dockerDeploymentResource) Configure(_ context.Context, req resource.Con
 // The install wait (step 1) and the deploy wait (step 4) are BOTH bounded by
 // a single createTimeout window overall, not createTimeout EACH: ctx is
 // wrapped with an absolute deadline (now + createTimeout) up front, so the
-// deploy wait's own waiter.WaitFor — which otherwise restarts a fresh
+// deploy wait's own waiter.WaitFor - which otherwise restarts a fresh
 // createTimeout-long relative timer from whenever it is called, see
-// internal/waiter.WaitFor — can never run past what the install wait already
+// internal/waiter.WaitFor - can never run past what the install wait already
 // spent. Without this, an install-then-deploy Create could take up to ~2x
 // createTimeout in the worst case (Docker not installed AND a slow deploy).
 func (r *dockerDeploymentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -545,7 +545,7 @@ func (r *dockerDeploymentResource) Read(ctx context.Context, req resource.ReadRe
 // configuration change. Implemented only to satisfy resource.Resource.
 //
 // DELIBERATE v1 SCOPE DECISION: the API's only other mutation surface is the
-// control(start|stop|restart|remove) action and retry — these are
+// control(start|stop|restart|remove) action and retry - these are
 // operational actions, not declarative attribute state, and wiring a
 // `desired_state` attribute to drive them adds meaningful complexity (the
 // one-active-deployment-at-a-time guard on the Master interacts awkwardly
@@ -583,7 +583,7 @@ func (r *dockerDeploymentResource) Delete(ctx context.Context, req resource.Dele
 //
 // source/slug/compose_url/name are recovered from the read-back (see
 // dockerDeploymentStateFromAPI's derivation helpers). env/port_mappings
-// cannot be recovered (write-only/policy-preserved — see docker.go) and land
+// cannot be recovered (write-only/policy-preserved - see docker.go) and land
 // null; set them in configuration after importing if they matter (they have
 // no update path, so leaving them unset is otherwise harmless post-import).
 func (r *dockerDeploymentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -665,8 +665,8 @@ func portMappingsToAPI(ctx context.Context, l types.List) ([]map[string]any, dia
 
 // dockerDeploymentStateFromAPI builds the model from an API deployment object
 // (the create response or the LIST scan). instance_id/env/port_mappings are
-// never reliably re-derivable from the response (either genuinely absent —
-// env/port_mappings are policy-preserved, see docker.go — or a RequiresReplace
+// never reliably re-derivable from the response (either genuinely absent -
+// env/port_mappings are policy-preserved, see docker.go - or a RequiresReplace
 // input whose authoritative value is the plan/prior state), so they always
 // fall back to the prior model. name IS read back (app_name is a plain,
 // always-populated column for both source shapes) so the server-derived
@@ -683,7 +683,7 @@ func dockerDeploymentStateFromAPI(obj map[string]any, prior dockerDeploymentMode
 		ComposeURL: dockerComposeURLFromAPI(obj, prior.ComposeURL),
 		Name:       stringFromAPI(obj, "app_name", prior.Name),
 
-		// WRITE-ONLY by policy — never in the response, or deliberately never
+		// WRITE-ONLY by policy - never in the response, or deliberately never
 		// round-tripped; preserve prior/plan verbatim.
 		Env:          prior.Env,
 		PortMappings: prior.PortMappings,
@@ -703,7 +703,7 @@ func dockerDeploymentStateFromAPI(obj map[string]any, prior dockerDeploymentMode
 // while deploy() always stores the real catalog slug. An absent/null/empty
 // app_slug falls back to the prior value (defensive; the column is NOT NULL
 // in practice). EDGE CASE: a catalog app whose own slug happens to be
-// "custom" would misclassify as source = "compose" on import/read — accepted
+// "custom" would misclassify as source = "compose" on import/read - accepted
 // as a narrow, documented limitation (catalog slugs are operator-controlled).
 func dockerSourceFromAPI(obj map[string]any, fallback types.String) types.String {
 	raw, ok := obj["app_slug"]
@@ -722,8 +722,8 @@ func dockerSourceFromAPI(obj map[string]any, fallback types.String) types.String
 
 // dockerSlugFromAPI reads back the catalog slug for a source = "app"
 // deployment. For a source = "compose" deployment app_slug is always the
-// literal string "custom" (not a real user input), so that sentinel — like an
-// absent/null/empty value — falls back to the prior value (null, since
+// literal string "custom" (not a real user input), so that sentinel - like an
+// absent/null/empty value - falls back to the prior value (null, since
 // compose deployments never set slug).
 func dockerSlugFromAPI(obj map[string]any, fallback types.String) types.String {
 	raw, ok := obj["app_slug"]

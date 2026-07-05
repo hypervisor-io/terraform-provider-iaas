@@ -25,7 +25,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/waiter"
 )
 
-// Interface assertions — iaas_kubernetes_cluster is an ASYNC, MULTI-STAGE
+// Interface assertions - iaas_kubernetes_cluster is an ASYNC, MULTI-STAGE
 // resource. It copies the established async recipe:
 //
 //   - ASYNC state-poll (from load_balancer/managed_database): CREATE records the
@@ -34,7 +34,7 @@ import (
 //     OWN "state" field via SHOW until "running" (the state machine drives
 //     created → starting → running | error). There IS a tracking task_id in the
 //     create response, but the cluster state is the canonical convergence signal
-//     (it is what the UI polls), so we poll SHOW state — NOT the task. The id is
+//     (it is what the UI polls), so we poll SHOW state - NOT the task. The id is
 //     persisted to state BEFORE the wait so a failed wait still leaves a
 //     destroyable resource; a timeouts block is exposed with a LARGE create
 //     default (K8s provisioning is slow).
@@ -47,20 +47,20 @@ import (
 //   - MOSTLY-IMMUTABLE: name/description/project_id are mutable via PATCH
 //     (controller's UpdateClusterRequest); every other topology input is
 //     RequiresReplace EXCEPT kubernetes_version_id (T7/id-G8), which is now
-//     updatable in place — see the version-upgrade orchestration below.
+//     updatable in place - see the version-upgrade orchestration below.
 //   - VERSION UPGRADE (T7/id-G8): the Master tracks TWO version columns on the
-//     cluster row, both equal at create — kubernetes_version_id (the WORKER
+//     cluster row, both equal at create - kubernetes_version_id (the WORKER
 //     baseline) and cp_kubernetes_version_id (the control plane's current
 //     version, exposed here read-only as cp_kubernetes_version_id/
 //     cp_kubernetes_version). When the plan's kubernetes_version_id differs
 //     from state, Update calls the dedicated upgrade endpoints in STAGED order
-//     — control plane (POST .../upgrade/cp) only if it isn't already at the
+//   - control plane (POST .../upgrade/cp) only if it isn't already at the
 //     target, then workers (POST .../upgrade/workers), matching the Master's
 //     own upstream-safety invariant that kubelet must never run ahead of the
-//     apiserver — then, if upgrade_ccm is true, a synchronous CCM redeploy
+//     apiserver - then, if upgrade_ccm is true, a synchronous CCM redeploy
 //     (POST .../upgrade/ccm) so the cloud-controller-manager image tracks the
 //     new worker baseline. Each rolling-upgrade stage is async (a
-//     KubernetesClusterTask, NOT a cluster.state change — state stays
+//     KubernetesClusterTask, NOT a cluster.state change - state stays
 //     "running" throughout); convergence is polled via
 //     waitForClusterUpgradeTask, which scans the cluster's own embedded
 //     "tasks" array (SHOW eager-loads the last 20) for the returned task_id's
@@ -73,7 +73,7 @@ import (
 // kubeconfig + autoscaler-manifest + catalog search data sources (id34) are
 // SEPARATE tasks and are NOT modelled here. The cluster CA cert / kubeconfig
 // (Sensitive) are exposed by the id34 kubeconfig data source, NOT this
-// resource — we only export the (non-secret) endpoint URLs.
+// resource - we only export the (non-secret) endpoint URLs.
 var (
 	_ resource.Resource                = &kubernetesClusterResource{}
 	_ resource.ResourceWithConfigure   = &kubernetesClusterResource{}
@@ -82,13 +82,13 @@ var (
 
 // defaultK8sCreateTimeout is intentionally larger than the shared async default:
 // a Kubernetes cluster provisions a CP load balancer, 1 or 3 control-plane VMs,
-// kubeadm init/join, the CNI, and the default worker pool — minutes of work.
+// kubeadm init/join, the CNI, and the default worker pool - minutes of work.
 const defaultK8sCreateTimeout = 45 * 60 * 1_000_000_000 // 45 minutes, in ns
 
 // defaultK8sUpgradeTimeout sizes the Update timeout used for a version-bump
 // upgrade (T7/id-G8). A rolling CP or worker upgrade surge-replaces nodes one
-// (or max_surge) at a time — the same order of magnitude of work as initial
-// provisioning — so the generic defaultUpdateTimeout (10 minutes, sized for a
+// (or max_surge) at a time - the same order of magnitude of work as initial
+// provisioning - so the generic defaultUpdateTimeout (10 minutes, sized for a
 // simple synchronous PATCH elsewhere in this package) would be too short; this
 // mirrors defaultK8sCreateTimeout instead.
 const defaultK8sUpgradeTimeout = 45 * 60 * 1_000_000_000 // 45 minutes, in ns
@@ -99,7 +99,7 @@ func NewKubernetesClusterResource() resource.Resource {
 	return &kubernetesClusterResource{}
 }
 
-// kubernetesClusterResource manages an iaas_kubernetes_cluster — a managed
+// kubernetesClusterResource manages an iaas_kubernetes_cluster - a managed
 // Kubernetes cluster (control plane behind a CP load balancer + a default worker
 // node pool).
 type kubernetesClusterResource struct {
@@ -141,7 +141,7 @@ type kubernetesClusterModel struct {
 	WorkerInstancePlanID types.String `tfsdk:"worker_instance_plan_id"`
 	DesiredWorkerCount   types.Int64  `tfsdk:"worker_count"`
 
-	// Upgrade orchestration knobs (T7/id-G8) — consulted ONLY when
+	// Upgrade orchestration knobs (T7/id-G8) - consulted ONLY when
 	// kubernetes_version_id changes; otherwise inert. Not echoed by the API, so
 	// kubernetesClusterStateFromAPI always carries these straight through from
 	// the plan/prior state.
@@ -171,14 +171,14 @@ func (r *kubernetesClusterResource) Schema(ctx context.Context, _ resource.Schem
 	resp.Schema = schema.Schema{
 		Description: "Manages a managed Kubernetes cluster: a control plane (1 or 3 nodes) behind a " +
 			"dedicated CP load balancer, plus a default worker node pool. Creation is ASYNCHRONOUS " +
-			"and multi-stage — the cluster row is recorded, the default pool is created, and a " +
+			"and multi-stage - the cluster row is recorded, the default pool is created, and a " +
 			"provisioning job runs; this resource waits for the cluster state to become \"running\" " +
 			"(created → starting → running, or \"error\" on failure). The region must have " +
 			"Kubernetes + VPC + Load Balancer enabled, the VPC must have an active NAT gateway, and " +
 			"the control-plane subnet must be private. name, description, project_id, and " +
 			"kubernetes_version_id are mutable in place (a version_id change drives a staged in-place " +
-			"upgrade — see kubernetes_version_id's description); all other topology (plans, CIDRs, " +
-			"subnets, control-node count) is immutable — changing any of those forces a new cluster. " +
+			"upgrade - see kubernetes_version_id's description); all other topology (plans, CIDRs, " +
+			"subnets, control-node count) is immutable - changing any of those forces a new cluster. " +
 			"Worker scaling, node pools, kubeconfig download, and per-cluster security/SSL config are " +
 			"managed by separate resources / data sources.",
 		Attributes: map[string]schema.Attribute{
@@ -248,11 +248,11 @@ func (r *kubernetesClusterResource) Schema(ctx context.Context, _ resource.Schem
 			},
 			"kubernetes_version_id": schema.StringAttribute{
 				Required: true,
-				Description: "UUID of an active supported Kubernetes version — the WORKER baseline (the " +
+				Description: "UUID of an active supported Kubernetes version - the WORKER baseline (the " +
 					"control plane's own current version is tracked separately, read-only, as " +
 					"cp_kubernetes_version_id/cp_kubernetes_version). Updatable in place (T7/id-G8): " +
-					"changing this drives a staged in-place upgrade — control plane first (if it isn't " +
-					"already at the target), then workers, then (if upgrade_ccm) a CCM redeploy — rather " +
+					"changing this drives a staged in-place upgrade - control plane first (if it isn't " +
+					"already at the target), then workers, then (if upgrade_ccm) a CCM redeploy - rather " +
 					"than replacing the cluster. The target must be an active version, forward-only, same " +
 					"major, and no more than 1 minor ahead of the current baseline (server-enforced).",
 			},
@@ -337,7 +337,7 @@ func (r *kubernetesClusterResource) Schema(ctx context.Context, _ resource.Schem
 				Optional: true,
 				Computed: true,
 				Description: "Initial worker count for the default pool (1-50). Set at create time only " +
-					"through this resource — ongoing scaling is a dedicated worker operation, so changing " +
+					"through this resource - ongoing scaling is a dedicated worker operation, so changing " +
 					"this forces a new resource. The live count is also exported here on read.",
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
@@ -372,7 +372,7 @@ func (r *kubernetesClusterResource) Schema(ctx context.Context, _ resource.Schem
 				Description: "Whether to redeploy the cloud-controller-manager (POST .../upgrade/ccm) " +
 					"after a successful worker-stage upgrade, so the CCM image tracks the new worker " +
 					"baseline's bundled_components.ccm_image (there is no separately-versioned ccm_version " +
-					"— the API always redeploys whatever image the CURRENT worker baseline resolves to). " +
+					"- the API always redeploys whatever image the CURRENT worker baseline resolves to). " +
 					"Only consulted when kubernetes_version_id changes; set false to manage CCM redeploys " +
 					"out of band.",
 			},
@@ -380,7 +380,7 @@ func (r *kubernetesClusterResource) Schema(ctx context.Context, _ resource.Schem
 			// ── Computed read-only ────────────────────────────────────────────
 			// state is SERVER-MUTABLE (created → starting → running → alert /
 			// stopped / destroying …). Per the golden guardrail, do NOT attach
-			// UseStateForUnknown to a server-mutable computed field — that would
+			// UseStateForUnknown to a server-mutable computed field - that would
 			// mask real drift.
 			"state": schema.StringAttribute{
 				Computed: true,
@@ -392,7 +392,7 @@ func (r *kubernetesClusterResource) Schema(ctx context.Context, _ resource.Schem
 				Computed: true,
 				Description: "Human-readable Kubernetes semantic version (e.g. \"1.30.2\") of the WORKER " +
 					"baseline (kubernetes_version_id), derived from the selected version. Server-mutable: " +
-					"changes once a version-bump upgrade's worker stage completes — per the golden " +
+					"changes once a version-bump upgrade's worker stage completes - per the golden " +
 					"guardrail, no UseStateForUnknown, so the plan doesn't mask that transition.",
 			},
 			"cp_kubernetes_version_id": schema.StringAttribute{
@@ -575,7 +575,7 @@ func (r *kubernetesClusterResource) Create(ctx context.Context, req resource.Cre
 }
 
 // Read refreshes state from the API. A 404 means the cluster was deleted out of
-// band — remove it from state so Terraform plans a recreate.
+// band - remove it from state so Terraform plans a recreate.
 func (r *kubernetesClusterResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state kubernetesClusterModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -596,8 +596,8 @@ func (r *kubernetesClusterResource) Read(ctx context.Context, req resource.ReadR
 	resp.Diagnostics.Append(resp.State.Set(ctx, kubernetesClusterStateFromAPI(obj, state))...)
 }
 
-// Update changes the mutable fields — name, description, project_id (a plain
-// PATCH) — and, as of T7/id-G8, kubernetes_version_id (a staged in-place
+// Update changes the mutable fields - name, description, project_id (a plain
+// PATCH) - and, as of T7/id-G8, kubernetes_version_id (a staged in-place
 // version upgrade). Everything else is RequiresReplace, so only those reach
 // here.
 //
@@ -607,13 +607,13 @@ func (r *kubernetesClusterResource) Read(ctx context.Context, req resource.ReadR
 // endpoint is gated on cluster.state=="error" and, when it runs, tears down
 // EVERY partial artifact (worker + CP VMs, the CP load balancer, all three
 // security groups, reserved CP IPs) and re-dispatches the FULL cluster-create
-// job on the same row — a from-scratch rebuild, not a "resume the failed
+// job on the same row - a from-scratch rebuild, not a "resume the failed
 // wave" operation. Neither CpRollingUpgrade nor WorkersRollingUpgrade ever
 // touch cluster.state (it stays "running" throughout; only the per-task
 // KubernetesClusterTask.status fails), so a failed upgrade stage would leave
 // state=="running" and RetryK8sClusterUpgrade would itself 422 ("Retry is
 // only available for clusters in 'error' state") rather than resume
-// anything — and on a cluster that genuinely IS "error" for an unrelated
+// anything - and on a cluster that genuinely IS "error" for an unrelated
 // reason, auto-calling it here would destroy/rebuild the whole cluster as a
 // side effect of a version-bump apply, which is disproportionate and
 // surprising. So a failed stage is surfaced as a plain Diagnostics error (the
@@ -682,11 +682,11 @@ func (r *kubernetesClusterResource) Update(ctx context.Context, req resource.Upd
 }
 
 // upgradeClusterVersion drives a user-initiated kubernetes_version_id change:
-// control plane first (skipped if it's already at the target — idempotent
+// control plane first (skipped if it's already at the target - idempotent
 // against a partially-applied prior attempt), then the worker baseline, then
 // (if plan.UpgradeCCM) a synchronous CCM redeploy. This mirrors the Master's
 // own upstream-safety invariant (WorkersUpgradeService::validateTarget rejects
-// a worker target that exceeds the CP's CURRENT version — kubelet must not run
+// a worker target that exceeds the CP's CURRENT version - kubelet must not run
 // ahead of the apiserver), and its create-time invariant that CP and worker
 // baselines start equal, by driving both to the SAME target version. Staged
 // CP-only or worker-only bumps to DIFFERENT targets are out of scope for this
@@ -725,7 +725,7 @@ func (r *kubernetesClusterResource) upgradeClusterVersion(ctx context.Context, c
 		return fmt.Errorf("worker upgrade did not complete: %w", err)
 	}
 
-	// Stage 3: CCM redeploy — SYNCHRONOUS (no task_id, no wait needed). The
+	// Stage 3: CCM redeploy - SYNCHRONOUS (no task_id, no wait needed). The
 	// image is resolved server-side from the (now-updated) worker baseline's
 	// bundled_components.ccm_image.
 	if plan.UpgradeCCM.ValueBool() {
@@ -742,8 +742,8 @@ func (r *kubernetesClusterResource) upgradeClusterVersion(ctx context.Context, c
 // THAT task's own "status" field to reach "completed" (fail: "failed"). There
 // is no per-task GET route for clusters (unlike instances'
 // GetInstanceTask/waiter pair), so this reuses the cluster's existing
-// convergence primitive — waiter.WaitFor + a Refresh closure over
-// GetKubernetesCluster — the SAME pattern Create/Delete already use for
+// convergence primitive - waiter.WaitFor + a Refresh closure over
+// GetKubernetesCluster - the SAME pattern Create/Delete already use for
 // "state" convergence, just classifying a different embedded field.
 func (r *kubernetesClusterResource) waitForClusterUpgradeTask(ctx context.Context, clusterID, taskID string, timeout time.Duration) error {
 	if taskID == "" {
@@ -770,7 +770,7 @@ func (r *kubernetesClusterResource) waitForClusterUpgradeTask(ctx context.Contex
 						return task, nil
 					}
 				}
-				// Not (yet) visible in the last-20 window — keep polling; the
+				// Not (yet) visible in the last-20 window - keep polling; the
 				// missing "status" key classifies as "keep polling" below.
 				return map[string]any{}, nil
 			},
@@ -858,7 +858,7 @@ func kubernetesClusterStateFromAPI(obj map[string]any, prior kubernetesClusterMo
 		Description: optionalStringFromAPI(obj, "description", prior.Description),
 		ProjectID:   optionalStringFromAPI(obj, "project_id", prior.ProjectID),
 
-		// Immutable topology inputs — authoritative value is the plan; SHOW echoes them.
+		// Immutable topology inputs - authoritative value is the plan; SHOW echoes them.
 		Slug:                stringOrPrior(obj, "slug", prior.Slug),
 		HypervisorGroupID:   stringOrPrior(obj, "hypervisor_group_id", prior.HypervisorGroupID),
 		VPCID:               stringOrPrior(obj, "vpc_id", prior.VPCID),
@@ -881,7 +881,7 @@ func kubernetesClusterStateFromAPI(obj map[string]any, prior kubernetesClusterMo
 		WorkerInstancePlanID: stringOrPrior(obj, "worker_instance_plan_id", prior.WorkerInstancePlanID),
 		DesiredWorkerCount:   int64FromAPI(obj, "worker_count", prior.DesiredWorkerCount),
 
-		// Upgrade orchestration knobs — never echoed by the API; carried
+		// Upgrade orchestration knobs - never echoed by the API; carried
 		// straight through from the plan (Create/Update) or prior state (Read).
 		UpgradeDrainGracePeriod: prior.UpgradeDrainGracePeriod,
 		UpgradeMaxSurge:         prior.UpgradeMaxSurge,

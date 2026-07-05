@@ -21,7 +21,7 @@ import (
 //	KUBECONFIG  GET /kubernetes/cluster/{id}/kubeconfig
 //	    → RAW YAML (Content-Type application/yaml), NOT a JSON envelope. The
 //	      controller mints a FRESH cluster-admin client certificate per call
-//	      (CN=kubernetes-admin / O=system:masters) and embeds it inline — nothing
+//	      (CN=kubernetes-admin / O=system:masters) and embeds it inline - nothing
 //	      is persisted. The body therefore carries live admin credentials and MUST
 //	      be treated as SENSITIVE. Error paths ARE JSON: 404 {"error":"kubeconfig
 //	      not yet available …"} when the cluster has not finished bootstrap (no
@@ -44,7 +44,7 @@ import (
 //	      Each result IS an item (NO "children" optgroup nesting) so decodeSelect2
 //	      takes the flat path. The optional ?search= param is a server-side
 //	      substring filter (name/slug for regions, semantic_version for versions,
-//	      name for plans) — we still resolve the UNIQUE match client-side in the
+//	      name for plans) - we still resolve the UNIQUE match client-side in the
 //	      data source. Per-endpoint label/extra fields:
 //	        regions  → text=region name; extra: slug, *_enabled flags.
 //	        versions → text=semantic_version; extra: semantic_version.
@@ -77,7 +77,7 @@ func (c *Client) GetKubeconfig(ctx context.Context, clusterID string) (string, e
 // NOT JSON), so this uses doRaw. The manifest embeds a freshly-minted controller
 // JWT (base64, inline Secret), so it carries a live bearer credential and MUST be
 // treated as sensitive; re-fetching ROTATES the active token. It is gated to
-// `running` clusters with worker autoscaling enabled — otherwise the controller
+// `running` clusters with worker autoscaling enabled - otherwise the controller
 // returns 422 {"error":"autoscaling not enabled on this cluster"} /
 // {"error":"cluster must be running"}, surfaced as an *APIError.
 func (c *Client) GetAutoscalerManifest(ctx context.Context, clusterID string) (string, error) {
@@ -126,7 +126,7 @@ func (c *Client) SearchK8sControlPlanePlans(ctx context.Context, query string) (
 // SearchK8sLoadBalancerPlans lists enabled LB plans available for the
 // control-plane load-balancer picker (FLAT Select2). The text field is
 // "<name> - <cpu> CPU, <ram> MB" and name/cpu_cores/ram/credit_value are returned
-// (NO storage — LB plans have none).
+// (NO storage - LB plans have none).
 func (c *Client) SearchK8sLoadBalancerPlans(ctx context.Context, query string) ([]map[string]any, error) {
 	return c.searchK8sSelect2(ctx, "/kubernetes/search/lb-plans", query, nil)
 }

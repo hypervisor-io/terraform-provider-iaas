@@ -11,7 +11,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/tfdiag"
 )
 
-// Interface assertions — vpn_peer_config follows the golden data-source contract
+// Interface assertions - vpn_peer_config follows the golden data-source contract
 // (Configure-capable, Read-only) but, unlike location, it is a DIRECT FETCH by id
 // rather than a list-and-match: it downloads the WireGuard client configuration
 // for a single road_warrior peer.
@@ -50,8 +50,8 @@ func (d *vpnPeerConfigDataSource) Schema(_ context.Context, _ datasource.SchemaR
 		Description: "Downloads the WireGuard CLIENT configuration for a road_warrior VPN peer. " +
 			"Returns the rendered `.conf` text (the [Interface]/[Peer] block a client uses to " +
 			"connect to the gateway). The rendered config uses a `[YOUR_PRIVATE_KEY]` " +
-			"placeholder for the client's own private key — the server never generates or " +
-			"stores it — but the config still contains the gateway's public key and endpoint, " +
+			"placeholder for the client's own private key - the server never generates or " +
+			"stores it - but the config still contains the gateway's public key and endpoint, " +
 			"so the output is marked sensitive. Only works for peers of type `road_warrior`; " +
 			"a site_to_site peer yields an error.",
 		Attributes: map[string]schema.Attribute{

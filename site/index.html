@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>iaas Provider — OpenTofu / Terraform Documentation</title>
-<meta name="description" content="Manage the entire Hypervisor.io IaaS platform — compute, VPCs, Kubernetes, managed databases, load balancers, storage, DNS, VPN and S3 — as code with the iaas OpenTofu / Terraform provider.">
+<title>iaas Provider - OpenTofu / Terraform Documentation</title>
+<meta name="description" content="Manage the entire Hypervisor.io IaaS platform - compute, VPCs, Kubernetes, managed databases, load balancers, storage, DNS, VPN and S3 - as code with the iaas OpenTofu / Terraform provider.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230a0d0e'/%3E%3Ctext x='32' y='42' font-family='monospace' font-size='30' font-weight='700' fill='%23ffb020' text-anchor='middle'%3E&gt;_%3C/text%3E%3C/svg%3E">
 <style>
 /* ============================================================
@@ -381,7 +381,7 @@ footer{ padding: 56px 0 70px; }
         <p class="hero-lede">
           <code class="mono">iaas</code> is a native OpenTofu / Terraform provider for the Hypervisor.io
           IaaS platform. Declare instances, VPCs, load balancers, managed Kubernetes clusters, databases,
-          block &amp; object storage, DNS, VPN and firewalls in HCL — and let <code class="mono">tofu apply</code>
+          block &amp; object storage, DNS, VPN and firewalls in HCL - and let <code class="mono">tofu apply</code>
           converge the real infrastructure, with UUID-based import for everything you provisioned by hand.
         </p>
         <div class="hero-cta">
@@ -397,7 +397,7 @@ footer{ padding: 56px 0 70px; }
       <div class="term">
         <div class="term-bar">
           <div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div>
-          <div class="term-title">~/infra — tofu apply</div>
+          <div class="term-title">~/infra - tofu apply</div>
         </div>
         <pre><code><span class="tok-key">provider</span> <span class="tok-str">"iaas"</span> {
   <span class="tok-com"># IAAS_API_ENDPOINT / IAAS_API_TOKEN also work</span>
@@ -433,7 +433,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
       <div class="eyebrow">Getting started</div>
       <h2 class="section-title">From zero to a running instance</h2>
       <p class="lede">Four steps: pin the provider, authenticate, configure, apply. The one thing that
-        catches everyone out is the IP lock below — read that before your first <code class="mono">tofu plan</code>.</p>
+        catches everyone out is the IP lock below - read that before your first <code class="mono">tofu plan</code>.</p>
 
       <div class="steps">
         <div class="step">
@@ -441,7 +441,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
           <div>
             <h3>Require the provider</h3>
             <p>The provider address is <code class="mono">iaas/iaas</code>, protocol v6, requiring
-              OpenTofu / Terraform ≥ 1.6. It is not yet published to a public registry — until it is,
+              OpenTofu / Terraform ≥ 1.6. It is not yet published to a public registry - until it is,
               build it locally and wire in a dev override (see the snippet's second block).</p>
             <div class="code-wrap">
               <button class="copy">copy</button>
@@ -475,7 +475,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
           <div>
             <h3>Authenticate</h3>
             <p>Every request carries a Bearer token. Prefer environment variables over hardcoding it in
-              HCL — the token is sensitive and, critically, IP-locked (next step).</p>
+              HCL - the token is sensitive and, critically, IP-locked (next step).</p>
             <div class="code-wrap">
               <button class="copy">copy</button>
               <pre><code><span class="tok-com"># base URL, including the /api suffix</span>
@@ -497,7 +497,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
               <button class="copy">copy</button>
               <pre><code><span class="tok-key">provider</span> <span class="tok-str">"iaas"</span> {
   endpoint        = <span class="tok-str">"https://panel.example.com/api"</span> <span class="tok-com"># or IAAS_API_ENDPOINT</span>
-  token           = var.iaas_token                  <span class="tok-com"># or IAAS_API_TOKEN — prefer the env var</span>
+  token           = var.iaas_token                  <span class="tok-com"># or IAAS_API_TOKEN - prefer the env var</span>
   request_timeout = 30                              <span class="tok-com"># seconds, optional (default 30)</span>
   insecure        = false                           <span class="tok-com"># optional, staging self-signed certs only</span>
 }</code></pre>
@@ -528,7 +528,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 }
 
 <span class="tok-key">resource</span> <span class="tok-str">"iaas_instance"</span> <span class="tok-str">"web"</span> {
-  <span class="tok-com"># immutable placement — changing any of these forces a new instance</span>
+  <span class="tok-com"># immutable placement - changing any of these forces a new instance</span>
   location_id = data.iaas_location.nyc.id
   plan_id     = data.iaas_plan.small.id
   image_id    = data.iaas_image.ubuntu.id
@@ -542,7 +542,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
   display_name = <span class="tok-str">"Web 01"</span>
 
   timeouts {
-    create = <span class="tok-str">"30m"</span> <span class="tok-com"># deploy is async — this instance is the golden async example</span>
+    create = <span class="tok-str">"30m"</span> <span class="tok-com"># deploy is async - this instance is the golden async example</span>
     delete = <span class="tok-str">"30m"</span>
   }
 }
@@ -554,26 +554,26 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
       </div>
 
       <div class="callout callout-danger">
-        <h4>🔒 The IP lock — read this before anything else</h4>
+        <h4>🔒 The IP lock - read this before anything else</h4>
         <p>
           <code class="mono">IAAS_API_TOKEN</code> is a Bearer token that the platform validates against
           the <strong>exact egress IP address it was registered with</strong>. A request from any other
-          source IP is rejected with <code class="mono">401</code>/<code class="mono">403</code> —
+          source IP is rejected with <code class="mono">401</code>/<code class="mono">403</code> -
           <em>regardless of whether the token itself is valid</em>.
         </p>
         <p>In practice, that means you run <code class="mono">tofu</code> / <code class="mono">terraform</code>
           from one of these, and only these:</p>
         <ul>
           <li><strong>A static CI runner</strong> with a fixed, known egress IP (a self-hosted runner or a
-            provider that offers static IPs) — register the token against that IP.</li>
+            provider that offers static IPs) - register the token against that IP.</li>
           <li><strong>A bastion host</strong> you SSH into to run applies, with a stable public IP.</li>
           <li><strong>A workstation</strong> on a static IP or a VPN/NAT egress that doesn't rotate.</li>
         </ul>
-        <p><strong>Most hosted CI (GitHub-hosted runners, etc.) is not supported</strong> — their egress IPs
+        <p><strong>Most hosted CI (GitHub-hosted runners, etc.) is not supported</strong> - their egress IPs
           are dynamic and unregistrable. Route applies through a static runner or bastion instead.
           The token may also be scoped to a <strong>subuser</strong> with a limited permission set, in which
           case in-scope requests from the right IP still fail with <code class="mono">403</code> if the
-          action is outside that subuser's permissions — see <a href="#users">Users &amp; admins</a>.</p>
+          action is outside that subuser's permissions - see <a href="#users">Users &amp; admins</a>.</p>
       </div>
     </div>
   </section>
@@ -594,7 +594,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
           <p>A token issued directly against your own account has full, "admin-scoped" access to
             everything that account owns: every instance, VPC, cluster, database, and bucket it holds.
             This is the common case for a single team managing its own infrastructure, and for a
-            <strong>reseller</strong> managing several separate customer accounts — each managed account
+            <strong>reseller</strong> managing several separate customer accounts - each managed account
             gets its own <code class="mono">provider "iaas" {}</code> block (or workspace) with its own
             IP-locked, account-scoped token. There is no single "super-token" that spans multiple accounts.</p>
         </div>
@@ -602,7 +602,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
           <h3><span class="role-tag">Subuser / scoped token</span></h3>
           <p>Account owners can create subusers with a restricted permission set in the control panel,
             then issue an IP-locked token to that subuser for Terraform to use. Routes are gated per
-            permission — e.g. <code class="mono">monitoring.view</code> / <code class="mono">monitoring.manage</code>
+            permission - e.g. <code class="mono">monitoring.view</code> / <code class="mono">monitoring.manage</code>
             for notification channels &amp; alert rules, <code class="mono">autoscaling.view</code> /
             <code class="mono">.manage</code> / <code class="mono">.delete</code> for autoscaling groups,
             <code class="mono">kubernetes.kubeconfig_download</code> for the kubeconfig data source. An
@@ -628,7 +628,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
         <h4>Deliberately not modelled</h4>
         <p>The provider does not manage <code class="mono">iaas_api_token</code>, roles, or subusers
           themselves. Tokens are IP-locked, so a token an <code class="mono">apply</code> just created
-          would not be usable from a different egress IP — a bootstrap paradox. Create tokens, roles and
+          would not be usable from a different egress IP - a bootstrap paradox. Create tokens, roles and
           subusers <strong>manually in the control panel</strong>, then feed the resulting IP-locked token
           to this provider.</p>
       </div>
@@ -648,7 +648,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
         in the provider source via <code class="mono">tfplugindocs</code>.</p>
 
       <div class="catalog-controls">
-        <input id="catalog-search" type="text" placeholder="Search — e.g. &quot;kubernetes&quot;, &quot;volume&quot;, &quot;async&quot;…" autocomplete="off">
+        <input id="catalog-search" type="text" placeholder="Search - e.g. &quot;kubernetes&quot;, &quot;volume&quot;, &quot;async&quot;…" autocomplete="off">
         <div class="chips">
           <button class="chip is-active" data-group="all">All</button>
           <button class="chip" data-group="compute">Compute</button>
@@ -734,7 +734,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 
           <article class="card" data-group="compute" data-search="iaas_docker_deployment new docker compose app container deploy">
             <div class="card-head"><code class="card-name">iaas_docker_deployment</code><span class="tag">resource</span><span class="tag tag-new">NEW</span></div>
-            <p class="card-desc">Deploys a catalog Docker app or a custom Compose file onto an instance, installing the Docker engine automatically first if needed. No update route — every change replaces the deployment.</p>
+            <p class="card-desc">Deploys a catalog Docker app or a custom Compose file onto an instance, installing the Docker engine automatically first if needed. No update route - every change replaces the deployment.</p>
             <details><summary>Example</summary>
               <div class="code-wrap"><button class="copy">copy</button><pre><code><span class="tok-key">resource</span> <span class="tok-str">"iaas_docker_deployment"</span> <span class="tok-str">"wordpress"</span> {
   instance_id = iaas_instance.app_host.id
@@ -765,20 +765,20 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 
           <article class="card" data-group="compute" data-search="iaas_autoscaling_policy scaling policy cpu memory threshold">
             <div class="card-head"><code class="card-name">iaas_autoscaling_policy</code><span class="tag">resource</span></div>
-            <p class="card-desc">A CPU or memory-driven scale-up/down policy attached to an autoscaling group. Child resource — the group_id is part of the API path.</p>
+            <p class="card-desc">A CPU or memory-driven scale-up/down policy attached to an autoscaling group. Child resource - the group_id is part of the API path.</p>
           </article>
 
         </div>
       </div>
 
-      <!-- ============ NETWORKING — VPC & IP ============ -->
+      <!-- ============ NETWORKING - VPC & IP ============ -->
       <div class="group" data-group-section="networking">
-        <div class="group-heading">Networking — VPC &amp; IP <span class="count">· 6 resources</span></div>
+        <div class="group-heading">Networking - VPC &amp; IP <span class="count">· 6 resources</span></div>
         <div class="grid">
 
           <article class="card" data-group="networking" data-search="iaas_vpc virtual private cloud network isolated vni">
             <div class="card-head"><code class="card-name">iaas_vpc</code><span class="tag">resource</span></div>
-            <p class="card-desc">An isolated layer-2 private network with a server-assigned VNI. No update endpoint — every attribute is immutable.</p>
+            <p class="card-desc">An isolated layer-2 private network with a server-assigned VNI. No update endpoint - every attribute is immutable.</p>
             <details><summary>Example</summary>
               <div class="code-wrap"><button class="copy">copy</button><pre><code><span class="tok-key">resource</span> <span class="tok-str">"iaas_vpc"</span> <span class="tok-str">"main"</span> {
   name                = <span class="tok-str">"prodnet01"</span>
@@ -797,7 +797,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 
           <article class="card" data-group="networking" data-search="iaas_vpc_subnet subnet cidr gateway netmask">
             <div class="card-head"><code class="card-name">iaas_vpc_subnet</code><span class="tag">resource</span></div>
-            <p class="card-desc">A subnet inside a VPC; gateway and netmask are server-derived from the CIDR. Only the name updates in place — changing CIDR or type replaces it.</p>
+            <p class="card-desc">A subnet inside a VPC; gateway and netmask are server-derived from the CIDR. Only the name updates in place - changing CIDR or type replaces it.</p>
           </article>
 
           <article class="card" data-group="networking" data-search="iaas_instance_vpc_attachment new attach instance vpc interface primary ip">
@@ -883,7 +883,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 
           <article class="card" data-group="lb" data-search="iaas_load_balancer haproxy public vpc mode async">
             <div class="card-head"><code class="card-name">iaas_load_balancer</code><span class="tag">resource</span></div>
-            <p class="card-desc">An HAProxy load balancer backed by a dedicated instance, deployed in public mode (location) or VPC mode (subnet). Asynchronous; every input is immutable — frontends/backends/targets are separate resources.</p>
+            <p class="card-desc">An HAProxy load balancer backed by a dedicated instance, deployed in public mode (location) or VPC mode (subnet). Asynchronous; every input is immutable - frontends/backends/targets are separate resources.</p>
             <details><summary>Example</summary>
               <div class="code-wrap"><button class="copy">copy</button><pre><code><span class="tok-key">resource</span> <span class="tok-str">"iaas_load_balancer"</span> <span class="tok-str">"public"</span> {
   name                = <span class="tok-str">"web-lb"</span>
@@ -909,7 +909,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 
           <article class="card" data-group="lb" data-search="iaas_lb_target member weight enabled instance ip port">
             <div class="card-head"><code class="card-name">iaas_lb_target</code><span class="tag">resource</span></div>
-            <p class="card-desc">A backend member — target_ip:target_port, optionally linked to an instance — with weight and enabled toggle. Import as a 3-part composite id.</p>
+            <p class="card-desc">A backend member - target_ip:target_port, optionally linked to an instance - with weight and enabled toggle. Import as a 3-part composite id.</p>
           </article>
 
           <article class="card" data-group="lb" data-search="iaas_lb_frontend listener port protocol default backend">
@@ -924,7 +924,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 
           <article class="card" data-group="lb" data-search="iaas_lb_certificate tls ssl pem private key">
             <div class="card-head"><code class="card-name">iaas_lb_certificate</code><span class="tag">resource</span></div>
-            <p class="card-desc">A manually-uploaded PEM certificate + private key attached to an HTTPS frontend. Immutable — any change rotates (replaces) it.</p>
+            <p class="card-desc">A manually-uploaded PEM certificate + private key attached to an HTTPS frontend. Immutable - any change rotates (replaces) it.</p>
           </article>
 
         </div>
@@ -1050,7 +1050,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 
       <!-- ============ STORAGE ============ -->
       <div class="group" data-group-section="storage">
-        <div class="group-heading">Storage — volumes &amp; S3 <span class="count">· 4 resources</span></div>
+        <div class="group-heading">Storage - volumes &amp; S3 <span class="count">· 4 resources</span></div>
         <div class="grid">
 
           <article class="card" data-group="storage" data-search="iaas_volume block storage plan size resize attach">
@@ -1087,7 +1087,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 
           <article class="card" data-group="storage" data-search="iaas_s3_access_key secret shown once attach bucket permission">
             <div class="card-head"><code class="card-name">iaas_s3_access_key</code><span class="tag">resource</span></div>
-            <p class="card-desc">A standalone S3 access key whose secret is returned only once, at creation. No delete endpoint — destroying only removes it from state.</p>
+            <p class="card-desc">A standalone S3 access key whose secret is returned only once, at creation. No delete endpoint - destroying only removes it from state.</p>
           </article>
 
         </div>
@@ -1126,7 +1126,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 
           <article class="card" data-group="k8s" data-search="iaas_kubernetes_ssl_certificate new custom let's encrypt cp load balancer">
             <div class="card-head"><code class="card-name">iaas_kubernetes_ssl_certificate</code><span class="tag">resource</span><span class="tag tag-new">NEW</span></div>
-            <p class="card-desc">A custom PEM or Let's Encrypt TLS certificate on a cluster's control-plane load balancer. No update route — any change rotates the certificate.</p>
+            <p class="card-desc">A custom PEM or Let's Encrypt TLS certificate on a cluster's control-plane load balancer. No update route - any change rotates the certificate.</p>
             <details><summary>Example</summary>
               <div class="code-wrap"><button class="copy">copy</button><pre><code><span class="tok-key">resource</span> <span class="tok-str">"iaas_kubernetes_ssl_certificate"</span> <span class="tok-str">"prod"</span> {
   cluster_id = iaas_kubernetes_cluster.prod.id
@@ -1138,7 +1138,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 
           <article class="card" data-group="k8s" data-search="iaas_kubernetes_security_group_rule new firewall lb cp worker auto-provisioned">
             <div class="card-head"><code class="card-name">iaas_kubernetes_security_group_rule</code><span class="tag">resource</span><span class="tag tag-new">NEW</span></div>
-            <p class="card-desc">A single firewall rule on one of a cluster's auto-provisioned groups (<code class="mono">lb</code> / <code class="mono">cp</code> / <code class="mono">worker</code>). No update — changing a field replaces the rule. Import as a 3-part composite id.</p>
+            <p class="card-desc">A single firewall rule on one of a cluster's auto-provisioned groups (<code class="mono">lb</code> / <code class="mono">cp</code> / <code class="mono">worker</code>). No update - changing a field replaces the rule. Import as a 3-part composite id.</p>
           </article>
 
         </div>
@@ -1174,7 +1174,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 
           <article class="card" data-group="account" data-search="iaas_project_assignment new assign tag resource to project standalone">
             <div class="card-head"><code class="card-name">iaas_project_assignment</code><span class="tag">resource</span><span class="tag tag-new">NEW</span></div>
-            <p class="card-desc">Assigns one resource (instance / vpc / load_balancer / s3_bucket / managed_database) to a project as a standalone tagging action — not an attribute on the resource itself.</p>
+            <p class="card-desc">Assigns one resource (instance / vpc / load_balancer / s3_bucket / managed_database) to a project as a standalone tagging action - not an attribute on the resource itself.</p>
             <details><summary>Example</summary>
               <div class="code-wrap"><button class="copy">copy</button><pre><code><span class="tok-key">resource</span> <span class="tok-str">"iaas_project_assignment"</span> <span class="tok-str">"web_in_production"</span> {
   project_id    = iaas_project.production.id
@@ -1187,9 +1187,9 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
         </div>
       </div>
 
-      <!-- ============ DATA SOURCES — CATALOG LOOKUPS ============ -->
+      <!-- ============ DATA SOURCES - CATALOG LOOKUPS ============ -->
       <div class="group" data-group-section="datasource">
-        <div class="group-heading">Data sources — catalog lookups <span class="count">· 4 data sources</span></div>
+        <div class="group-heading">Data sources - catalog lookups <span class="count">· 4 data sources</span></div>
         <div class="grid">
 
           <article class="card" data-group="datasource" data-search="iaas_location region hypervisor group slug display name">
@@ -1215,9 +1215,9 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
         </div>
       </div>
 
-      <!-- ============ DATA SOURCES — KUBERNETES ============ -->
+      <!-- ============ DATA SOURCES - KUBERNETES ============ -->
       <div class="group" data-group-section="datasource">
-        <div class="group-heading">Data sources — Kubernetes <span class="count">· 7 data sources</span></div>
+        <div class="group-heading">Data sources - Kubernetes <span class="count">· 7 data sources</span></div>
         <div class="grid">
 
           <article class="card" data-group="datasource" data-search="iaas_kubernetes_version semantic version active catalog">
@@ -1227,7 +1227,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 
           <article class="card" data-group="datasource" data-search="iaas_kubernetes_region eligible hosting cluster">
             <div class="card-head"><code class="card-name">iaas_kubernetes_region</code><span class="tag tag-ds">data source</span></div>
-            <p class="card-desc">Resolves a region eligible to host a cluster — only regions with Kubernetes + VPC + Load Balancer enabled are returned.</p>
+            <p class="card-desc">Resolves a region eligible to host a cluster - only regions with Kubernetes + VPC + Load Balancer enabled are returned.</p>
           </article>
 
           <article class="card" data-group="datasource" data-search="iaas_kubernetes_plan worker cp lb kind">
@@ -1256,25 +1256,25 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 
           <article class="card" data-group="datasource" data-search="iaas_kubernetes_kubeconfig admin fresh cert sensitive rotates">
             <div class="card-head"><code class="card-name">iaas_kubernetes_kubeconfig</code><span class="tag tag-ds">data source</span></div>
-            <p class="card-desc">Downloads a fresh admin kubeconfig for a running cluster. <strong>Sensitive</strong> — every read mints a new client certificate.</p>
+            <p class="card-desc">Downloads a fresh admin kubeconfig for a running cluster. <strong>Sensitive</strong> - every read mints a new client certificate.</p>
           </article>
 
           <article class="card" data-group="datasource" data-search="iaas_kubernetes_autoscaler_manifest jwt cluster-autoscaler kubectl apply sensitive rotates">
             <div class="card-head"><code class="card-name">iaas_kubernetes_autoscaler_manifest</code><span class="tag tag-ds">data source</span></div>
-            <p class="card-desc">Renders the self-contained cluster-autoscaler manifest, embedding a freshly-minted controller JWT. <strong>Sensitive</strong> — every read rotates the active token.</p>
+            <p class="card-desc">Renders the self-contained cluster-autoscaler manifest, embedding a freshly-minted controller JWT. <strong>Sensitive</strong> - every read rotates the active token.</p>
           </article>
 
         </div>
       </div>
 
-      <!-- ============ DATA SOURCES — ACCOUNT & VPN ============ -->
+      <!-- ============ DATA SOURCES - ACCOUNT & VPN ============ -->
       <div class="group" data-group-section="datasource">
-        <div class="group-heading">Data sources — account &amp; VPN <span class="count">· 2 data sources</span></div>
+        <div class="group-heading">Data sources - account &amp; VPN <span class="count">· 2 data sources</span></div>
         <div class="grid">
 
           <article class="card" data-group="datasource" data-search="iaas_account new whoami singleton validate token ip lock">
             <div class="card-head"><code class="card-name">iaas_account</code><span class="tag tag-ds">data source</span><span class="tag tag-new">NEW</span></div>
-            <p class="card-desc">Returns the caller's own account (whoami) — a singleton with no input filter. Referencing it validates the token &amp; IP-lock during plan/apply.</p>
+            <p class="card-desc">Returns the caller's own account (whoami) - a singleton with no input filter. Referencing it validates the token &amp; IP-lock during plan/apply.</p>
             <details><summary>Example</summary>
               <div class="code-wrap"><button class="copy">copy</button><pre><code><span class="tok-key">data</span> <span class="tok-str">"iaas_account"</span> <span class="tok-str">"current"</span> {}
 
@@ -1325,7 +1325,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
           <h3>Import by UUID</h3>
           <p>Every resource is UUID-identified. Top-level resources import with a single UUID; children
             of a parent path (backends, targets, replicas, subnets…) import with a composite id joined
-            by <code class="mono">/</code> — 2 or 3 segments depending on nesting depth.</p>
+            by <code class="mono">/</code> - 2 or 3 segments depending on nesting depth.</p>
           <div class="code-wrap"><button class="copy">copy</button><pre><code><span class="tok-com"># single UUID</span>
 tofu import iaas_ssh_key.laptop 11111111-1111-1111-1111-111111111111
 
@@ -1340,7 +1340,7 @@ tofu import iaas_lb_target.web \
 
         <div class="pattern-block">
           <h3>References between resources</h3>
-          <p>Almost nothing is standalone — VPCs feed subnets, subnets feed instances and load balancers,
+          <p>Almost nothing is standalone - VPCs feed subnets, subnets feed instances and load balancers,
             instances feed targets, catalog data sources resolve every UUID by name. Build the graph with
             real references and <code class="mono">tofu plan</code> orders the applies for you:</p>
           <div class="code-wrap"><button class="copy">copy</button><pre><code>data: location → plan → image
@@ -1366,9 +1366,9 @@ iaas_load_balancer ──► iaas_lb_backend ──► iaas_lb_target (×N → i
               <thead><tr><th>Status</th><th>Likely cause</th><th>Fix</th></tr></thead>
               <tbody>
                 <tr><td><code>401</code></td><td>Token missing, malformed, or expired</td><td>Re-check <code>IAAS_API_TOKEN</code> / <code>endpoint</code></td></tr>
-                <tr><td><code>403</code></td><td><strong>IP-lock mismatch</strong> — wrong egress IP — or a subuser missing the required permission</td><td>Confirm the runner/bastion IP matches the token's registered IP; check the permission table above</td></tr>
+                <tr><td><code>403</code></td><td><strong>IP-lock mismatch</strong> - wrong egress IP - or a subuser missing the required permission</td><td>Confirm the runner/bastion IP matches the token's registered IP; check the permission table above</td></tr>
                 <tr><td><code>404</code></td><td>Resource deleted out-of-band, or a wrong parent id in a composite import</td><td>Let the next plan recreate it, or re-check the composite id order</td></tr>
-                <tr><td><code>422</code></td><td>Validation, quota, or feature-not-enabled at the location</td><td>Read the message — plan/feature/quota gates fail with a specific reason</td></tr>
+                <tr><td><code>422</code></td><td>Validation, quota, or feature-not-enabled at the location</td><td>Read the message - plan/feature/quota gates fail with a specific reason</td></tr>
                 <tr><td><code>429</code> / <code>5xx</code></td><td>Rate limited or a transient platform error</td><td>The client retries automatically with backoff; safe to re-run <code>apply</code></td></tr>
               </tbody>
             </table>

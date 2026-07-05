@@ -3,12 +3,12 @@
 page_title: "iaas_nat_gateway Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a VPC NAT gateway — the single egress gateway that gives a VPC's PRIVATE subnets outbound internet access. The parent vpc_id is part of the API path, so changing it forces a new resource (a VPC has at most one NAT gateway). Creation is ASYNCHRONOUS: the gateway record is created (status="pending"), a public IP is auto-assigned, and this resource waits for the slave to provision the gateway and report status="active". The set of attached private subnets is managed in place via subnet_ids (attach/detach on diff). NAT can be toggled in place via nat_enabled. The feature must be enabled for the VPC's location; if it is not (or the per-account NAT gateway quota is reached, or no public IP is available), the create fails with a clear message.
+  Manages a VPC NAT gateway - the single egress gateway that gives a VPC's PRIVATE subnets outbound internet access. The parent vpc_id is part of the API path, so changing it forces a new resource (a VPC has at most one NAT gateway). Creation is ASYNCHRONOUS: the gateway record is created (status="pending"), a public IP is auto-assigned, and this resource waits for the slave to provision the gateway and report status="active". The set of attached private subnets is managed in place via subnet_ids (attach/detach on diff). NAT can be toggled in place via nat_enabled. The feature must be enabled for the VPC's location; if it is not (or the per-account NAT gateway quota is reached, or no public IP is available), the create fails with a clear message.
 ---
 
 # iaas_nat_gateway (Resource)
 
-Manages a VPC NAT gateway — the single egress gateway that gives a VPC's PRIVATE subnets outbound internet access. The parent vpc_id is part of the API path, so changing it forces a new resource (a VPC has at most one NAT gateway). Creation is ASYNCHRONOUS: the gateway record is created (status="pending"), a public IP is auto-assigned, and this resource waits for the slave to provision the gateway and report status="active". The set of attached private subnets is managed in place via subnet_ids (attach/detach on diff). NAT can be toggled in place via nat_enabled. The feature must be enabled for the VPC's location; if it is not (or the per-account NAT gateway quota is reached, or no public IP is available), the create fails with a clear message.
+Manages a VPC NAT gateway - the single egress gateway that gives a VPC's PRIVATE subnets outbound internet access. The parent vpc_id is part of the API path, so changing it forces a new resource (a VPC has at most one NAT gateway). Creation is ASYNCHRONOUS: the gateway record is created (status="pending"), a public IP is auto-assigned, and this resource waits for the slave to provision the gateway and report status="active". The set of attached private subnets is managed in place via subnet_ids (attach/detach on diff). NAT can be toggled in place via nat_enabled. The feature must be enabled for the VPC's location; if it is not (or the per-account NAT gateway quota is reached, or no public IP is available), the create fails with a clear message.
 
 ## Example Usage
 
@@ -32,7 +32,7 @@ resource "iaas_vpc_subnet" "private" {
 }
 
 resource "iaas_nat_gateway" "example" {
-  # Parent VPC id — part of the API path. Changing this forces a new resource.
+  # Parent VPC id - part of the API path. Changing this forces a new resource.
   vpc_id = iaas_vpc.example.id
 
   # Optional. Lowercase alphanumeric and dashes. Defaults to "natgw-<vpc name>".
@@ -80,7 +80,7 @@ output "nat_gateway_public_ip" {
 ### Optional
 
 - `name` (String) Display name for the gateway (lowercase alphanumeric and dashes). Defaults to "natgw-<vpc name>" when omitted. Updatable in place. Modelled Optional+Computed so an omitted name round-trips against the server default without showing spurious drift.
-- `nat_enabled` (Boolean) Whether NAT (outbound translation) is active on the gateway. Defaults to true. Updatable in place (enable/disable). Note: the server may set this to false out of band if the gateway is suspended for bandwidth overage, which would surface as drift. Re-applying with nat_enabled = true while the gateway is bandwidth-suspended will fail with a clear server message — resolve the bandwidth issue first, then re-enable. Modelled Optional+Computed so an omitted value round-trips against the server default.
+- `nat_enabled` (Boolean) Whether NAT (outbound translation) is active on the gateway. Defaults to true. Updatable in place (enable/disable). Note: the server may set this to false out of band if the gateway is suspended for bandwidth overage, which would surface as drift. Re-applying with nat_enabled = true while the gateway is bandwidth-suspended will fail with a clear server message - resolve the bandwidth issue first, then re-enable. Modelled Optional+Computed so an omitted value round-trips against the server default.
 - `subnet_ids` (Set of String) UUIDs of the VPC's PRIVATE subnets attached to this NAT gateway, as an order-independent set. Adding or removing an id attaches or detaches that subnet in place. When omitted at create, the server attaches ALL of the VPC's private subnets; the resource then adopts that server-chosen set into state (so leave this unset to manage attachments outside Terraform, or set it explicitly to manage them here). Only private subnets may be attached.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 

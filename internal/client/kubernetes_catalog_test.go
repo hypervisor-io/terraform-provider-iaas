@@ -52,13 +52,13 @@ func TestGetKubeconfig_Success(t *testing.T) {
 }
 
 // TestGetKubeconfig_NotBootstrapped verifies that a 404 JSON error body (cluster
-// has not finished bootstrap — no CA yet) surfaces as an *APIError recognised by
+// has not finished bootstrap - no CA yet) surfaces as an *APIError recognised by
 // IsNotFound.
 func TestGetKubeconfig_NotBootstrapped(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
-		_, _ = w.Write([]byte(`{"error":"kubeconfig not yet available — cluster has not finished bootstrap. Retry after cluster reaches running state."}`))
+		_, _ = w.Write([]byte(`{"error":"kubeconfig not yet available - cluster has not finished bootstrap. Retry after cluster reaches running state."}`))
 	}))
 	defer srv.Close()
 
@@ -92,7 +92,7 @@ func TestGetKubeconfig_EmptyID(t *testing.T) {
 // TestGetAutoscalerManifest_Success verifies GetAutoscalerManifest:
 //   - GETs /kubernetes/cluster/{id}/autoscaler-manifest
 //   - returns the RAW YAML body verbatim (NOT JSON), matching the controller's
-//     text/yaml manifest (embeds a base64 controller JWT inline — sensitive).
+//     text/yaml manifest (embeds a base64 controller JWT inline - sensitive).
 func TestGetAutoscalerManifest_Success(t *testing.T) {
 	const manifest = "apiVersion: v1\nkind: ServiceAccount\nmetadata:\n  name: cluster-autoscaler\n---\napiVersion: v1\nkind: Secret\nmetadata:\n  name: cluster-autoscaler-token\ndata:\n  token: SldUX0JBU0U2NA==\n"
 

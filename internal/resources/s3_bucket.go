@@ -17,18 +17,18 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — iaas_s3_bucket is a SYNC resource. It models:
+// Interface assertions - iaas_s3_bucket is a SYNC resource. It models:
 //
 //   - an immutable bucket (name / s3_plan_id / s3_server_id → RequiresReplace,
 //     because the user API has no rename / re-plan / migrate endpoint);
 //   - an in-place ACL (default_access, set via the dedicated ACL PATCH endpoint);
 //   - the bucket's OWN auto-generated access_key/secret_key (returned on every
-//     SHOW — unlike a standalone access key, these are NOT shown-once, so the
+//     SHOW - unlike a standalone access key, these are NOT shown-once, so the
 //     secret is a plain Sensitive Computed re-read each time, no capture trick);
 //   - a managed set of attached standalone access keys, each with a permission,
 //     diffed via the per-key attach/update/detach endpoints. The permission is
 //     UPDATABLE in place (PATCH .../update/{kid}), so a permission change is an
-//     in-place update — NOT a delete+add (this is the key difference from the
+//     in-place update - NOT a delete+add (this is the key difference from the
 //     security_group rule set-diff, which has no rule-update endpoint).
 var (
 	_ resource.Resource                = &s3BucketResource{}
@@ -269,7 +269,7 @@ func (r *s3BucketResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	// C4 readback: the create response has no id — find the bucket by its unique
+	// C4 readback: the create response has no id - find the bucket by its unique
 	// name to learn the id.
 	created, err := r.client.GetS3BucketByName(ctx, plan.Name.ValueString())
 	if err != nil {
@@ -291,7 +291,7 @@ func (r *s3BucketResource) Create(ctx context.Context, req resource.CreateReques
 
 	// Apply the ACL if the user requested a non-default access control. The
 	// server default is "private", so skip the no-op call when the plan asks
-	// for "private" — it avoids a redundant ACL PATCH at create time.
+	// for "private" - it avoids a redundant ACL PATCH at create time.
 	if !plan.DefaultAccess.IsNull() && !plan.DefaultAccess.IsUnknown() &&
 		plan.DefaultAccess.ValueString() != "" && plan.DefaultAccess.ValueString() != "private" {
 		if err := r.client.SetS3BucketACL(ctx, id, plan.DefaultAccess.ValueString()); err != nil {
@@ -327,7 +327,7 @@ func (r *s3BucketResource) Create(ctx context.Context, req resource.CreateReques
 }
 
 // Read refreshes state from the API. A 404 means the bucket was deleted out of
-// band — remove it from state so Terraform plans a recreate.
+// band - remove it from state so Terraform plans a recreate.
 func (r *s3BucketResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state s3BucketModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

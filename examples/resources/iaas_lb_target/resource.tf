@@ -22,11 +22,11 @@ resource "iaas_lb_target" "app1" {
   target_ip   = "10.0.0.5"
   target_port = 8080
 
-  # Optional: link the target to an instance (tracking only — the API does NOT
+  # Optional: link the target to an instance (tracking only - the API does NOT
   # derive target_ip from it). Changing it forces a new resource.
   # instance_id = "55555555-5555-5555-5555-555555555555"
 
-  # Optional: relative weight (1-256, default 100) and enabled flag — both
+  # Optional: relative weight (1-256, default 100) and enabled flag - both
   # updatable in place.
   weight  = 100
   enabled = true

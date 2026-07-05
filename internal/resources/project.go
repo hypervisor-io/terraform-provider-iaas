@@ -14,7 +14,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — project follows the golden ssh_key resource pattern.
+// Interface assertions - project follows the golden ssh_key resource pattern.
 var (
 	_ resource.Resource                = &projectResource{}
 	_ resource.ResourceWithConfigure   = &projectResource{}
@@ -28,7 +28,7 @@ func NewProjectResource() resource.Resource {
 
 // projectResource manages an iaas_project.
 //
-// All three write operations (create, update, delete) are synchronous — no
+// All three write operations (create, update, delete) are synchronous - no
 // async task/waiter is required. Create returns the new object (with id) in the
 // "project" envelope, so no list-and-match read-back is needed.
 //
@@ -144,7 +144,7 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 }
 
 // Read refreshes state from the API. A 404 means the project was deleted out of
-// band — remove it from state so Terraform plans a recreate (drift handling).
+// band - remove it from state so Terraform plans a recreate (drift handling).
 func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state projectModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

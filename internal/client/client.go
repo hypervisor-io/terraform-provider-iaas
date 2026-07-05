@@ -98,7 +98,7 @@ func (c *Client) do(ctx context.Context, method, path string, body any) (*http.R
 
 // doWithHeaders is do with optional per-request extra headers. The fixed
 // transport headers (Authorization, Accept, Content-Type) are always set; the
-// extra headers are applied on top (and may override them, by design — callers
+// extra headers are applied on top (and may override them, by design - callers
 // only pass application headers such as Idempotency-Key). The retry/backoff and
 // body-handling semantics are identical to do.
 //
@@ -189,10 +189,10 @@ func (c *Client) doWithHeaders(ctx context.Context, method, path string, body an
 			(resp.StatusCode >= 500 && resp.StatusCode < 600) // 5xx
 
 		if !isRetryable || attempt == maxRetryAttempts-1 {
-			// Either not retryable, or this was the final attempt — return.
+			// Either not retryable, or this was the final attempt - return.
 			return resp, data, nil
 		}
-		// Retryable and more attempts remain — loop.
+		// Retryable and more attempts remain - loop.
 	}
 
 	// Unreachable (loop always returns on last attempt), but satisfies compiler.

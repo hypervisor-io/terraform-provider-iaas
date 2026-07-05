@@ -11,7 +11,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccVPC_basic — LIVE acceptance test (manual staging gate).
+// TestAccVPC_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set (resource.Test enforces this), so it never
 // runs or blocks CI. Requires a reachable panel + IP-locked token via
@@ -49,14 +49,14 @@ resource "iaas_vpc" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitVPC_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitVPC_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the full resource lifecycle against canned API responses, with no
 // live panel. The Steps execute in this order:
 //
-//  1. Create + read-back — applies createCfg; checks id, vni_number, name,
+//  1. Create + read-back - applies createCfg; checks id, vni_number, name,
 //     cidr, hypervisor_group_id, description.
-//  2. Import — imports the resource by UUID and verifies state matches the
+//  2. Import - imports the resource by UUID and verifies state matches the
 //     prior step.
 //
 // There is NO update step: VPC has no UPDATE route, so every configurable
@@ -81,8 +81,8 @@ func TestUnitVPC_lifecycle(t *testing.T) {
 		vni     = 4097
 	)
 
-	// CREATE — POST /vpcs returns 200 + {success,vpc}. The vpc object carries
-	// its id AND the appended vni_number (synchronous create — no task).
+	// CREATE - POST /vpcs returns 200 + {success,vpc}. The vpc object carries
+	// its id AND the appended vni_number (synchronous create - no task).
 	srv.Handle("POST", "/vpcs", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
@@ -91,7 +91,7 @@ func TestUnitVPC_lifecycle(t *testing.T) {
 		})
 	})
 
-	// READ / SHOW — GET /vpc/{id} (singular) returns the vpc with subnets
+	// READ / SHOW - GET /vpc/{id} (singular) returns the vpc with subnets
 	// eager-loaded (which the resource ignores).
 	srv.Handle("GET", "/vpc/"+vpcID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
@@ -100,7 +100,7 @@ func TestUnitVPC_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — DELETE /vpc/{id} (singular) succeeds at 200.
+	// DELETE - DELETE /vpc/{id} (singular) succeeds at 200.
 	srv.Handle("DELETE", "/vpc/"+vpcID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,

@@ -3,7 +3,7 @@
 # keyed on instance_id rather than a nested block on iaas_instance.
 #
 # Enabling a VPC ALWAYS auto-assigns the LOWEST FREE address in vpc_subnet_id
-# as the instance's first (primary) ip — there is no way to choose or omit
+# as the instance's first (primary) ip - there is no way to choose or omit
 # it. That address is exposed read-only as auto_assigned_ip. Any further
 # secondary addresses are managed via additional_ips (an order-independent
 # set of free addresses drawn from the subnet's pool); primary_ip selects
@@ -35,7 +35,7 @@ resource "iaas_instance_vpc_attachment" "example" {
   instance_id = iaas_instance.example.id
 
   # Required. Changing either vpc_id or vpc_subnet_id forces a new resource
-  # (disable, then re-enable) — there is no in-place "move to a different
+  # (disable, then re-enable) - there is no in-place "move to a different
   # VPC" operation.
   vpc_id        = iaas_vpc.example.id
   vpc_subnet_id = iaas_vpc_subnet.example.id
@@ -43,7 +43,7 @@ resource "iaas_instance_vpc_attachment" "example" {
   # Optional. Extra addresses beyond the server auto-assigned
   # auto_assigned_ip, drawn from the subnet's FREE pool. Adding/removing an
   # address here attaches/detaches it in place. Do NOT list auto_assigned_ip
-  # here — it is tracked separately, and the API itself refuses to remove an
+  # here - it is tracked separately, and the API itself refuses to remove an
   # instance's LAST vpc ip (destroy this resource instead to release
   # everything).
   additional_ips = ["10.0.0.10", "10.0.0.11"]

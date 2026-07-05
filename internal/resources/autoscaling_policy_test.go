@@ -12,7 +12,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccAutoscalingPolicy_basic — LIVE acceptance test (manual staging gate).
+// TestAccAutoscalingPolicy_basic - LIVE acceptance test (manual staging gate).
 // Auto-skips unless TF_ACC is set.
 // ---------------------------------------------------------------------------
 
@@ -79,13 +79,13 @@ func intFromBodyDefault(body map[string]any, key string, def int) int {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitAutoscalingPolicy_lifecycle — MOCK-backed CHILD lifecycle test.
+// TestUnitAutoscalingPolicy_lifecycle - MOCK-backed CHILD lifecycle test.
 //
 // Steps:
-//  1. Create — POST /scaling-group/{gid}/policy; the policy appears in the group
+//  1. Create - POST /scaling-group/{gid}/policy; the policy appears in the group
 //     SHOW policies[] (read-by-scan). Asserts the create body + server defaults.
-//  2. Import — composite "<group_id>/<policy_id>".
-//  3. Update — PATCH .../policy/{pid}; asserts the PATCH body.
+//  2. Import - composite "<group_id>/<policy_id>".
+//  3. Update - PATCH .../policy/{pid}; asserts the PATCH body.
 //
 // Delete is implicit teardown.
 // ---------------------------------------------------------------------------
@@ -111,7 +111,7 @@ func TestUnitAutoscalingPolicy_lifecycle(t *testing.T) {
 		return []any{store.policyObject(policyID)}
 	}
 
-	// Group SHOW — read-by-scan target for the policy.
+	// Group SHOW - read-by-scan target for the policy.
 	srv.Handle("GET", "/scaling-group/"+groupID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
@@ -129,7 +129,7 @@ func TestUnitAutoscalingPolicy_lifecycle(t *testing.T) {
 		})
 	})
 
-	// CREATE — POST /scaling-group/{gid}/policy (envelope key "policy").
+	// CREATE - POST /scaling-group/{gid}/policy (envelope key "policy").
 	srv.Handle("POST", "/scaling-group/"+groupID+"/policy", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -145,7 +145,7 @@ func TestUnitAutoscalingPolicy_lifecycle(t *testing.T) {
 		})
 	})
 
-	// UPDATE — PATCH /scaling-group/{gid}/policy/{pid}.
+	// UPDATE - PATCH /scaling-group/{gid}/policy/{pid}.
 	srv.Handle("PATCH", "/scaling-group/"+groupID+"/policy/"+policyID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -160,7 +160,7 @@ func TestUnitAutoscalingPolicy_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — DELETE /scaling-group/{gid}/policy/{pid}.
+	// DELETE - DELETE /scaling-group/{gid}/policy/{pid}.
 	srv.Handle("DELETE", "/scaling-group/"+groupID+"/policy/"+policyID, func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		store.exists = false
@@ -196,7 +196,7 @@ resource "iaas_autoscaling_policy" "test" {
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: acctest.Factories,
 		Steps: []resource.TestStep{
-			// 1. Create — server defaults populate steps/cooldowns/windows.
+			// 1. Create - server defaults populate steps/cooldowns/windows.
 			{
 				Config: createCfg,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -210,14 +210,14 @@ resource "iaas_autoscaling_policy" "test" {
 					resource.TestCheckResourceAttr("iaas_autoscaling_policy.test", "evaluation_interval", "30"),
 				),
 			},
-			// 2. Import — composite "<group_id>/<policy_id>".
+			// 2. Import - composite "<group_id>/<policy_id>".
 			{
 				ResourceName:      "iaas_autoscaling_policy.test",
 				ImportState:       true,
 				ImportStateId:     groupID + "/" + policyID,
 				ImportStateVerify: true,
 			},
-			// 3. Update — change metric/thresholds + step/cooldown.
+			// 3. Update - change metric/thresholds + step/cooldown.
 			{
 				Config: updateCfg,
 				Check: resource.ComposeAggregateTestCheckFunc(

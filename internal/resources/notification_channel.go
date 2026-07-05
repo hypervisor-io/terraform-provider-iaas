@@ -16,7 +16,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — iaas_notification_channel follows the golden ssh_key
+// Interface assertions - iaas_notification_channel follows the golden ssh_key
 // resource pattern (simple sync CRUD).
 var (
 	_ resource.Resource                = &notificationChannelResource{}
@@ -58,7 +58,7 @@ func NewNotificationChannelResource() resource.Resource {
 //     map whose keys vary by type (webhook_url, bot_token/chat_id, url/method/
 //     secret/connect_timeout/timeout/verify_ssl). Note: the headers key requires
 //     an array value and is not settable via this flat string map (v1).
-//     MapAttribute(String) is the cleanest representation — it round-trips cleanly
+//     MapAttribute(String) is the cleanest representation - it round-trips cleanly
 //     because the SHOW endpoint returns config decrypted (encrypted:array in DB,
 //     decrypted on read, no $hidden on the model). Non-string values (bool, int)
 //     from the API are coerced to strings for storage.
@@ -71,7 +71,7 @@ func NewNotificationChannelResource() resource.Resource {
 //   - auto_disabled is server-mutable Computed (no UseStateForUnknown): it changes
 //     when the server disables a channel after repeated failures.
 //   - failure_count is server-mutable Computed (no UseStateForUnknown).
-//   - test action (POST /notification-channel/{id}/test) is NOT modelled — it is
+//   - test action (POST /notification-channel/{id}/test) is NOT modelled - it is
 //     an operational helper, not IaC state.
 //   - No billing gate. Routes are gated by subuser permission monitoring.manage
 //     (create/update/delete) and monitoring.view (list/show).
@@ -100,7 +100,7 @@ func (r *notificationChannelResource) Metadata(_ context.Context, req resource.M
 // Schema describes the iaas_notification_channel resource.
 func (r *notificationChannelResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a notification channel — a delivery target (Slack, Discord, Telegram, " +
+		Description: "Manages a notification channel - a delivery target (Slack, Discord, Telegram, " +
 			"or generic webhook) that alert rules dispatch through.\n\n" +
 			"The channel type determines which config keys are required:\n" +
 			"  - **slack / discord**: `webhook_url` (required)\n" +
@@ -129,7 +129,7 @@ func (r *notificationChannelResource) Schema(_ context.Context, _ resource.Schem
 			"type": schema.StringAttribute{
 				Required: true,
 				Description: "Channel delivery type. One of: `slack`, `discord`, `telegram`, `webhook`. " +
-					"Updatable in place — changing the type does not force a new resource; supply a " +
+					"Updatable in place - changing the type does not force a new resource; supply a " +
 					"matching config map for the new type.",
 				// type is NOT RequiresReplace: the controller accepts type changes in PATCH.
 			},
@@ -142,9 +142,9 @@ func (r *notificationChannelResource) Schema(_ context.Context, _ resource.Schem
 					"  - **slack / discord**: `webhook_url` (incoming webhook URL)\n" +
 					"  - **telegram**: `bot_token` (bot API token), `chat_id` (target chat ID)\n" +
 					"  - **webhook**: `url` (destination URL); optional: `method` (POST or PUT), " +
-					"`secret` (HMAC signing secret), `connect_timeout` (1–30 s), " +
-					"`timeout` (1–60 s), `verify_ssl` (`\"1\"` to enable / `\"0\"` to disable " +
-					"— the API's boolean rule only accepts 1/0 as strings)\n\n" +
+					"`secret` (HMAC signing secret), `connect_timeout` (1-30 s), " +
+					"`timeout` (1-60 s), `verify_ssl` (`\"1\"` to enable / `\"0\"` to disable " +
+					"- the API's boolean rule only accepts 1/0 as strings)\n\n" +
 					"Note: the `headers` key requires an array value and cannot be set via this " +
 					"resource's flat string config map in v1; configure it via the panel or API " +
 					"directly (a future typed config block may add support).\n\n" +
@@ -240,7 +240,7 @@ func (r *notificationChannelResource) Create(ctx context.Context, req resource.C
 }
 
 // Read refreshes state from the API. A 404 means the channel was deleted
-// out of band — remove it from state so Terraform plans a recreate.
+// out of band - remove it from state so Terraform plans a recreate.
 func (r *notificationChannelResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state notificationChannelModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -370,7 +370,7 @@ func ncStateFromAPI(ctx context.Context, obj map[string]any, prior notificationC
 	case float64:
 		m.AutoDisabled = types.BoolValue(v != 0)
 	default:
-		// Absent on create response — default to false.
+		// Absent on create response - default to false.
 		if prior.AutoDisabled.IsNull() || prior.AutoDisabled.IsUnknown() {
 			m.AutoDisabled = types.BoolValue(false)
 		} else {
@@ -383,7 +383,7 @@ func ncStateFromAPI(ctx context.Context, obj map[string]any, prior notificationC
 	case float64:
 		m.FailureCount = types.Int64Value(int64(v))
 	default:
-		// Absent on create response — default to 0.
+		// Absent on create response - default to 0.
 		if prior.FailureCount.IsNull() || prior.FailureCount.IsUnknown() {
 			m.FailureCount = types.Int64Value(0)
 		} else {

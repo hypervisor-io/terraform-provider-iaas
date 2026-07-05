@@ -17,7 +17,7 @@ const ipLockHint = "check that your token is registered from this IP address (to
 	"the token is enabled and not expired, and has the required scope / subuser permission"
 
 // APIError represents a non-2xx response from the IaaS API.
-// It is a plain Go error — no terraform-plugin-framework dependency.
+// It is a plain Go error - no terraform-plugin-framework dependency.
 // Resource-layer code translates *APIError → Terraform diagnostics.
 type APIError struct {
 	// Status is the HTTP status code (e.g. 404, 422).
@@ -75,7 +75,7 @@ func responseError(resp *http.Response, body []byte) error {
 
 	// Try to parse the body as JSON to extract message / errors. Most
 	// controllers return the Laravel-standard {"message":…} envelope, but a few
-	// (notably the Kubernetes KubeconfigController) return {"error":…} instead —
+	// (notably the Kubernetes KubeconfigController) return {"error":…} instead -
 	// fall back to that key when "message" is absent so the specific text is not
 	// lost.
 	var parsed struct {

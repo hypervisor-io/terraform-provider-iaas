@@ -30,7 +30,7 @@ import (
 // Child writes are SYNCHRONOUS (syncConfig runs internally). A duplicate
 // (port, protocol) returns HTTP 200 success:false → an error (C3).
 //
-// There is NO individual frontend SHOW route — frontends are EMBEDDED in the LB
+// There is NO individual frontend SHOW route - frontends are EMBEDDED in the LB
 // SHOW under load_balancer.frontends[] (each with its routing_rules[]).
 // GetLBFrontend reads-by-scan.
 

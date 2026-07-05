@@ -93,7 +93,7 @@ func TestListDBParameterGroups_BillingDisabled(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// GetDBParameterGroup (list-and-match — no SHOW endpoint)
+// GetDBParameterGroup (list-and-match - no SHOW endpoint)
 // ---------------------------------------------------------------------------
 
 // TestGetDBParameterGroup_Success verifies that GetDBParameterGroup finds the

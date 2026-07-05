@@ -13,7 +13,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccDBParameterGroup_basic — LIVE acceptance test (manual staging gate).
+// TestAccDBParameterGroup_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set (resource.Test enforces this), so it never
 // runs in CI. Requires a reachable panel + IP-locked token + billing enabled.
@@ -137,7 +137,7 @@ type dbParameterGroupMockServer struct {
 	// engine is immutable once created.
 	engine string
 
-	// parameters stores what the server returns — i.e. with suffixes applied,
+	// parameters stores what the server returns - i.e. with suffixes applied,
 	// mirroring the real server's stored form.
 	parameters map[string]string
 
@@ -158,7 +158,7 @@ func (s *dbParameterGroupMockServer) groupObject() map[string]any {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitDBParameterGroup_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitDBParameterGroup_lifecycle - MOCK-backed lifecycle proof.
 //
 // Uses only SUFFIX-FREE parameters (max_connections, wait_timeout) so values
 // round-trip cleanly through the honest mock (which simulates server-side suffix
@@ -185,7 +185,7 @@ func TestUnitDBParameterGroup_lifecycle(t *testing.T) {
 		parameters: map[string]string{},
 	}
 
-	// LIST — GET /db/parameter-groups
+	// LIST - GET /db/parameter-groups
 	srv.Handle("GET", "/db/parameter-groups", func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -201,7 +201,7 @@ func TestUnitDBParameterGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// CREATE — POST /db/parameter-groups
+	// CREATE - POST /db/parameter-groups
 	// Simulates the server's appendParameterSuffixes() by applying mock suffixes
 	// to the incoming parameter values before storing them.
 	srv.Handle("POST", "/db/parameter-groups", func(w http.ResponseWriter, r *http.Request) {
@@ -232,7 +232,7 @@ func TestUnitDBParameterGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// UPDATE — PATCH /db/parameter-group/{id}
+	// UPDATE - PATCH /db/parameter-group/{id}
 	// Also applies server-side suffix transforms on the incoming parameters.
 	srv.Handle("PATCH", "/db/parameter-group/"+pgID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
@@ -258,7 +258,7 @@ func TestUnitDBParameterGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — DELETE /db/parameter-group/{id}
+	// DELETE - DELETE /db/parameter-group/{id}
 	srv.Handle("DELETE", "/db/parameter-group/"+pgID, func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -271,7 +271,7 @@ func TestUnitDBParameterGroup_lifecycle(t *testing.T) {
 
 	providerCfg := acctest.ProviderConfig(srv.Endpoint())
 
-	// Create config: suffix-free parameters only — these round-trip cleanly.
+	// Create config: suffix-free parameters only - these round-trip cleanly.
 	createCfg := providerCfg + `
 resource "iaas_db_parameter_group" "test" {
   name   = "my-mysql-params"
@@ -308,7 +308,7 @@ resource "iaas_db_parameter_group" "test" {
 					resource.TestCheckResourceAttr("iaas_db_parameter_group.test", "parameters.%", "1"),
 				),
 			},
-			// 2. Import by id (rehydrates from list — no SHOW endpoint).
+			// 2. Import by id (rehydrates from list - no SHOW endpoint).
 			{
 				ResourceName:      "iaas_db_parameter_group.test",
 				ImportState:       true,
@@ -372,13 +372,13 @@ resource "iaas_db_parameter_group" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitDBParameterGroup_rejectSuffixKey — NEGATIVE validator test.
+// TestUnitDBParameterGroup_rejectSuffixKey - NEGATIVE validator test.
 //
 // Confirms that specifying a suffix-bearing parameter key (e.g.
 // innodb_buffer_pool_size for mysql) is rejected at plan time with a clear
 // error naming the offending key and explaining the root cause.
 //
-// This test does NOT need a mock server — the validator fires before any API
+// This test does NOT need a mock server - the validator fires before any API
 // call is made.
 // ---------------------------------------------------------------------------
 func TestUnitDBParameterGroup_rejectSuffixKey(t *testing.T) {
@@ -414,7 +414,7 @@ resource "iaas_db_parameter_group" "bad" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitDBParameterGroup_rejectSuffixKeyPostgresql — NEGATIVE validator test
+// TestUnitDBParameterGroup_rejectSuffixKeyPostgresql - NEGATIVE validator test
 // for the postgresql engine.
 //
 // Confirms that shared_buffers (suffix 'MB') is rejected for postgresql.
@@ -446,7 +446,7 @@ resource "iaas_db_parameter_group" "bad_pg" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitDBParameterGroup_suffixSimulation — unit test for the mock's
+// TestUnitDBParameterGroup_suffixSimulation - unit test for the mock's
 // applyServerSuffixes helper: verifies it correctly simulates the server-side
 // suffix transform, i.e. the same non-idempotency the validator protects against.
 // ---------------------------------------------------------------------------

@@ -18,13 +18,13 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/waiter"
 )
 
-// Interface assertions — iaas_vpn_gateway is a CHILD + ASYNC resource, combining
+// Interface assertions - iaas_vpn_gateway is a CHILD + ASYNC resource, combining
 // the established patterns:
 //
 //   - CHILD (from vpc_subnet/nat_gateway): the parent vpc_id lives in the CREATE
 //     URL path, so it is Required + RequiresReplace, and import takes a COMPOSITE
 //     "<vpc_id>/<id>". NOTE the route asymmetry: ONLY create is nested under the
-//     VPC — Read/Delete use the FLAT /vpn-gateway/{id} path, so the gateway id
+//     VPC - Read/Delete use the FLAT /vpn-gateway/{id} path, so the gateway id
 //     alone drives every operation after create.
 //   - ASYNC (from nat_gateway/load_balancer): CREATE records the row
 //     (status="deploying"), then waits for the SHOW status to reach "active" via a
@@ -34,7 +34,7 @@ import (
 //
 // The VPN gateway has NO update endpoint of its own (the only mutable surface is
 // its PEERS, modelled as the separate iaas_vpn_peer resource), so EVERY input
-// attribute is RequiresReplace — the vpc no-update pattern. Update is therefore a
+// attribute is RequiresReplace - the vpc no-update pattern. Update is therefore a
 // read-back no-op.
 var (
 	_ resource.Resource                = &vpnGatewayResource{}
@@ -47,7 +47,7 @@ func NewVPNGatewayResource() resource.Resource {
 	return &vpnGatewayResource{}
 }
 
-// vpnGatewayResource manages an iaas_vpn_gateway — the (single) WireGuard VPN
+// vpnGatewayResource manages an iaas_vpn_gateway - the (single) WireGuard VPN
 // gateway of a VPC, backed by a real VM instance, giving remote clients and sites
 // encrypted access into the VPC.
 type vpnGatewayResource struct {
@@ -57,11 +57,11 @@ type vpnGatewayResource struct {
 // vpnGatewayModel maps the Terraform state/plan for iaas_vpn_gateway.
 //
 // Field groups:
-//   - PARENT path id: vpc_id (Required, RequiresReplace — part of the CREATE path).
-//   - create inputs (all RequiresReplace — the gateway has no update endpoint):
-//     vpngw_plan_id (Required), vpc_subnet_id (Required, WRITE-ONLY — consumed at
+//   - PARENT path id: vpc_id (Required, RequiresReplace - part of the CREATE path).
+//   - create inputs (all RequiresReplace - the gateway has no update endpoint):
+//     vpngw_plan_id (Required), vpc_subnet_id (Required, WRITE-ONLY - consumed at
 //     deploy, never returned by SHOW), name / tunnel_subnet / listen_port
-//     (Optional+Computed — server defaults).
+//     (Optional+Computed - server defaults).
 //   - computed read-only: status (server-mutable lifecycle), public_key + vpc_ip
 //   - public_ip (stable after create).
 type vpnGatewayModel struct {
@@ -90,7 +90,7 @@ func (r *vpnGatewayResource) Metadata(_ context.Context, req resource.MetadataRe
 // Schema describes the iaas_vpn_gateway resource.
 func (r *vpnGatewayResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a VPC VPN gateway — a WireGuard endpoint backed by a dedicated VM " +
+		Description: "Manages a VPC VPN gateway - a WireGuard endpoint backed by a dedicated VM " +
 			"instance, deployed into one of the VPC's PUBLIC subnets, giving remote clients " +
 			"(road-warrior) and remote sites (site-to-site / VPC peering) encrypted access to " +
 			"the VPC's private networks. A VPC can have AT MOST ONE VPN gateway. The parent " +
@@ -98,7 +98,7 @@ func (r *vpnGatewayResource) Schema(ctx context.Context, _ resource.SchemaReques
 			"Creation is ASYNCHRONOUS: the gateway record is created (status=\"deploying\"), a " +
 			"public IP is allocated, a backing VM is deployed, and this resource waits for the " +
 			"slave to report status=\"active\" (a failed deploy ends in status=\"error\"). The " +
-			"gateway itself has no in-place updates — every input forces replacement; its peers " +
+			"gateway itself has no in-place updates - every input forces replacement; its peers " +
 			"are managed via separate iaas_vpn_peer resources. The feature must be enabled for " +
 			"the VPC's location; if it is not (or the per-account VPN gateway quota is reached, " +
 			"or no public IP is available) the create fails with a clear message.",
@@ -131,7 +131,7 @@ func (r *vpnGatewayResource) Schema(ctx context.Context, _ resource.SchemaReques
 				Required: true,
 				Description: "UUID of the VPC PUBLIC subnet to deploy the gateway's backing VM into " +
 					"(it must be a public subnet with at least one free IP). This is a WRITE-ONLY " +
-					"input consumed at deploy time — it is NOT returned by the gateway read endpoint, " +
+					"input consumed at deploy time - it is NOT returned by the gateway read endpoint, " +
 					"so it is preserved from configuration and ignored on import. Changing it forces a " +
 					"new resource.",
 				PlanModifiers: []planmodifier.String{
@@ -177,12 +177,12 @@ func (r *vpnGatewayResource) Schema(ctx context.Context, _ resource.SchemaReques
 			},
 			// status is a SERVER-MUTABLE computed field (deploying → active, or
 			// error on failure), so per the golden guardrail it does NOT use
-			// UseStateForUnknown — that would copy the stale prior value into the
+			// UseStateForUnknown - that would copy the stale prior value into the
 			// plan and mask real drift.
 			"status": schema.StringAttribute{
 				Computed: true,
 				Description: "Lifecycle status: \"deploying\" (provisioning), \"active\" (ready), " +
-					"\"error\" (deploy failed — recoverable via the gateway retry action). " +
+					"\"error\" (deploy failed - recoverable via the gateway retry action). " +
 					"Server-mutable.",
 			},
 			// public_key is the gateway's WireGuard PUBLIC key, generated server-side
@@ -209,7 +209,7 @@ func (r *vpnGatewayResource) Schema(ctx context.Context, _ resource.SchemaReques
 			},
 			"public_ip": schema.StringAttribute{
 				Computed: true,
-				Description: "The public IPv4 address of the gateway's backing VM — the WireGuard " +
+				Description: "The public IPv4 address of the gateway's backing VM - the WireGuard " +
 					"endpoint address remote peers connect to. Stable after creation.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -219,7 +219,7 @@ func (r *vpnGatewayResource) Schema(ctx context.Context, _ resource.SchemaReques
 		Blocks: map[string]schema.Block{
 			// Only create is async (waits for status="active"); there is no update
 			// endpoint and delete is synchronous-from-the-API's-view, so only the
-			// create timeout is truly meaningful — the block exposes all three for
+			// create timeout is truly meaningful - the block exposes all three for
 			// consistency with the async-resource pattern.
 			"timeouts": timeouts.Block(ctx, timeouts.Opts{
 				Create: true,
@@ -249,7 +249,7 @@ func (r *vpnGatewayResource) Configure(_ context.Context, req resource.Configure
 // Create provisions the VPN gateway and waits for it to become active:
 //
 //  1. CreateVpnGateway records the row (status="deploying"), allocates a public
-//     IP, and deploys the backing VM — all in one async call.
+//     IP, and deploys the backing VM - all in one async call.
 //  2. The id is saved into state BEFORE the wait, so a provisioning failure or
 //     timeout still tracks the gateway for a subsequent destroy.
 //  3. WaitFor polls GetVpnGateway until status=="active" (fail on "error").
@@ -341,7 +341,7 @@ func (r *vpnGatewayResource) Create(ctx context.Context, req resource.CreateRequ
 
 // Read refreshes state from the API via the FLAT /vpn-gateway/{id} path (the
 // parent vpc is NOT in the path). A 404 means the gateway was deleted out of band
-// — remove it from state so Terraform plans a recreate.
+// - remove it from state so Terraform plans a recreate.
 func (r *vpnGatewayResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state vpnGatewayModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -383,7 +383,7 @@ func (r *vpnGatewayResource) Update(ctx context.Context, req resource.UpdateRequ
 
 // Delete removes the VPN gateway. The service bills final hours, destroys the
 // backing instance (releasing its public IP), deletes the peers, and soft-deletes
-// the row immediately, so a subsequent SHOW 404s right away — no delete waiter is
+// the row immediately, so a subsequent SHOW 404s right away - no delete waiter is
 // required.
 func (r *vpnGatewayResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state vpnGatewayModel

@@ -17,12 +17,12 @@ func TestAccLBTarget_basic(t *testing.T) {
 
 // TestUnitLBTarget_lifecycle drives the full 3-level CHILD lifecycle:
 //
-//  1. Create — POST .../backend/{bid}/targets; asserts the body uses target_ip /
+//  1. Create - POST .../backend/{bid}/targets; asserts the body uses target_ip /
 //     target_port (not ip/port). The target appears in backends[].targets[].
-//  2. Read — scans the LB SHOW backends[bid].targets[tid].
-//  3. Import — 3-part composite "<lb>/<backend>/<target>".
-//  4. Update — PATCH .../target/{tid} (weight); asserts the PATCH body.
-//  5. Delete — removes the target from the embedded array.
+//  2. Read - scans the LB SHOW backends[bid].targets[tid].
+//  3. Import - 3-part composite "<lb>/<backend>/<target>".
+//  4. Update - PATCH .../target/{tid} (weight); asserts the PATCH body.
+//  5. Delete - removes the target from the embedded array.
 func TestUnitLBTarget_lifecycle(t *testing.T) {
 	ensureTFBinary(t)
 

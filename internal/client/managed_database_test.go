@@ -26,7 +26,7 @@ import (
 //     status="deploying".
 //
 // Create is async: the real ManagedDatabaseService::deploy returns
-// {success,message,managed_database:{id,status:"deploying",...}} — the controller's
+// {success,message,managed_database:{id,status:"deploying",...}} - the controller's
 // Scribe annotation showing only {success,message} is stale (like VPC/LB).
 func TestCreateManagedDatabase_Success(t *testing.T) {
 	var gotMethod, gotPath string
@@ -93,7 +93,7 @@ func TestCreateManagedDatabase_BillingDisabled(t *testing.T) {
 }
 
 // TestCreateManagedDatabase_FeatureDisabled verifies an in-controller feature/quota
-// gate (HTTP 200 success:false — e.g. plan disabled, quota, db_enabled false, no
+// gate (HTTP 200 success:false - e.g. plan disabled, quota, db_enabled false, no
 // public IP) surfaces as an error (C3).
 func TestCreateManagedDatabase_FeatureDisabled(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

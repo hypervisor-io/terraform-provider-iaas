@@ -6,7 +6,7 @@ description: |-
 
 # iaas Provider
 
-> **IMPORTANT — IP-locked token:** Authentication uses a Bearer API token that is
+> **IMPORTANT - IP-locked token:** Authentication uses a Bearer API token that is
 > validated against the IP address it was registered with. `tofu`/`terraform` must
 > run from that same egress IP (a static CI runner, bastion, or workstation).
 > Dynamic-IP CI is not supported. The token may also be scoped or belong to a
@@ -21,7 +21,7 @@ provider "iaas" {
   endpoint = "https://panel.example.com/api"
 
   # Bearer token. Prefer the IAAS_API_TOKEN env var over hardcoding.
-  # NOTE: the token is IP-LOCKED — it only works from the IP it was registered with.
+  # NOTE: the token is IP-LOCKED - it only works from the IP it was registered with.
   # token = "..."  # or export IAAS_API_TOKEN
 }
 ```

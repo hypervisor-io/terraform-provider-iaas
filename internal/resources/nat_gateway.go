@@ -18,7 +18,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/waiter"
 )
 
-// Interface assertions — iaas_nat_gateway is a CHILD + ASYNC resource. It
+// Interface assertions - iaas_nat_gateway is a CHILD + ASYNC resource. It
 // combines two established patterns:
 //
 //   - CHILD (from vpc_subnet): the parent vpc_id lives in the URL path, so it is
@@ -30,7 +30,7 @@ import (
 //
 // In addition it owns a set of attached subnet ids, managed via per-subnet
 // attach/detach on diff (the simple string-set variant of the security_group
-// instance_ids pattern — here each child is a bare subnet UUID, not a nested
+// instance_ids pattern - here each child is a bare subnet UUID, not a nested
 // object, since the API takes/returns plain ids).
 var (
 	_ resource.Resource                = &natGatewayResource{}
@@ -43,7 +43,7 @@ func NewNATGatewayResource() resource.Resource {
 	return &natGatewayResource{}
 }
 
-// natGatewayResource manages an iaas_nat_gateway — the (single) NAT gateway of a
+// natGatewayResource manages an iaas_nat_gateway - the (single) NAT gateway of a
 // VPC, providing outbound internet for the VPC's private subnets.
 type natGatewayResource struct {
 	client *client.Client
@@ -52,10 +52,10 @@ type natGatewayResource struct {
 // natGatewayModel maps the Terraform state/plan for iaas_nat_gateway.
 //
 // Field groups:
-//   - PARENT path id: vpc_id (Required, RequiresReplace — part of every path).
-//   - create inputs: name (Optional+Computed — server defaults to "natgw-<vpc>"),
-//     nat_enabled (Optional+Computed — toggled in place via enable/disable or
-//     PATCH; server defaults to true), subnet_ids (Optional set — attached private
+//   - PARENT path id: vpc_id (Required, RequiresReplace - part of every path).
+//   - create inputs: name (Optional+Computed - server defaults to "natgw-<vpc>"),
+//     nat_enabled (Optional+Computed - toggled in place via enable/disable or
+//     PATCH; server defaults to true), subnet_ids (Optional set - attached private
 //     subnets, managed by attach/detach on diff; server defaults to all private
 //     subnets when omitted).
 //   - computed read-only: status (server-mutable lifecycle), public_ip (the
@@ -82,7 +82,7 @@ func (r *natGatewayResource) Metadata(_ context.Context, req resource.MetadataRe
 // Schema describes the iaas_nat_gateway resource.
 func (r *natGatewayResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a VPC NAT gateway — the single egress gateway that gives a VPC's " +
+		Description: "Manages a VPC NAT gateway - the single egress gateway that gives a VPC's " +
 			"PRIVATE subnets outbound internet access. The parent vpc_id is part of the API " +
 			"path, so changing it forces a new resource (a VPC has at most one NAT gateway). " +
 			"Creation is ASYNCHRONOUS: the gateway record is created (status=\"pending\"), a " +
@@ -123,7 +123,7 @@ func (r *natGatewayResource) Schema(ctx context.Context, _ resource.SchemaReques
 					"to true. Updatable in place (enable/disable). Note: the server may set this to " +
 					"false out of band if the gateway is suspended for bandwidth overage, which would " +
 					"surface as drift. Re-applying with nat_enabled = true while the gateway is " +
-					"bandwidth-suspended will fail with a clear server message — resolve the bandwidth " +
+					"bandwidth-suspended will fail with a clear server message - resolve the bandwidth " +
 					"issue first, then re-enable. Modelled Optional+Computed so an omitted value " +
 					"round-trips against the server default.",
 			},
@@ -139,7 +139,7 @@ func (r *natGatewayResource) Schema(ctx context.Context, _ resource.SchemaReques
 			},
 			// status is a SERVER-MUTABLE computed field (pending → active, then
 			// deleting on teardown), so per the golden guardrail it does NOT use
-			// UseStateForUnknown — that would copy the stale prior value into the plan
+			// UseStateForUnknown - that would copy the stale prior value into the plan
 			// and mask real drift.
 			"status": schema.StringAttribute{
 				Computed: true,
@@ -160,7 +160,7 @@ func (r *natGatewayResource) Schema(ctx context.Context, _ resource.SchemaReques
 		Blocks: map[string]schema.Block{
 			// Only create is async (waits for status="active"); update/enable/disable/
 			// attach/detach/delete are synchronous from the API's perspective, so only
-			// the create timeout is truly meaningful — the block still exposes all three
+			// the create timeout is truly meaningful - the block still exposes all three
 			// for consistency with the async-resource pattern.
 			"timeouts": timeouts.Block(ctx, timeouts.Opts{
 				Create: true,
@@ -190,7 +190,7 @@ func (r *natGatewayResource) Configure(_ context.Context, req resource.Configure
 // Create provisions the NAT gateway and waits for it to become active:
 //
 //  1. CreateNatGateway records the row (status="pending"), auto-assigns a public
-//     IP, and attaches the requested (or all private) subnets — all in one call.
+//     IP, and attaches the requested (or all private) subnets - all in one call.
 //  2. The id is saved into state BEFORE the wait, so a provisioning failure or
 //     timeout still tracks the gateway for a subsequent destroy.
 //  3. WaitFor polls GetNatGateway until status=="active".
@@ -283,7 +283,7 @@ func (r *natGatewayResource) Create(ctx context.Context, req resource.CreateRequ
 
 // Read refreshes state from the API. The parent vpc_id is read from prior state
 // to build the request path. A 404 means the gateway (or its VPC) was deleted out
-// of band — remove it from state so Terraform plans a recreate.
+// of band - remove it from state so Terraform plans a recreate.
 func (r *natGatewayResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state natGatewayModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -308,7 +308,7 @@ func (r *natGatewayResource) Read(ctx context.Context, req resource.ReadRequest,
 //
 //   - name / nat_enabled: PATCHed when changed. nat_enabled changes prefer the
 //     dedicated enable/disable endpoints (which carry the bandwidth-suspension
-//     guard) and fall back to nothing else — the PATCH also accepts nat_enabled,
+//     guard) and fall back to nothing else - the PATCH also accepts nat_enabled,
 //     but enable/disable is the semantically correct toggle.
 //   - subnet_ids: diffed (attach added / detach removed) by id.
 //
@@ -396,7 +396,7 @@ func (r *natGatewayResource) Update(ctx context.Context, req resource.UpdateRequ
 
 // Delete removes the NAT gateway. The controller dispatches a slave teardown
 // task, releases the public IP, detaches all subnets, and soft-deletes the row
-// immediately, so a subsequent SHOW 404s right away — no delete waiter required.
+// immediately, so a subsequent SHOW 404s right away - no delete waiter required.
 func (r *natGatewayResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state natGatewayModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -463,7 +463,7 @@ func natGatewayStateFromAPI(obj map[string]any, prior natGatewayModel) natGatewa
 //
 // Note: when subnet_ids is omitted at create the server attaches all private
 // subnets, and this adopts that server-chosen set into state on the post-create
-// Read — so the very first plan-after-create would show the attribute moving from
+// Read - so the very first plan-after-create would show the attribute moving from
 // null to a known set. That is intentional (the resource surfaces what the server
 // actually attached); operators who want a stable null should leave subnet_ids
 // unset AND accept the gateway managing its own attachments, in which case the
@@ -497,7 +497,7 @@ func natGatewaySubnetSetFromAPI(raw any, prior types.Set) types.Set {
 }
 
 // mustSetValue builds a types.Set, discarding the conversion diagnostics (which
-// can only error on a type mismatch — impossible here since every element is a
+// can only error on a type mismatch - impossible here since every element is a
 // String). It keeps the call sites terse where the inputs are statically correct.
 func mustSetValue(elemType attr.Type, elems []attr.Value) types.Set {
 	s, _ := types.SetValue(elemType, elems)

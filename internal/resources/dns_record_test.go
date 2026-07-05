@@ -11,7 +11,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/acctest"
 )
 
-// TestAccDNSRecord_basic — LIVE acceptance test (manual staging gate).
+// TestAccDNSRecord_basic - LIVE acceptance test (manual staging gate).
 func TestAccDNSRecord_basic(t *testing.T) {
 	t.Skip("TestAccDNSRecord_basic: acceptance test runs only with TF_ACC + a real record-set id (manual gate)")
 }
@@ -19,13 +19,13 @@ func TestAccDNSRecord_basic(t *testing.T) {
 // TestUnitDNSRecord_lifecycle drives the full GRANDCHILD lifecycle (including the
 // inline health_check block) against a stateful mock:
 //
-//  1. Create — POST .../records (asserts body) + POST .../health-check (asserts
+//  1. Create - POST .../records (asserts body) + POST .../health-check (asserts
 //     body); both reflected in the zone SHOW embedded record_sets[].records[].
-//  2. Read — two-level scan of the zone SHOW.
-//  3. Import — composite id "<zone_id>/<record_set_id>/<record_id>".
-//  4. Update — PATCH the record value + re-STORE the changed health check; asserts
+//  2. Read - two-level scan of the zone SHOW.
+//  3. Import - composite id "<zone_id>/<record_set_id>/<record_id>".
+//  4. Update - PATCH the record value + re-STORE the changed health check; asserts
 //     both fired.
-//  5. Delete — removes the record from the embedded array.
+//  5. Delete - removes the record from the embedded array.
 func TestUnitDNSRecord_lifecycle(t *testing.T) {
 	ensureTFBinary(t)
 
@@ -70,7 +70,7 @@ func TestUnitDNSRecord_lifecycle(t *testing.T) {
 		return []any{recordObj()}
 	}
 
-	// Zone SHOW — embeds record_sets[].records[] each with health_check.
+	// Zone SHOW - embeds record_sets[].records[] each with health_check.
 	srv.Handle("GET", "/dns-zone/"+zoneID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"zone": map[string]any{

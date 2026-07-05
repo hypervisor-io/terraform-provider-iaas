@@ -14,11 +14,11 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccVpnPeer_basic — LIVE acceptance test (manual staging gate).
+// TestAccVpnPeer_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set. Requires an EXISTING active VPN gateway:
 //
-//	IAAS_TEST_VPN_GATEWAY_ID — UUID of an active iaas_vpn_gateway
+//	IAAS_TEST_VPN_GATEWAY_ID - UUID of an active iaas_vpn_gateway
 //
 // Skips cleanly when absent.
 // ---------------------------------------------------------------------------
@@ -53,23 +53,23 @@ resource "iaas_vpn_peer" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitVpnPeer_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitVpnPeer_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the full CHILD (read-by-scan) resource lifecycle against canned API
-// responses. The peer has NO individual SHOW route — it is read by scanning the
+// responses. The peer has NO individual SHOW route - it is read by scanning the
 // gateway SHOW's embedded peers[]; a stateful mock embeds the peer after create,
 // reflects the update, and drops it after delete:
 //
-//  1. Create — POST /vpn-gateway/{id}/peer returns {peer:{id,...}} (with the
+//  1. Create - POST /vpn-gateway/{id}/peer returns {peer:{id,...}} (with the
 //     server-allocated tunnel_ip + default allowed_ips). Asserts the create body
 //     carries type + name + public_key + the write-only preshared_key, and that
 //     the SHOW never leaks the preshared_key.
-//  2. Read-back — scans the gateway SHOW peers[]; the write-only preshared_key is
+//  2. Read-back - scans the gateway SHOW peers[]; the write-only preshared_key is
 //     echoed from the plan.
-//  3. Import — COMPOSITE id "<gateway_id>/<peer_id>", ignoring the unrecoverable
+//  3. Import - COMPOSITE id "<gateway_id>/<peer_id>", ignoring the unrecoverable
 //     write-only preshared_key.
-//  4. Update — rename + disable (PATCH). Asserts the PATCH fired.
-//  5. Delete — implicit teardown; the peer drops out of the embedded peers[].
+//  4. Update - rename + disable (PATCH). Asserts the PATCH fired.
+//  5. Delete - implicit teardown; the peer drops out of the embedded peers[].
 //
 // Peer writes are synchronous → NO waiter, NO poll-interval seam, NO hang.
 // ---------------------------------------------------------------------------
@@ -113,7 +113,7 @@ func TestUnitVpnPeer_lifecycle(t *testing.T) {
 		}
 	}
 
-	// Gateway SHOW — embeds the peer once created (and not yet deleted).
+	// Gateway SHOW - embeds the peer once created (and not yet deleted).
 	srv.Handle("GET", gwPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		peers := []any{}
@@ -131,7 +131,7 @@ func TestUnitVpnPeer_lifecycle(t *testing.T) {
 		})
 	})
 
-	// CREATE peer — returns {peer:{id,...}}.
+	// CREATE peer - returns {peer:{id,...}}.
 	srv.Handle("POST", peerPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		created = true
@@ -144,7 +144,7 @@ func TestUnitVpnPeer_lifecycle(t *testing.T) {
 		})
 	})
 
-	// UPDATE peer — PATCH name/enabled.
+	// UPDATE peer - PATCH name/enabled.
 	srv.Handle("PATCH", peerItemPath, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -164,7 +164,7 @@ func TestUnitVpnPeer_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "Peer updated successfully", "peer": p})
 	})
 
-	// DELETE peer — drops it from the embedded peers[].
+	// DELETE peer - drops it from the embedded peers[].
 	srv.Handle("DELETE", peerItemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		created = false

@@ -1,5 +1,5 @@
 // Package datasources holds the Terraform data-source implementations for the
-// IaaS provider. location.go is the GOLDEN data source — it establishes the
+// IaaS provider. location.go is the GOLDEN data source - it establishes the
 // read-only lookup-by-name pattern every later data source copies:
 //
 //  1. an input filter attribute (the human name, Required) + Computed outputs;
@@ -27,7 +27,7 @@ import (
 //
 // It returns (client, problem). When problem is non-empty the caller adds it as
 // an error diagnostic. A nil client with empty problem means "not configured
-// yet" — the caller should simply return.
+// yet" - the caller should simply return.
 func configureClient(providerData any) (c *client.Client, problem string) {
 	if providerData == nil {
 		return nil, ""

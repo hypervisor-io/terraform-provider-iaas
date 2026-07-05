@@ -15,9 +15,9 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — dns_record_set is a CHILD of dns_zone (zone_id in the
+// Interface assertions - dns_record_set is a CHILD of dns_zone (zone_id in the
 // path) and a PARENT of dns_record. It copies the LB-child read-by-scan pattern
-// (no individual SHOW route — record sets are embedded in the zone SHOW) and the
+// (no individual SHOW route - record sets are embedded in the zone SHOW) and the
 // vpc_subnet composite-import pattern (zone_id/record_set_id).
 var (
 	_ resource.Resource                = &dnsRecordSetResource{}
@@ -30,7 +30,7 @@ func NewDNSRecordSetResource() resource.Resource {
 	return &dnsRecordSetResource{}
 }
 
-// dnsRecordSetResource manages an iaas_dns_record_set — a named group of DNS
+// dnsRecordSetResource manages an iaas_dns_record_set - a named group of DNS
 // records of one type sharing a routing policy and TTL inside a zone.
 //
 // A record set is a genuinely distinct concept from a record: it carries the name,
@@ -49,7 +49,7 @@ func NewDNSRecordSetResource() resource.Resource {
 //	                                                          → {success,message,record_set}
 //	DELETE  DELETE /dns-zone/{zoneId}/record-set/{rsId}      → {success,message}
 //
-// There is NO individual record-set SHOW route — Read scans the zone SHOW's
+// There is NO individual record-set SHOW route - Read scans the zone SHOW's
 // embedded record_sets[]. All four fields are updatable in place via PATCH, so
 // none is RequiresReplace except the parent zone_id (which is in the path).
 type dnsRecordSetResource struct {
@@ -74,7 +74,7 @@ func (r *dnsRecordSetResource) Metadata(_ context.Context, req resource.Metadata
 // Schema describes the iaas_dns_record_set resource.
 func (r *dnsRecordSetResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a DNS record set inside a zone — a named group of records of one " +
+		Description: "Manages a DNS record set inside a zone - a named group of records of one " +
 			"type that share a routing policy and TTL. The (name, type) pair is unique within " +
 			"a zone. The parent zone_id is part of the API path, so changing it forces a new " +
 			"resource; name/type/routing_policy/ttl are all updatable in place. Add the actual " +
@@ -115,7 +115,7 @@ func (r *dnsRecordSetResource) Schema(_ context.Context, _ resource.SchemaReques
 			},
 			"ttl": schema.Int64Attribute{
 				Required:    true,
-				Description: "Time-to-live in seconds (30–86400). Updatable in place.",
+				Description: "Time-to-live in seconds (30-86400). Updatable in place.",
 			},
 		},
 	}

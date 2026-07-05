@@ -12,12 +12,12 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccProjectAssignment_basic — LIVE acceptance test (manual staging gate).
+// TestAccProjectAssignment_basic - LIVE acceptance test (manual staging gate).
 //
 // Requires an existing project and instance owned by the same account:
 //
-//	IAAS_TEST_PROJECT_ID  — UUID of an existing iaas_project
-//	IAAS_TEST_INSTANCE_ID — UUID of an existing instance to assign
+//	IAAS_TEST_PROJECT_ID  - UUID of an existing iaas_project
+//	IAAS_TEST_INSTANCE_ID - UUID of an existing instance to assign
 //
 // Skips cleanly when absent.
 // ---------------------------------------------------------------------------
@@ -26,7 +26,7 @@ func TestAccProjectAssignment_basic(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitProjectAssignment_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitProjectAssignment_lifecycle - MOCK-backed lifecycle proof.
 //
 // iaas_project_assignment has NO server-assigned id and NO per-assignment
 // SHOW route: it drives everything through the SAME
@@ -35,17 +35,17 @@ func TestAccProjectAssignment_basic(t *testing.T) {
 // TARGET RESOURCE's own SHOW (GET /instance/{id} here), comparing its
 // project_id field:
 //
-//  1. Create — POST /project/assign-resource {resource_type,resource_id,
+//  1. Create - POST /project/assign-resource {resource_type,resource_id,
 //     project_id}; the mock records the instance's current project_id.
 //     Create then verifies by GETting the instance and checking project_id
 //     matches, and persists the SYNTHESIZED id "<project_id>/<resource_type>/<resource_id>".
-//  2. Import — 3-part composite id; the automatic post-import Read re-checks
+//  2. Import - 3-part composite id; the automatic post-import Read re-checks
 //     the instance's project_id.
-//  3. Delete — implicit teardown: POST /project/assign-resource again with
-//     project_id explicitly null (the unassign path — there is no dedicated
+//  3. Delete - implicit teardown: POST /project/assign-resource again with
+//     project_id explicitly null (the unassign path - there is no dedicated
 //     detach/DELETE route); asserted afterward.
 //
-// The whole lifecycle is synchronous — no waiter, no poll-interval seam.
+// The whole lifecycle is synchronous - no waiter, no poll-interval seam.
 // ---------------------------------------------------------------------------
 func TestUnitProjectAssignment_lifecycle(t *testing.T) {
 	ensureTFBinary(t)
@@ -62,7 +62,7 @@ func TestUnitProjectAssignment_lifecycle(t *testing.T) {
 	var mu sync.Mutex
 	var currentProjectID *string // nil == unassigned
 
-	// ASSIGN/UNASSIGN — POST /project/assign-resource (the SAME endpoint
+	// ASSIGN/UNASSIGN - POST /project/assign-resource (the SAME endpoint
 	// handles both directions; project_id null unassigns).
 	srv.Handle("POST", "/project/assign-resource", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
@@ -83,7 +83,7 @@ func TestUnitProjectAssignment_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — GET /instance/{id} returns the BARE instance model, including
+	// SHOW - GET /instance/{id} returns the BARE instance model, including
 	// project_id (un-hidden on the real Instance model).
 	srv.Handle("GET", "/instance/"+instanceID, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
@@ -173,7 +173,7 @@ resource "iaas_project_assignment" "test" {
 // TestUnitProjectAssignment_deleteToleratesGoneTarget proves Delete no longer
 // errors when the assign-resource endpoint reports the target as gone via a
 // 200 success:false "not found"-shaped message rather than a genuine HTTP 404
-// — decodeItem/checkSuccessFlag (internal/client/decode.go) surface
+// - decodeItem/checkSuccessFlag (internal/client/decode.go) surface
 // success:false as a PLAIN error, which client.IsNotFound alone does not
 // recognise, so before this fix an out-of-band-deleted target would fail
 // Delete instead of being treated as a benign no-op.
@@ -211,7 +211,7 @@ func TestUnitProjectAssignment_deleteToleratesGoneTarget(t *testing.T) {
 
 		// Unassign: simulate the instance having been destroyed out of band.
 		// The endpoint reports this as HTTP 200 success:false with a
-		// "not found"-shaped message, NOT a genuine 404 — the exact shape
+		// "not found"-shaped message, NOT a genuine 404 - the exact shape
 		// isNotFoundLikeError must tolerate.
 		unassignCalls++
 		writeJSON(w, http.StatusOK, map[string]any{

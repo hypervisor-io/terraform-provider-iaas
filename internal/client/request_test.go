@@ -11,7 +11,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// doItem — composes do + responseError + decodeItem.
+// doItem - composes do + responseError + decodeItem.
 // ---------------------------------------------------------------------------
 
 // TestDoItem_UnwrapsKey verifies that a 200 response carrying a wrapped object
@@ -97,7 +97,7 @@ func TestDoItem_404_IsNotFound(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// doList — composes do + responseError + decodeList.
+// doList - composes do + responseError + decodeList.
 // ---------------------------------------------------------------------------
 
 // TestDoList_Paginator verifies that a Laravel paginator body yields the data slice.
@@ -141,7 +141,7 @@ func TestDoList_422_IsAPIError(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// doVoid — request expecting no object; maps non-2xx and 200+success:false.
+// doVoid - request expecting no object; maps non-2xx and 200+success:false.
 // ---------------------------------------------------------------------------
 
 // TestDoVoid_Success verifies a 200 success:true returns nil.
@@ -196,7 +196,7 @@ func TestDoVoid_422_IsAPIError(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// doList — auto-pagination of Laravel paginators.
+// doList - auto-pagination of Laravel paginators.
 // ---------------------------------------------------------------------------
 
 // TestDoList_MultiPage verifies that doList fetches ALL pages of a Laravel
@@ -339,7 +339,7 @@ func parseQuery(raw string) (map[string]string, error) {
 	if raw == "" {
 		return m, nil
 	}
-	// net/url is already a transitive import in the test binary — use it.
+	// net/url is already a transitive import in the test binary - use it.
 	import_url_parse := func(s string) map[string]string {
 		r := make(map[string]string)
 		for _, pair := range splitAmpersand(s) {

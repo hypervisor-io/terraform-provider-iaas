@@ -14,13 +14,13 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccVpnPeering_basic — LIVE acceptance test (manual staging gate).
+// TestAccVpnPeering_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set. Requires TWO existing active VPN gateways
 // in DIFFERENT VPCs, owned by the same account:
 //
-//	IAAS_TEST_VPN_GATEWAY_ID        — UUID of the LOCAL iaas_vpn_gateway
-//	IAAS_TEST_VPN_GATEWAY_REMOTE_ID — UUID of the REMOTE iaas_vpn_gateway
+//	IAAS_TEST_VPN_GATEWAY_ID        - UUID of the LOCAL iaas_vpn_gateway
+//	IAAS_TEST_VPN_GATEWAY_REMOTE_ID - UUID of the REMOTE iaas_vpn_gateway
 //
 // Skips cleanly when absent.
 // ---------------------------------------------------------------------------
@@ -55,24 +55,24 @@ resource "iaas_vpn_peering" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitVpnPeering_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitVpnPeering_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the CHILD (read-by-scan) resource lifecycle against canned API
-// responses. A peering has NO individual SHOW/DELETE route — it is read by
+// responses. A peering has NO individual SHOW/DELETE route - it is read by
 // scanning the LOCAL gateway's SHOW embedded peers[] (type == "vpc_peering"),
 // and deleted via the generic peer-removal endpoint:
 //
-//  1. Create — POST /vpn-gateway/{id}/peering with body {remote_gateway_id}
+//  1. Create - POST /vpn-gateway/{id}/peering with body {remote_gateway_id}
 //     returns {peers:[local,remote]}; asserts the create body carries ONLY
-//     remote_gateway_id (no cidrs/psk — the plan's assumed shape was wrong,
+//     remote_gateway_id (no cidrs/psk - the plan's assumed shape was wrong,
 //     confirmed by reading VpnGatewayController::createPeering) and that
 //     peers[0] (the LOCAL side) is the one tracked.
-//  2. Read-back — scans the local gateway SHOW's peers[]; matches by id AND
+//  2. Read-back - scans the local gateway SHOW's peers[]; matches by id AND
 //     type == "vpc_peering".
-//  3. Import — COMPOSITE id "<vpn_gateway_id>/<peering_id>"; remote_gateway_id
+//  3. Import - COMPOSITE id "<vpn_gateway_id>/<peering_id>"; remote_gateway_id
 //     (Required, non-Computed) is populated by the automatic post-import Read,
 //     not by ImportState.
-//  4. Delete — implicit teardown via DELETE /vpn-gateway/{id}/peer/{peeringId}
+//  4. Delete - implicit teardown via DELETE /vpn-gateway/{id}/peer/{peeringId}
 //     (there is no dedicated peering-delete route); asserted afterward.
 //
 // Peering creation is SYNCHRONOUS → NO waiter, NO poll-interval seam, NO hang.
@@ -102,7 +102,7 @@ func TestUnitVpnPeering_lifecycle(t *testing.T) {
 	exists := false
 
 	localPeerObject := func() map[string]any {
-		// NOTE: no preshared_key — it is $hidden + encrypted server-side and
+		// NOTE: no preshared_key - it is $hidden + encrypted server-side and
 		// never returned by ANY response, so the resource must not (and does
 		// not) expose it.
 		return map[string]any{
@@ -121,7 +121,7 @@ func TestUnitVpnPeering_lifecycle(t *testing.T) {
 		}
 	}
 
-	// Local gateway SHOW — embeds the peering once created (and not yet deleted).
+	// Local gateway SHOW - embeds the peering once created (and not yet deleted).
 	srv.Handle("GET", gwPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		peers := []any{}
@@ -139,7 +139,7 @@ func TestUnitVpnPeering_lifecycle(t *testing.T) {
 		})
 	})
 
-	// CREATE peering — returns {peers:[local,remote]}.
+	// CREATE peering - returns {peers:[local,remote]}.
 	srv.Handle("POST", peeringPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		exists = true
@@ -166,7 +166,7 @@ func TestUnitVpnPeering_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — the generic peer-removal endpoint (no dedicated peering-delete route).
+	// DELETE - the generic peer-removal endpoint (no dedicated peering-delete route).
 	srv.Handle("DELETE", peerItemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		exists = false
@@ -215,7 +215,7 @@ resource "iaas_vpn_peering" "test" {
 		},
 	})
 
-	// Assert the CREATE body carried ONLY remote_gateway_id — no cidrs/psk/etc
+	// Assert the CREATE body carried ONLY remote_gateway_id - no cidrs/psk/etc
 	// (the plan's assumed create shape was wrong; the controller only accepts
 	// remote_gateway_id, confirmed by Read of VpnGatewayController::createPeering).
 	creates := srv.Requests("POST", peeringPath)

@@ -14,7 +14,7 @@ import (
 // instance-id endpoints. Both rules and the attached-instance set are embedded in
 // the SHOW response so Read can hydrate them.
 //
-// Parent (security_group) CRUD — note the plural-vs-singular path asymmetry that
+// Parent (security_group) CRUD - note the plural-vs-singular path asymmetry that
 // mirrors ip_set:
 //
 //	INDEX   GET    /security-groups        (PLURAL)  → Laravel paginator {data:[...]}
@@ -116,7 +116,7 @@ func (c *Client) GetSecurityGroupEnvelope(ctx context.Context, id string) (map[s
 // UpdateSecurityGroup patches the mutable scalar fields of a security group (name
 // required; description optional/nullable). The UPDATE route is SINGULAR. The
 // PATCH response carries NO security_group body (only {success,message}), so the
-// resource must call GetSecurityGroupEnvelope afterwards to refresh state — this
+// resource must call GetSecurityGroupEnvelope afterwards to refresh state - this
 // method returns the bare envelope map for completeness but callers should not
 // rely on it carrying the id.
 func (c *Client) UpdateSecurityGroup(ctx context.Context, id string, fields map[string]any) (map[string]any, error) {

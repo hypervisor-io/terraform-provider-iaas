@@ -10,9 +10,9 @@ import (
 // This file holds the shared request helpers every resource client method
 // reuses. Each helper performs the same canonical sequence:
 //
-//  1. c.do(...)                 — transport (auth, retry, body read).
-//  2. responseError(resp, body) — map any non-2xx to *APIError and return.
-//  3. decode*                   — unwrap the envelope; decodeItem/decodeList
+//  1. c.do(...)                 - transport (auth, retry, body read).
+//  2. responseError(resp, body) - map any non-2xx to *APIError and return.
+//  3. decode*                   - unwrap the envelope; decodeItem/decodeList
 //                                 also surface HTTP-200 + success:false (C3).
 //
 // Keeping this sequence in one place means resource methods are one-liners
@@ -22,7 +22,7 @@ import (
 // maxPaginatorPages is the safety cap for the auto-pagination loop in doList.
 // It prevents an infinite loop when a server returns pathological paginator
 // values (e.g. last_page == MaxInt). 10,000 pages × 12 items/page = 120,000
-// items maximum — sufficient for any realistic dataset.
+// items maximum - sufficient for any realistic dataset.
 const maxPaginatorPages = 10_000
 
 // doItem performs the request, maps a non-2xx response to *APIError, then
@@ -47,7 +47,7 @@ func (c *Client) doItem(ctx context.Context, method, path string, body any, key 
 // (so the Master's idempotency.user middleware deduplicates a retried create)
 // pass it here. Header application, retry/backoff, error mapping (responseError),
 // the 200+success:false check (decodeItem), and envelope unwrapping are all
-// identical to doItem — the only difference is the extra headers reach the
+// identical to doItem - the only difference is the extra headers reach the
 // transport.
 func (c *Client) doItemWithHeaders(ctx context.Context, method, path string, body any, key string, extraHeaders map[string]string) (map[string]any, error) {
 	resp, raw, err := c.doWithHeaders(ctx, method, path, body, extraHeaders)
@@ -97,7 +97,7 @@ func (c *Client) doList(ctx context.Context, method, path string, body any) ([]m
 	// Inspect the raw response for Laravel paginator fields.
 	currentPage, lastPage, isPaginator := paginatorPages(raw)
 	if !isPaginator {
-		// Top-level array or non-paginator object — single fetch, done.
+		// Top-level array or non-paginator object - single fetch, done.
 		return items, nil
 	}
 
@@ -128,7 +128,7 @@ func (c *Client) doList(ctx context.Context, method, path string, body any) ([]m
 		// change on a live system between requests).
 		cp, lp, ok := paginatorPages(raw)
 		if !ok {
-			// Server stopped sending paginator fields — treat as done.
+			// Server stopped sending paginator fields - treat as done.
 			break
 		}
 		currentPage = cp
@@ -191,7 +191,7 @@ func withPageParam(path string, page int) (string, error) {
 
 // doRaw performs the request and returns the RAW response body as a string,
 // mapping a non-2xx response to *APIError. Unlike doItem/doList/doVoid it does
-// NOT JSON-decode the body or check a success flag — it is for endpoints whose
+// NOT JSON-decode the body or check a success flag - it is for endpoints whose
 // SUCCESS payload is not JSON (e.g. a text/plain file download such as the VPN
 // peer WireGuard .conf). Error responses are still JSON, so responseError parses
 // the body's "message"/"errors" normally; only the 2xx body is returned verbatim.

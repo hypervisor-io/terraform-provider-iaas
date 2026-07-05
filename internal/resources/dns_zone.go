@@ -19,7 +19,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/waiter"
 )
 
-// Interface assertions — dns_zone is the PARENT of the DNS resource family. It
+// Interface assertions - dns_zone is the PARENT of the DNS resource family. It
 // reuses the security_group instance_ids set-diff pattern for its attached VPCs
 // (vpc_ids: a plain string set reconciled via attach/detach on diff, rebuilt from
 // the SHOW on Read), and adds an async delete (the zone is queued for deletion and
@@ -35,7 +35,7 @@ func NewDNSZoneResource() resource.Resource {
 	return &dnsZoneResource{}
 }
 
-// dnsZoneResource manages an iaas_dns_zone — an internal (per-VPC CoreDNS) DNS
+// dnsZoneResource manages an iaas_dns_zone - an internal (per-VPC CoreDNS) DNS
 // zone, owned by the account and attachable to 0..N VPCs.
 //
 // Route summary (verified against UserApi\VpcDnsZoneController + VpcDnsService +
@@ -80,7 +80,7 @@ func (r *dnsZoneResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 			"account and can be attached to one or more VPCs, where its records become " +
 			"resolvable. The set of attached VPCs is managed via the `vpc_ids` attribute " +
 			"(attach/detach in place). The zone name is immutable; only the description can " +
-			"be changed in place. Deletion is asynchronous — the zone is queued for removal " +
+			"be changed in place. Deletion is asynchronous - the zone is queued for removal " +
 			"and the provider waits for it to disappear.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -94,7 +94,7 @@ func (r *dnsZoneResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 				Required: true,
 				Description: "The zone name (e.g. \"corp.internal\"). Must be lowercase " +
 					"alphanumeric with dots and hyphens, max 63 chars. A bare public TLD " +
-					"(\"com\", \"local\", ...) is rejected to avoid shadowing real DNS — use a " +
+					"(\"com\", \"local\", ...) is rejected to avoid shadowing real DNS - use a " +
 					"compound name like \"corp.internal\". Immutable: changing it forces a new " +
 					"resource (the API has no rename).",
 				PlanModifiers: []planmodifier.String{

@@ -30,7 +30,7 @@ import (
 // to wait on, so there is no waiter. A failure surfaces as 200 success:false,
 // which doItem/doVoid map to an error (C3).
 //
-// There is NO individual backend SHOW route — backends are EMBEDDED in the LB
+// There is NO individual backend SHOW route - backends are EMBEDDED in the LB
 // SHOW under load_balancer.backends[] (each with its targets[]). GetLBBackend
 // therefore reads-by-scan: it calls GetLoadBalancer and scans the embedded
 // backends[] for the matching id, returning a 404-shaped *APIError (IsNotFound)
@@ -75,7 +75,7 @@ func (c *Client) DeleteLBBackend(ctx context.Context, lbID, backendID string) er
 }
 
 // GetLBBackend resolves a single backend by scanning the parent load balancer's
-// embedded backends[] array (there is NO individual backend SHOW route — the LB
+// embedded backends[] array (there is NO individual backend SHOW route - the LB
 // SHOW embeds the backends). It returns the matching backend object or a
 // 404-shaped *APIError (IsNotFound = true) when the id is absent. This is the
 // read-by-scan source for the resource's Read.

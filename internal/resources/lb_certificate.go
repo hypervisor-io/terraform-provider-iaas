@@ -17,7 +17,7 @@ import (
 
 // Interface assertions. iaas_lb_certificate is a CHILD resource of a load
 // balancer. Unlike the other LB children it has NO update/PATCH route, so every
-// field is immutable (RequiresReplace) — rotate by replacing. Read scans the LB
+// field is immutable (RequiresReplace) - rotate by replacing. Read scans the LB
 // SHOW certificates[]. Writes are SYNCHRONOUS (no waiter).
 //
 // SENSITIVE / WRITE-ONLY: private_key is $hidden server-side and never returned by
@@ -35,7 +35,7 @@ func NewLBCertificateResource() resource.Resource {
 	return &lbCertificateResource{}
 }
 
-// lbCertificateResource manages an iaas_lb_certificate — an SSL certificate of a
+// lbCertificateResource manages an iaas_lb_certificate - an SSL certificate of a
 // load balancer (manual PEM upload).
 type lbCertificateResource struct {
 	client *client.Client
@@ -66,7 +66,7 @@ func (r *lbCertificateResource) Schema(_ context.Context, _ resource.SchemaReque
 		Description: "Manages a manually-uploaded SSL/TLS certificate on a load balancer (PEM " +
 			"certificate + private key, optional chain). A certificate is a child of a load " +
 			"balancer: its parent load_balancer_id is part of the API path, so changing it forces " +
-			"a new resource. Certificates are immutable — there is no update endpoint — so " +
+			"a new resource. Certificates are immutable - there is no update endpoint - so " +
 			"changing any field rotates (replaces) the certificate. The private_key is write-only " +
 			"and sensitive: it is never returned by the API, so it is taken from configuration and " +
 			"never refreshed. Attach a certificate to an https frontend via its ssl_certificate_id. " +
@@ -251,7 +251,7 @@ func (r *lbCertificateResource) ImportState(ctx context.Context, req resource.Im
 // lbCertificateStateFromAPI builds the model from an embedded certificate object.
 // private_key is NEVER in the SHOW ($hidden) → preserved verbatim from the prior
 // model. certificate/chain ARE returned (decrypted) so they refresh from the API
-// (falling back to prior when absent — e.g. on import before the first apply).
+// (falling back to prior when absent - e.g. on import before the first apply).
 func lbCertificateStateFromAPI(obj map[string]any, prior lbCertificateModel) lbCertificateModel {
 	return lbCertificateModel{
 		ID:             stringFromAPI(obj, "id", prior.ID),
@@ -259,7 +259,7 @@ func lbCertificateStateFromAPI(obj map[string]any, prior lbCertificateModel) lbC
 		Name:           stringOrPrior(obj, "name", prior.Name),
 		Certificate:    stringOrPrior(obj, "certificate", prior.Certificate),
 
-		// WRITE-ONLY — never in the SHOW; preserve the plan/state value verbatim.
+		// WRITE-ONLY - never in the SHOW; preserve the plan/state value verbatim.
 		PrivateKey: prior.PrivateKey,
 
 		Chain: optionalStringFromAPI(obj, "chain", prior.Chain),

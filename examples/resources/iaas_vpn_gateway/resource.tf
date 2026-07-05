@@ -19,14 +19,14 @@ resource "iaas_vpc_subnet" "public" {
 }
 
 resource "iaas_vpn_gateway" "example" {
-  # Parent VPC id — part of the create API path. Changing this forces a new resource.
+  # Parent VPC id - part of the create API path. Changing this forces a new resource.
   vpc_id = iaas_vpc.example.id
 
   # Required. The VPN gateway plan (sizing/pricing of the backing VM).
   vpngw_plan_id = "11111111-1111-1111-1111-111111111111"
 
   # Required. The PUBLIC subnet to deploy the gateway's backing VM into. This is a
-  # WRITE-ONLY input consumed at deploy time — it is NOT returned by the read
+  # WRITE-ONLY input consumed at deploy time - it is NOT returned by the read
   # endpoint, so it is ignored on import (supply it in config).
   vpc_subnet_id = iaas_vpc_subnet.public.id
 
@@ -65,4 +65,4 @@ output "vpn_gateway_endpoint" {
 
 # Import a VPN gateway with the COMPOSITE id "<vpc_id>/<gateway_id>", e.g.:
 #   terraform import iaas_vpn_gateway.example 00000000-0000-0000-0000-000000000000/22222222-2222-2222-2222-222222222222
-# (vpc_subnet_id is write-only and cannot be recovered on import — set it in config.)
+# (vpc_subnet_id is write-only and cannot be recovered on import - set it in config.)

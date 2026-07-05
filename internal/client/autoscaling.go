@@ -13,7 +13,7 @@ import (
 // There are TWO resources here: the GROUP (a fleet of identical instances kept
 // between min/max) and the POLICY (a metric→scale rule, a CHILD of the group).
 //
-// GROUP routes (note the path asymmetry — the collection/create path is PLURAL
+// GROUP routes (note the path asymmetry - the collection/create path is PLURAL
 // but every item op is SINGULAR):
 //
 //	LIST    GET    /scaling-groups                  (PLURAL)
@@ -34,12 +34,12 @@ import (
 //	                → {success,message,group:{...}}
 //	PAUSE   POST   /scaling-group/{id}/pause        → {success,message,group:{status:"paused"}}
 //	RESUME  POST   /scaling-group/{id}/resume       → {success,message,group:{status:"active"}}
-//	DELETE  DELETE /scaling-group/{id}              → {success,message} — ASYNC: marks
+//	DELETE  DELETE /scaling-group/{id}              → {success,message} - ASYNC: marks
 //	                paused immediately, dispatches DestroyGroup job to tear down
 //	                member instances + the group row in the background.
 //
 // POLICY routes (a CHILD of the group; the group id is in the path; there is NO
-// individual policy SHOW — policies are EMBEDDED in the group SHOW under
+// individual policy SHOW - policies are EMBEDDED in the group SHOW under
 // scaling_group.policies[], so GetAutoscalingPolicy reads-by-scan):
 //
 //	CREATE  POST   /scaling-group/{groupId}/policy             → {success,message,policy:{id,...}}
@@ -169,7 +169,7 @@ func (c *Client) DeleteAutoscalingPolicy(ctx context.Context, groupID, policyID 
 // GetAutoscalingPolicy resolves a single policy by scanning the parent group's
 // embedded policies[] (there is NO individual policy SHOW route). It returns the
 // matching policy object or a 404-shaped *APIError (IsNotFound) when the group is
-// gone or the policy id is absent — a 404 on the group itself propagates so the
+// gone or the policy id is absent - a 404 on the group itself propagates so the
 // resource can RemoveResource.
 func (c *Client) GetAutoscalingPolicy(ctx context.Context, groupID, policyID string) (map[string]any, error) {
 	if groupID == "" {

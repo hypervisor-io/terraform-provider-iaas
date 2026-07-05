@@ -15,7 +15,7 @@ import (
 // resync-replicas) AND read-replica create (the replica is its own
 // ManagedDatabase row, so it reuses GetManagedDatabase/DeleteManagedDatabase).
 //
-// ROUTES (controller-verified — all wrapped in the billing.enabled middleware):
+// ROUTES (controller-verified - all wrapped in the billing.enabled middleware):
 //
 //	CREATE  POST   /databases                          body {name (req), engine (req:
 //	                                                     mysql|mariadb|postgresql),
@@ -33,15 +33,15 @@ import (
 //	RESTART POST   /database/{id}/restart               → {success,message}
 //	RESETPW POST   /database/{id}/reset-password        → {success,message,password:"<cleartext>"}
 //	UPGRADE POST   /database/{id}/upgrade               body {target_version (req)} → {success,message};
-//	                                                     T9 (subuser.permission:databases.manage) — see
+//	                                                     T9 (subuser.permission:databases.manage) - see
 //	                                                     UpgradeManagedDatabase for the async-timing caveat.
-//	RETRY   POST   /database/{id}/retry                 → {success,message,task_id}; T9 — see
+//	RETRY   POST   /database/{id}/retry                 → {success,message,task_id}; T9 - see
 //	                                                     RetryManagedDatabase (rebuilds destructively;
 //	                                                     implemented + tested, deliberately unwired).
-//	ACKERR  POST   /database/{id}/acknowledge-error     → {success:true}; T9 — see
+//	ACKERR  POST   /database/{id}/acknowledge-error     → {success:true}; T9 - see
 //	                                                     AcknowledgeManagedDatabaseError (non-destructive;
 //	                                                     implemented + tested, deliberately unwired).
-//	RESYNC  POST   /database/{id}/resync-replicas       → {success,message[,errors]}; T9 — see
+//	RESYNC  POST   /database/{id}/resync-replicas       → {success,message[,errors]}; T9 - see
 //	                                                     ResyncManagedDatabaseReplicas.
 //	REPLICA POST   /database/{id}/replica               body {name?, db_plan_id (req),
 //	                                                     vpc_subnet_id (req)} → {success,message,
@@ -50,7 +50,7 @@ import (
 // Async behaviour (controller-verified):
 //   - CREATE is ASYNC and backed by a REAL instance: the managed_databases row is
 //     recorded synchronously with status="deploying" and a backing Instance +
-//     slave deploy task are created. There is NO task_id in the create response —
+//     slave deploy task are created. There is NO task_id in the create response -
 //     ManagedDatabaseService::deploy returns {success,message,managed_database:{id,
 //     status:"deploying",...}} (the controller's Scribe {success,message}-only
 //     annotation is stale, like VPC/LB). The async signal is the DB's own "status"
@@ -78,7 +78,7 @@ import (
 //     are `encrypted` + in the model's $hidden, so they are NEVER returned by SHOW.
 //     The ONLY place a cleartext password is returned is the reset-password action
 //     response ({success,message,password}). So the resource cannot read the
-//     password from create/SHOW — it exposes username (admin_user), port, and host
+//     password from create/SHOW - it exposes username (admin_user), port, and host
 //     (the nested public_ip{ip}) as computed, and the password only as a Sensitive
 //     value surfaced from a reset-password action (write-only-ish).
 //
@@ -121,13 +121,13 @@ func (c *Client) GetManagedDatabase(ctx context.Context, id string) (map[string]
 // authenticated account (the controller hides replicas from the index, nesting
 // them under each primary's "replicas" relation). The index wraps the Laravel
 // paginator under the named "managed_databases" key
-// ({success,managed_databases:{data:[...]}}) — NOT a top-level "data" array — so
+// ({success,managed_databases:{data:[...]}}) - NOT a top-level "data" array - so
 // the shared doList paginator decoder cannot be used directly. Instead doItem
 // unwraps the named key (surfacing C3 success:false), then the inner paginator's
 // "data" array is flattened to []map[string]any.
 //
 // CAVEAT: this fetches only page 1 (the named-key paginator can't use the
-// auto-paginating doList) — a future list data source must add page iteration.
+// auto-paginating doList) - a future list data source must add page iteration.
 func (c *Client) ListManagedDatabases(ctx context.Context) ([]map[string]any, error) {
 	paginator, err := c.doItem(ctx, "GET", "/databases", nil, "managed_databases")
 	if err != nil {
@@ -205,7 +205,7 @@ func (c *Client) ResetManagedDatabasePassword(ctx context.Context, id string) (m
 //
 // CRITICAL timing note (documented concern, not a bug in this provider): the
 // row's engine_version column is updated to the target SYNCHRONOUSLY, the
-// moment the hypervisor ACCEPTS the upgrade command — not once the engine
+// moment the hypervisor ACCEPTS the upgrade command - not once the engine
 // upgrade actually finishes running on the box. There is no task_id in the
 // response and the UserApi SHOW does not eager-load the tasks[] relation (unlike
 // iaas_kubernetes_cluster's upgrade, which polls an embedded task), so real
@@ -226,7 +226,7 @@ func (c *Client) UpgradeManagedDatabase(ctx context.Context, id, targetVersion s
 
 // RetryManagedDatabase retries a failed deployment via POST /database/{id}/retry.
 // Controller-verified (ManagedDatabaseService::retryDeploy): despite the name,
-// this is NOT a "resume the stuck step" operation — it rebuilds the backing
+// this is NOT a "resume the stuck step" operation - it rebuilds the backing
 // instance from scratch (the same cloud-init rebuild code path as an instance
 // reinstall: deployed=0, status=0, fresh cloudcfg, a new deploy task with
 // rebuild=true), flips the database status back to "deploying" (and, for a
@@ -236,7 +236,7 @@ func (c *Client) UpgradeManagedDatabase(ctx context.Context, id, targetVersion s
 //
 // Implemented + unit-tested for T9 but DELIBERATELY LEFT UNWIRED from any
 // automatic invocation (mirrors T7's kubernetes_cluster upgrade/retry
-// precedent — see wave-bc-t7-report.md): auto-invoking this from a waiter fail
+// precedent - see wave-bc-t7-report.md): auto-invoking this from a waiter fail
 // path would silently destroy and rebuild a database that may still be
 // perfectly healthy (e.g. a transient slave-side blip, or an unrelated
 // last_error), which is far more damaging than surfacing a clear Diagnostics
@@ -249,7 +249,7 @@ func (c *Client) RetryManagedDatabase(ctx context.Context, id string) error {
 }
 
 // AcknowledgeManagedDatabaseError clears the database's alert state via POST
-// /database/{id}/acknowledge-error — controller-verified to unconditionally set
+// /database/{id}/acknowledge-error - controller-verified to unconditionally set
 // last_error=null, error_acknowledged=true and return {success:true}; it never
 // fails once the id resolves. Unlike RetryManagedDatabase this is NOT
 // destructive (it touches no infrastructure, only the notification flags), but
@@ -272,7 +272,7 @@ func (c *Client) AcknowledgeManagedDatabaseError(ctx context.Context, id string)
 // /database/{id}/resync-replicas (no body). Controller-verified
 // (ManagedDatabaseService::resyncReplicas): the target must be a primary,
 // "active", and have at least one replica that is not currently "deploying" or
-// already "syncing" — the primary's replication user is (re)configured if no
+// already "syncing" - the primary's replication user is (re)configured if no
 // replica is currently active/syncing, then every eligible replica is sent a
 // resync command. SYNC from the API's view (mirrors resize/restart/
 // reset-password): it dispatches the per-replica slave tasks and returns once
@@ -294,7 +294,7 @@ func (c *Client) ResyncManagedDatabaseReplicas(ctx context.Context, id string) e
 // under the "replica" envelope with status="deploying". Create is ASYNC: poll
 // GetManagedDatabase(replicaID) until status="active". The primary must be active
 // + a primary + in a VPC, the replica plan storage must be >= the primary plan's,
-// and the per-primary replica count limit applies — all enforced as 200
+// and the per-primary replica count limit applies - all enforced as 200
 // success:false (surfaced by doItem).
 func (c *Client) CreateDatabaseReplica(ctx context.Context, primaryID string, body map[string]any) (map[string]any, error) {
 	if primaryID == "" {

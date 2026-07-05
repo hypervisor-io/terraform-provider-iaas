@@ -3,12 +3,12 @@
 page_title: "iaas_instance_backup_policy Resource - iaas"
 subcategory: ""
 description: |-
-  Manages an instance backup policy — a named schedule and retention configuration for KVM instance backups. Instances are attached to the policy one at a time via the instance_ids set attribute. Changes to that set attach or detach the corresponding instances in place. All schedule fields are stored and returned in UTC.
+  Manages an instance backup policy - a named schedule and retention configuration for KVM instance backups. Instances are attached to the policy one at a time via the instance_ids set attribute. Changes to that set attach or detach the corresponding instances in place. All schedule fields are stored and returned in UTC.
 ---
 
 # iaas_instance_backup_policy (Resource)
 
-Manages an instance backup policy — a named schedule and retention configuration for KVM instance backups. Instances are attached to the policy one at a time via the `instance_ids` set attribute. Changes to that set attach or detach the corresponding instances in place. All schedule fields are stored and returned in UTC.
+Manages an instance backup policy - a named schedule and retention configuration for KVM instance backups. Instances are attached to the policy one at a time via the `instance_ids` set attribute. Changes to that set attach or detach the corresponding instances in place. All schedule fields are stored and returned in UTC.
 
 ## Example Usage
 
@@ -49,9 +49,9 @@ resource "iaas_instance_backup_policy" "weekly" {
 - `backup_device` (String) Which disk device(s) to include in the backup: "primary" (boot disk only) or "all" (all attached disks).
 - `full_backup_frequency` (String) How often a full backup is taken: "daily" or "weekly".
 - `full_backup_time` (String) Time of day for the full backup in HH:MM format (UTC). The server accepts the value in the user's local timezone and stores it internally as UTC; the provider passes UTC directly.
-- `max_incremental_chain` (Number) Maximum number of incremental backups to chain between full backups (0–30). Zero disables incrementals.
+- `max_incremental_chain` (Number) Maximum number of incremental backups to chain between full backups (0-30). Zero disables incrementals.
 - `name` (String) Display name for the backup policy. Maximum 255 characters. Updatable in place.
-- `retention_count` (Number) Number of full backups to retain (1–365). Older backups are pruned.
+- `retention_count` (Number) Number of full backups to retain (1-365). Older backups are pruned.
 
 ### Optional
 

@@ -9,7 +9,7 @@ import (
 // VPC-to-VPC "peering" endpoint (verified against the real UserApi
 // VpnGatewayController::createPeering + VpnGatewayService::createVpcPeering +
 // routes/user_api.php). This is DISTINCT from a "site_to_site" PEER created via
-// AddVpnPeer/addPeer (internal/client/vpn_gateway.go) — that flavour lets the
+// AddVpnPeer/addPeer (internal/client/vpn_gateway.go) - that flavour lets the
 // caller supply an arbitrary remote endpoint/public_key/allowed_ips for a
 // third-party (non-platform) gateway. "Peering", by contrast, links TWO
 // iaas_vpn_gateway resources OWNED BY THE SAME ACCOUNT, in DIFFERENT VPCs: the
@@ -17,7 +17,7 @@ import (
 // everything else (endpoint, public_key, allowed_ips, a shared preshared_key,
 // and a tunnel IP on each side) and materialises it as a SYMMETRIC PAIR of rows
 // in the SAME vpn_gateway_peers table used by AddVpnPeer, tagged
-// type="vpc_peering" — there is no separate "peering" table/model.
+// type="vpc_peering" - there is no separate "peering" table/model.
 //
 //	CREATE POST /vpn-gateway/{gatewayId}/peering  body {remote_gateway_id (req,
 //	                                               uuid of another gateway owned
@@ -34,29 +34,29 @@ import (
 // gateway address / CIDRs / PSK (a classic third-party site-to-site shape).
 // The controller (UserApi\VpnGatewayController::createPeering, confirmed by
 // Read of the source) instead validates only `remote_gateway_id`: uuid, required
-// — the rest is 100% server-derived from the two existing gateway rows. There
+// - the rest is 100% server-derived from the two existing gateway rows. There
 // is no dedicated "peering" SHOW/DELETE/UPDATE route at all; every read/delete
 // goes through the generic peer machinery (GetVpnGateway's embedded peers[] /
 // RemoveVpnPeer) because a "peering" IS a peer row.
 //
-// Async behaviour: createPeering is SYNCHRONOUS — createVpcPeering does its
+// Async behaviour: createPeering is SYNCHRONOUS - createVpcPeering does its
 // work (CIDR/tunnel overlap checks, tunnel IP allocation, peer creation) inside
 // one DB transaction and returns; the WireGuard config push to each gateway VM
 // afterwards is best-effort (a push failure is logged, not fatal, and does not
 // fail the request). There is NO waiter/poll for this resource.
 //
 // The preshared_key generated for the pairing is $hidden + encrypted
-// server-side (same as any other peer's preshared_key — see
+// server-side (same as any other peer's preshared_key - see
 // app/Models/VpnGatewayPeer.php) and is NEVER returned by ANY response
 // (create or SHOW), so it is not modelled as a resource attribute at all (there
-// is nothing to read, and it is not an accepted create input either — the
+// is nothing to read, and it is not an accepted create input either - the
 // server always generates its own).
 
 // CreateVpnPeering creates a VPC-to-VPC peering from gatewayID (the LOCAL side,
 // taken from the resource's parent path) to remoteGatewayID (another
 // iaas_vpn_gateway owned by the same account, in a different VPC). The
 // envelope key is "peers", an array of the two symmetric peer rows created;
-// this returns ONLY peers[0] — the row that belongs to gatewayID — since that
+// this returns ONLY peers[0] - the row that belongs to gatewayID - since that
 // is the row this resource tracks (the symmetric peers[1] row belongs
 // conceptually to the OTHER gateway's own iaas_vpn_peering resource, created by
 // peering that gateway back to this one, or read out-of-band). A validation
@@ -90,7 +90,7 @@ func (c *Client) CreateVpnPeering(ctx context.Context, gatewayID, remoteGatewayI
 }
 
 // GetVpnPeering resolves a single peering by scanning the parent gateway's
-// embedded peers[] array (there is no dedicated peering SHOW route — same
+// embedded peers[] array (there is no dedicated peering SHOW route - same
 // read-by-scan shape as GetVpnPeer) and additionally requires
 // type == "vpc_peering", so a plain road_warrior/site_to_site peer id never
 // satisfies a peering lookup (and vice versa). Returns a 404-shaped *APIError
@@ -113,7 +113,7 @@ func (c *Client) GetVpnPeering(ctx context.Context, gatewayID, peeringID string)
 			continue
 		}
 		if t, _ := p["type"].(string); t != "vpc_peering" {
-			break // id matches but it's a different peer flavour — treat as not found
+			break // id matches but it's a different peer flavour - treat as not found
 		}
 		return p, nil
 	}
@@ -123,9 +123,9 @@ func (c *Client) GetVpnPeering(ctx context.Context, gatewayID, peeringID string)
 // DeleteVpnPeering removes a peering. There is NO dedicated peering-delete
 // route: a peering is a row in the same vpn_gateway_peers table as any other
 // peer, so deletion reuses the generic peer-removal endpoint
-// (DELETE /vpn-gateway/{id}/peer/{peerId} — RemoveVpnPeer). Deleting one side
+// (DELETE /vpn-gateway/{id}/peer/{peerId} - RemoveVpnPeer). Deleting one side
 // does NOT delete the symmetric row on the remote gateway (removePeer only
-// scopes by vpn_gateway_id + peer id, and does not follow remote_gateway_id) —
+// scopes by vpn_gateway_id + peer id, and does not follow remote_gateway_id) -
 // the remote gateway's own iaas_vpn_peering resource (if configured) manages
 // that row independently.
 func (c *Client) DeleteVpnPeering(ctx context.Context, gatewayID, peeringID string) error {

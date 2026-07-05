@@ -5,7 +5,7 @@
 # A managed Kubernetes cluster always has exactly one DEFAULT worker pool
 # (is_default = true). It is created automatically when the cluster is
 # provisioned (you can size it at create time via the cluster's worker_count /
-# worker_instance_plan_id inputs), so Terraform does NOT *create* it — you ADOPT
+# worker_instance_plan_id inputs), so Terraform does NOT *create* it - you ADOPT
 # it with `terraform import` and then manage its scale, labels, taints and
 # autoscaling in place, exactly like any other node pool.
 #
@@ -29,17 +29,17 @@ resource "iaas_kubernetes_node_pool" "default" {
   name             = "default"
   instance_plan_id = "99999999-9999-9999-9999-999999999999"
 
-  # SCALE the default pool — equivalent to POST /workers/scale. target_count and
+  # SCALE the default pool - equivalent to POST /workers/scale. target_count and
   # min_size are kept in lockstep for user edits, so set them to the same value.
   min_size     = 3
   max_size     = 6
   target_count = 3
 
-  # AUTOSCALING the default pool — equivalent to POST /workers/autoscaling. The
+  # AUTOSCALING the default pool - equivalent to POST /workers/autoscaling. The
   # cluster-autoscaler scales this pool between min_size and max_size.
   autoscaling_enabled = true
 
-  # LABELS / TAINTS on the default pool — equivalent to PATCH /workers/labels.
+  # LABELS / TAINTS on the default pool - equivalent to PATCH /workers/labels.
   labels = {
     "pool" = "default"
   }
@@ -75,6 +75,6 @@ output "default_pool_nodes" {
 #
 # The default pool cannot be deleted while it is the cluster default (the API
 # rejects it with default_pool_protected / default_pool_must_reassign_first), so
-# `terraform destroy` of this resource alone is not a supported flow — promote a
+# `terraform destroy` of this resource alone is not a supported flow - promote a
 # different pool to default first (an operational action), or destroy the whole
 # cluster.

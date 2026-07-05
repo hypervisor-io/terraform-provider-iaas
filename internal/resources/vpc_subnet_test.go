@@ -13,7 +13,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccVPCSubnet_basic — LIVE acceptance test (manual staging gate).
+// TestAccVPCSubnet_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set (resource.Test enforces this), so it never
 // runs or blocks CI. Requires a reachable panel + IP-locked token via
@@ -64,16 +64,16 @@ resource "iaas_vpc_subnet" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitVPCSubnet_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitVPCSubnet_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the full child-resource lifecycle against canned API responses, with
 // no live panel. The Steps execute in this order:
 //
-//  1. Create + read-back — applies createCfg; checks id, netmask, gateway, used,
+//  1. Create + read-back - applies createCfg; checks id, netmask, gateway, used,
 //     free, used_percentage, name (parent vpc created alongside).
-//  2. Import — imports via the COMPOSITE id "<vpc_id>/<subnet_id>" built by
+//  2. Import - imports via the COMPOSITE id "<vpc_id>/<subnet_id>" built by
 //     ImportStateIdFunc; ImportStateVerify: true.
-//  3. Update — applies updateCfg (renamed name); checks new name.
+//  3. Update - applies updateCfg (renamed name); checks new name.
 //
 // Delete is implicit teardown after the final step.
 //
@@ -110,12 +110,12 @@ func TestUnitVPCSubnet_lifecycle(t *testing.T) {
 	)
 
 	// currentName tracks the server-side subnet name so READ/IMPORT reflect the
-	// latest value set by create/update — exercising real drift-free read-back.
+	// latest value set by create/update - exercising real drift-free read-back.
 	currentName := createNam
 
 	// --- Parent VPC handlers (so vpc_id can reference a real iaas_vpc) ---
 	// The parent VPC config omits description, so the mock must NOT return a
-	// description key — otherwise the vpc resource maps "" over a null optional
+	// description key - otherwise the vpc resource maps "" over a null optional
 	// and the framework reports an inconsistent-result error. Deleting the key
 	// lets optionalStringFromAPI keep description null (round-trips cleanly).
 	parentVPC := func() map[string]any {
@@ -140,7 +140,7 @@ func TestUnitVPCSubnet_lifecycle(t *testing.T) {
 	})
 
 	// --- Subnet (child) handlers ---
-	// CREATE — POST /vpc/{vpcId}/subnets (PLURAL). Returns the row with id +
+	// CREATE - POST /vpc/{vpcId}/subnets (PLURAL). Returns the row with id +
 	// server-derived gateway/netmask.
 	srv.Handle("POST", "/vpc/"+vpcID+"/subnets", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
@@ -154,7 +154,7 @@ func TestUnitVPCSubnet_lifecycle(t *testing.T) {
 			"subnet":  subnetObject(subnetID, cidr, netmask, gateway, subType, currentName, used, free, usedPct),
 		})
 	})
-	// SHOW — GET /vpc/{vpcId}/subnet/{id} (SINGULAR). Reflects the latest name;
+	// SHOW - GET /vpc/{vpcId}/subnet/{id} (SINGULAR). Reflects the latest name;
 	// used/free are STABLE so ImportStateVerify passes.
 	srv.Handle("GET", "/vpc/"+vpcID+"/subnet/"+subnetID, func(w http.ResponseWriter, r *http.Request) {
 		obj := subnetObject(subnetID, cidr, netmask, gateway, subType, currentName, used, free, usedPct)
@@ -164,7 +164,7 @@ func TestUnitVPCSubnet_lifecycle(t *testing.T) {
 			"subnet":  obj,
 		})
 	})
-	// UPDATE — PATCH /vpc/{vpcId}/subnet/{id} (SINGULAR). Applies the new name.
+	// UPDATE - PATCH /vpc/{vpcId}/subnet/{id} (SINGULAR). Applies the new name.
 	srv.Handle("PATCH", "/vpc/"+vpcID+"/subnet/"+subnetID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -177,7 +177,7 @@ func TestUnitVPCSubnet_lifecycle(t *testing.T) {
 			"subnet":  subnetObject(subnetID, cidr, netmask, gateway, subType, currentName, used, free, usedPct),
 		})
 	})
-	// DELETE — DELETE /vpc/{vpcId}/subnet/{id} (SINGULAR).
+	// DELETE - DELETE /vpc/{vpcId}/subnet/{id} (SINGULAR).
 	srv.Handle("DELETE", "/vpc/"+vpcID+"/subnet/"+subnetID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "Subnet deleted"})
 	})
@@ -268,8 +268,8 @@ resource "iaas_vpc_subnet" "test" {
 
 // vpcSubnetImportStateIDFunc returns an ImportStateIdFunc that builds the
 // COMPOSITE import id "<vpc_id>/<subnet_id>" from the resource's state. A child
-// resource cannot be imported by its own id alone — the parent vpc_id is needed
-// to build the API path — so the import id joins both with a slash. This mirrors
+// resource cannot be imported by its own id alone - the parent vpc_id is needed
+// to build the API path - so the import id joins both with a slash. This mirrors
 // the split performed by the resource's ImportState.
 func vpcSubnetImportStateIDFunc(resourceName string) resource.ImportStateIdFunc {
 	return func(s *terraform.State) (string, error) {
@@ -288,8 +288,8 @@ func vpcSubnetImportStateIDFunc(resourceName string) resource.ImportStateIdFunc 
 
 // subnetObject builds a serialized subnet object matching the API SHOW/CREATE
 // shape (id, cidr, derived netmask/gateway, type, name, used/free, and the
-// appended used_percentage). The vpc_id is intentionally NOT included — it lives
-// in the URL path, not the body — matching the real controller.
+// appended used_percentage). The vpc_id is intentionally NOT included - it lives
+// in the URL path, not the body - matching the real controller.
 func subnetObject(id, cidr, netmask, gateway, subType, name string, used, free int, usedPct float64) map[string]any {
 	return map[string]any{
 		"id":              id,

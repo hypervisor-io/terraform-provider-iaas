@@ -15,10 +15,10 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — iaas_autoscaling_policy is a CHILD of an autoscaling
+// Interface assertions - iaas_autoscaling_policy is a CHILD of an autoscaling
 // group: the parent group id is part of every request path, so it is Required +
 // RequiresReplace, and import is the composite "<group_id>/<policy_id>". There is
-// NO individual policy SHOW route — Read scans the group SHOW's policies[]
+// NO individual policy SHOW route - Read scans the group SHOW's policies[]
 // (read-by-scan, mirroring the LB target). Writes are SYNCHRONOUS (no waiter).
 var (
 	_ resource.Resource                = &autoscalingPolicyResource{}
@@ -31,7 +31,7 @@ func NewAutoscalingPolicyResource() resource.Resource {
 	return &autoscalingPolicyResource{}
 }
 
-// autoscalingPolicyResource manages an iaas_autoscaling_policy — a metric→scale
+// autoscalingPolicyResource manages an iaas_autoscaling_policy - a metric→scale
 // rule attached to an autoscaling group.
 type autoscalingPolicyResource struct {
 	client *client.Client

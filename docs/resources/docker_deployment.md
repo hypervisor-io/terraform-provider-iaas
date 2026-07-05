@@ -3,12 +3,12 @@
 page_title: "iaas_docker_deployment Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a Docker app deployment on an instance — either a catalog app (source = "app", via app_slug) or a custom Docker Compose deployment fetched from a remote URL (source = "compose", via compose_url + name). If the instance does not yet have the Docker engine installed, Create installs it automatically and waits for the install to converge before deploying. Deployment itself is asynchronous: this resource waits for the app to report "running" (or fails on "error"). There is no update route beyond start/stop/restart/remove actions (not modelled in this version), so every input forces a new resource. Import with a composite id: "<instance_id>/<deployment_id>".
+  Manages a Docker app deployment on an instance - either a catalog app (source = "app", via app_slug) or a custom Docker Compose deployment fetched from a remote URL (source = "compose", via compose_url + name). If the instance does not yet have the Docker engine installed, Create installs it automatically and waits for the install to converge before deploying. Deployment itself is asynchronous: this resource waits for the app to report "running" (or fails on "error"). There is no update route beyond start/stop/restart/remove actions (not modelled in this version), so every input forces a new resource. Import with a composite id: "<instance_id>/<deployment_id>".
 ---
 
 # iaas_docker_deployment (Resource)
 
-Manages a Docker app deployment on an instance — either a catalog app (source = "app", via app_slug) or a custom Docker Compose deployment fetched from a remote URL (source = "compose", via compose_url + name). If the instance does not yet have the Docker engine installed, Create installs it automatically and waits for the install to converge before deploying. Deployment itself is asynchronous: this resource waits for the app to report "running" (or fails on "error"). There is no update route beyond start/stop/restart/remove actions (not modelled in this version), so every input forces a new resource. Import with a composite id: "<instance_id>/<deployment_id>".
+Manages a Docker app deployment on an instance - either a catalog app (source = "app", via app_slug) or a custom Docker Compose deployment fetched from a remote URL (source = "compose", via compose_url + name). If the instance does not yet have the Docker engine installed, Create installs it automatically and waits for the install to converge before deploying. Deployment itself is asynchronous: this resource waits for the app to report "running" (or fails on "error"). There is no update route beyond start/stop/restart/remove actions (not modelled in this version), so every input forces a new resource. Import with a composite id: "<instance_id>/<deployment_id>".
 
 ## Example Usage
 
@@ -18,7 +18,7 @@ Manages a Docker app deployment on an instance — either a catalog app (source 
 #
 #   1. If the instance does not yet have the Docker engine installed
 #      (instance.docker_enabled == 0), Create calls the install endpoint and
-#      polls until it converges — no separate resource/step required.
+#      polls until it converges - no separate resource/step required.
 #   2. The app or compose file is deployed and this resource waits for the
 #      deployment to report "running" (fails on "error"/"failed").
 #
@@ -86,7 +86,7 @@ output "wordpress_status" {
 
 ### Optional
 
-- `compose_url` (String) HTTPS URL of a docker-compose.yml to deploy. The compose file is FETCHED SERVER-SIDE via an SSRF-guarded request — this is a URL, not literal compose content. Required when source = "compose"; must be omitted for source = "app". Immutable; changing it forces a new resource.
+- `compose_url` (String) HTTPS URL of a docker-compose.yml to deploy. The compose file is FETCHED SERVER-SIDE via an SSRF-guarded request - this is a URL, not literal compose content. Required when source = "compose"; must be omitted for source = "app". Immutable; changing it forces a new resource.
 - `env` (Map of String, Sensitive) Environment variables passed to the deployment. WRITE-ONLY: the API stores this encrypted and never returns it on read, so it is always taken from configuration and never refreshed. Immutable; changing it forces a new resource.
 - `name` (String) Display name of the deployment (sent as app_name). Required when source = "compose"; for source = "app" the server always derives it from the catalog entry and this attribute must be left unset (it becomes Computed once known). Immutable; changing it forces a new resource.
 - `port_mappings` (Attributes List) Host/container port overrides applied to the deployment's compose file. WRITE-ONLY by policy (see the resource's package doc): always taken from configuration and never refreshed from the API, even though the API technically returns it. Immutable; changing it forces a new resource. (see [below for nested schema](#nestedatt--port_mappings))

@@ -24,7 +24,7 @@ import (
 //	                                  the controller runs.
 //
 // There is NO SHOW route. GetImage therefore lists and matches by id,
-// synthesising a 404 *APIError when the id is absent — the same pattern as
+// synthesising a 404 *APIError when the id is absent - the same pattern as
 // GetUserScript.
 //
 // Image capture is genuinely ASYNCHRONOUS: CreateImage's response is the Image
@@ -32,7 +32,7 @@ import (
 // fire-and-forget command to the source instance's hypervisor, and the actual
 // disk-capture work is finalized later out-of-band via a slave→master callback
 // route this client never calls. The two terminal states are "available"
-// (ready) and "error" (fail) — callers must wrap CreateImage with
+// (ready) and "error" (fail) - callers must wrap CreateImage with
 // internal/waiter, polling GetImage's "status" field until one of those is
 // reached; "creating" means keep polling.
 //
@@ -77,7 +77,7 @@ func (c *Client) GetImage(ctx context.Context, id string) (map[string]any, error
 }
 
 // DeleteImage deletes a user image by id (singular route). Deletion is
-// synchronous — the row is gone by the time this returns successfully.
+// synchronous - the row is gone by the time this returns successfully.
 func (c *Client) DeleteImage(ctx context.Context, id string) error {
 	if id == "" {
 		return fmt.Errorf("DeleteImage: empty id")

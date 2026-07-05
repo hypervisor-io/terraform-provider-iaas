@@ -3,7 +3,7 @@
 #
 #   1. If the instance does not yet have the Docker engine installed
 #      (instance.docker_enabled == 0), Create calls the install endpoint and
-#      polls until it converges — no separate resource/step required.
+#      polls until it converges - no separate resource/step required.
 #   2. The app or compose file is deployed and this resource waits for the
 #      deployment to report "running" (fails on "error"/"failed").
 #

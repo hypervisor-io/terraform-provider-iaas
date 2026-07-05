@@ -4,14 +4,14 @@ page_title: "iaas_static_ip Resource - iaas"
 subcategory: ""
 description: |-
   Reserves (allocates) a static public IPv4 address from the chosen location's available pool. Static IPs are long-lived addresses that persist independent of any single instance and can be attached to or detached from instances. Allocation pre-bills the first hour via Cloud Service credits. This resource requires billing to be enabled on the platform; if billing is disabled the API returns a 403 error.
-  The Static IP API has no update endpoint, so changing any configurable attribute forces the resource to be replaced (deallocated and re-allocated). Deallocating an IP that is currently attached to an instance will fail — detach it from the instance first.
+  The Static IP API has no update endpoint, so changing any configurable attribute forces the resource to be replaced (deallocated and re-allocated). Deallocating an IP that is currently attached to an instance will fail - detach it from the instance first.
 ---
 
 # iaas_static_ip (Resource)
 
 Reserves (allocates) a static public IPv4 address from the chosen location's available pool. Static IPs are long-lived addresses that persist independent of any single instance and can be attached to or detached from instances. Allocation pre-bills the first hour via Cloud Service credits. This resource requires billing to be enabled on the platform; if billing is disabled the API returns a 403 error.
 
-The Static IP API has no update endpoint, so changing any configurable attribute forces the resource to be replaced (deallocated and re-allocated). Deallocating an IP that is currently attached to an instance will fail — detach it from the instance first.
+The Static IP API has no update endpoint, so changing any configurable attribute forces the resource to be replaced (deallocated and re-allocated). Deallocating an IP that is currently attached to an instance will fail - detach it from the instance first.
 
 ## Example Usage
 
@@ -25,7 +25,7 @@ The Static IP API has no update endpoint, so changing any configurable attribute
 #      available pool (use the /static-ips/available endpoint or the panel UI).
 #
 # Changing ip_id or hypervisor_group_id forces a new resource (deallocate + re-allocate).
-# Deallocating an IP that is currently attached to an instance will fail — detach it first.
+# Deallocating an IP that is currently attached to an instance will fail - detach it first.
 
 resource "iaas_static_ip" "example" {
   # UUID of the specific IP address to reserve from the location's available pool.

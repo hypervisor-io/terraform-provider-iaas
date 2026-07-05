@@ -14,16 +14,16 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccManagedDatabase_basic — LIVE acceptance test (manual staging gate).
+// TestAccManagedDatabase_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set (resource.Test enforces this). Requires a
 // reachable panel + IP-locked token, billing enabled, a database-enabled
 // location/VPC, and the account's managed-database quota not exhausted. Supplied
 // via:
 //
-//	IAAS_TEST_DB_PLAN_ID       — UUID of an enabled db_plan supporting the engine
-//	IAAS_TEST_DB_VPC_ID        — UUID of a VPC in a db_enabled location
-//	IAAS_TEST_DB_VPC_SUBNET_ID — UUID of a (public) subnet in that VPC with a free IP
+//	IAAS_TEST_DB_PLAN_ID       - UUID of an enabled db_plan supporting the engine
+//	IAAS_TEST_DB_VPC_ID        - UUID of a VPC in a db_enabled location
+//	IAAS_TEST_DB_VPC_SUBNET_ID - UUID of a (public) subnet in that VPC with a free IP
 //
 // The test skips cleanly when the vars are absent.
 // ---------------------------------------------------------------------------
@@ -70,21 +70,21 @@ resource "iaas_managed_database" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitManagedDatabase_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitManagedDatabase_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the full ASYNC managed-database lifecycle against canned responses with
 // no live panel:
 //
-//  1. Create — POST /databases returns {managed_database:{id,status:"deploying"}};
+//  1. Create - POST /databases returns {managed_database:{id,status:"deploying"}};
 //     the SHOW immediately returns status="active" (ready on the FIRST poll → the
 //     waiter converges instantly, no sleep). Asserts the create body (name +
 //     engine + engine_version + db_plan_id + vpc_id + vpc_subnet_id) and that it
 //     omits computed/server fields. reset_password is set, so the create also
 //     rotates the password once and captures it.
-//  2. Import — by the DB id, ignoring write-only reset_password/password + timeouts.
-//  3. Update — resize (db_plan_id change) asserts the PATCH /resize body, plus a
+//  2. Import - by the DB id, ignoring write-only reset_password/password + timeouts.
+//  3. Update - resize (db_plan_id change) asserts the PATCH /resize body, plus a
 //     reset_password trigger change re-rotates the password.
-//  4. Delete — implicit teardown; DELETE soft-deletes and the next SHOW 404s.
+//  4. Delete - implicit teardown; DELETE soft-deletes and the next SHOW 404s.
 //
 // The IAAS_INSTANCE_POLL_INTERVAL seam is set tiny so the waiter cannot hang;
 // combined with active-on-first-poll the test must NOT sleep.
@@ -134,14 +134,14 @@ func TestUnitManagedDatabase_lifecycle(t *testing.T) {
 			"public_ip":           map[string]any{"id": "ip-1", "ip": pubIP},
 			// last_error/error_acknowledged (T9): healthy defaults, matching the
 			// real column defaults (last_error nullable/null, error_acknowledged
-			// default true — see 2026_03_09_000001_add_error_notification_to_
+			// default true - see 2026_03_09_000001_add_error_notification_to_
 			// managed_databases.php).
 			"last_error":         nil,
 			"error_acknowledged": true,
 		}
 	}
 
-	// CREATE — record the row; create response carries status "deploying".
+	// CREATE - record the row; create response carries status "deploying".
 	srv.Handle("POST", basePath, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
@@ -157,7 +157,7 @@ func TestUnitManagedDatabase_lifecycle(t *testing.T) {
 		})
 	})
 
-	// RESET-PASSWORD — returns a cleartext password (the only place one is returned).
+	// RESET-PASSWORD - returns a cleartext password (the only place one is returned).
 	srv.Handle("POST", itemPath+"/reset-password", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success":  true,
@@ -166,7 +166,7 @@ func TestUnitManagedDatabase_lifecycle(t *testing.T) {
 		})
 	})
 
-	// RESIZE — PATCH the plan in place.
+	// RESIZE - PATCH the plan in place.
 	srv.Handle("PATCH", itemPath+"/resize", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -182,7 +182,7 @@ func TestUnitManagedDatabase_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — 404 once delete has been enqueued.
+	// SHOW - 404 once delete has been enqueued.
 	srv.Handle("GET", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		gone := deleted
@@ -194,7 +194,7 @@ func TestUnitManagedDatabase_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "managed_database": showDB()})
 	})
 
-	// DELETE — soft-delete; the next SHOW 404s.
+	// DELETE - soft-delete; the next SHOW 404s.
 	srv.Handle("DELETE", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		deleted = true
@@ -306,19 +306,19 @@ resource "iaas_managed_database" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitManagedDatabase_versionUpgrade — MOCK-backed proof of T9's in-place
+// TestUnitManagedDatabase_versionUpgrade - MOCK-backed proof of T9's in-place
 // engine_version upgrade.
 //
 // Drives create-at-8.0 → update-to-8.4 against canned responses with no live
 // panel:
 //
-//  1. Create — POST /databases returns status="deploying"; SHOW immediately
+//  1. Create - POST /databases returns status="deploying"; SHOW immediately
 //     reports status="active", engine_version="8.0" (ready on the first poll).
-//  2. Update — engine_version 8.0 → 8.4 in config triggers exactly one POST
+//  2. Update - engine_version 8.0 → 8.4 in config triggers exactly one POST
 //     /database/{id}/upgrade with body {target_version:"8.4"}; the mock
 //     upgrade handler flips its internal engine_version (mirroring the
 //     Master's synchronous engine_version write) so the next SHOW already
-//     reports "8.4" — the waiter converges on the very first poll, matching
+//     reports "8.4" - the waiter converges on the very first poll, matching
 //     the real API's documented timing (see UpgradeManagedDatabase).
 //  3. Asserts the final state's engine_version == "8.4" and that resize/
 //     reset-password/resync-replicas were NOT invoked by an unrelated
@@ -369,7 +369,7 @@ func TestUnitManagedDatabase_versionUpgrade(t *testing.T) {
 		}
 	}
 
-	// CREATE — record the row; create response carries status "deploying".
+	// CREATE - record the row; create response carries status "deploying".
 	srv.Handle("POST", basePath, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
@@ -385,7 +385,7 @@ func TestUnitManagedDatabase_versionUpgrade(t *testing.T) {
 		})
 	})
 
-	// UPGRADE — mirrors ManagedDatabaseService::upgradeVersion writing
+	// UPGRADE - mirrors ManagedDatabaseService::upgradeVersion writing
 	// engine_version onto the row synchronously, before the (unobservable) async
 	// upgrade even runs on the box.
 	srv.Handle("POST", itemPath+"/upgrade", func(w http.ResponseWriter, r *http.Request) {
@@ -403,7 +403,7 @@ func TestUnitManagedDatabase_versionUpgrade(t *testing.T) {
 		})
 	})
 
-	// SHOW — 404 once delete has been enqueued.
+	// SHOW - 404 once delete has been enqueued.
 	var mu2 sync.Mutex
 	deleted := false
 	srv.Handle("GET", itemPath, func(w http.ResponseWriter, r *http.Request) {
@@ -417,7 +417,7 @@ func TestUnitManagedDatabase_versionUpgrade(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "managed_database": showDB()})
 	})
 
-	// DELETE — implicit teardown at the end of the test.
+	// DELETE - implicit teardown at the end of the test.
 	srv.Handle("DELETE", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu2.Lock()
 		deleted = true

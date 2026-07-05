@@ -11,7 +11,7 @@ import (
 // CIDR entries used by security-group rules. The entries are managed as child
 // rows under the parent ip_set.
 //
-// Parent (ip_set) CRUD — note the plural-vs-singular path asymmetry:
+// Parent (ip_set) CRUD - note the plural-vs-singular path asymmetry:
 //
 //	INDEX   GET    /ip-sets               (PLURAL)  → Laravel paginator {data:[...]}
 //	                                       each row carries entries_count, rules_count
@@ -23,7 +23,7 @@ import (
 //	                                       entries are EMBEDDED so Read can hydrate them
 //	UPDATE  PATCH  /ip-set/{id}           (SINGULAR) body {name (required),
 //	                                       description?, ip_version?} → 200 {success,message}
-//	                                       (NOTE: the UPDATE response carries NO ip_set body —
+//	                                       (NOTE: the UPDATE response carries NO ip_set body -
 //	                                        the resource must Read back after updating)
 //	DELETE  DELETE /ip-set/{id}           (SINGULAR) → 200 {success,message};
 //	                                       200 success:false when in use by a rule (C3)
@@ -78,7 +78,7 @@ func (c *Client) GetIPSet(ctx context.Context, id string) (map[string]any, error
 // UpdateIPSet patches the mutable scalar fields of an IP set (name required;
 // description/ip_version optional). The UPDATE route is SINGULAR. The PATCH
 // response carries NO ip_set body (only {success,message}), so the resource
-// must call GetIPSet afterwards to refresh state — this method returns the bare
+// must call GetIPSet afterwards to refresh state - this method returns the bare
 // envelope map for completeness but callers should not rely on it carrying id.
 func (c *Client) UpdateIPSet(ctx context.Context, id string, fields map[string]any) (map[string]any, error) {
 	if id == "" {

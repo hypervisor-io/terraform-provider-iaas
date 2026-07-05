@@ -12,7 +12,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccS3AccessKey_basic — LIVE acceptance test (manual staging gate).
+// TestAccS3AccessKey_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set. secret_key is shown only once, so it is added
 // to ImportStateVerifyIgnore (an imported key cannot recover it).
@@ -64,7 +64,7 @@ type s3KeyMock struct {
 }
 
 func (s *s3KeyMock) listPaginator() map[string]any {
-	// NOTE: NO secret_key here — it is $hidden in the real model.
+	// NOTE: NO secret_key here - it is $hidden in the real model.
 	return map[string]any{
 		"current_page": 1,
 		"last_page":    1,
@@ -80,7 +80,7 @@ func (s *s3KeyMock) listPaginator() map[string]any {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitS3AccessKey_lifecycle — MOCK-backed lifecycle proof (the key test).
+// TestUnitS3AccessKey_lifecycle - MOCK-backed lifecycle proof (the key test).
 //
 // Steps:
 //  1. Create → asserts the secret is CAPTURED into state from the create
@@ -108,7 +108,7 @@ func TestUnitS3AccessKey_lifecycle(t *testing.T) {
 		active:    1,
 	}
 
-	// CREATE — POST /object-storage/access-keys returns data:{access_key,secret_key}
+	// CREATE - POST /object-storage/access-keys returns data:{access_key,secret_key}
 	// with NO id (forcing the by-access-key readback) and the shown-once secret.
 	srv.Handle("POST", "/object-storage/access-keys", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
@@ -128,7 +128,7 @@ func TestUnitS3AccessKey_lifecycle(t *testing.T) {
 		})
 	})
 
-	// LIST — GET /object-storage/access-keys (used for both readbacks + Read).
+	// LIST - GET /object-storage/access-keys (used for both readbacks + Read).
 	// The secret_key is NEVER present here.
 	srv.Handle("GET", "/object-storage/access-keys", func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
@@ -136,7 +136,7 @@ func TestUnitS3AccessKey_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, store.listPaginator())
 	})
 
-	// UPDATE — PATCH /object-storage/access-key/{id}: name and/or active.
+	// UPDATE - PATCH /object-storage/access-key/{id}: name and/or active.
 	srv.Handle("PATCH", "/object-storage/access-key/"+keyID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -174,7 +174,7 @@ resource "iaas_s3_access_key" "test" {
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: acctest.Factories,
 		Steps: []resource.TestStep{
-			// 1. Create — secret captured into state.
+			// 1. Create - secret captured into state.
 			{
 				Config: createCfg,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -186,7 +186,7 @@ resource "iaas_s3_access_key" "test" {
 					resource.TestCheckResourceAttr("iaas_s3_access_key.test", "active", "true"),
 				),
 			},
-			// 2. Import by id — secret_key cannot be recovered, so ignore it.
+			// 2. Import by id - secret_key cannot be recovered, so ignore it.
 			{
 				ResourceName:            "iaas_s3_access_key.test",
 				ImportState:             true,

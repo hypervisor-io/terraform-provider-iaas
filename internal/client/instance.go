@@ -13,13 +13,13 @@ import (
 //	PHASE 1  CREATE  POST   /cloud-service/instances
 //	                 body {location_id,plan_id,vpc_id?,vpc_subnet_id?,hostname?,static_ip_ids?}
 //	                 → 200 {success,message,instance:{...full model incl id...}}
-//	                 SYNCHRONOUS — records the row only (NO OS, NO task). Capture
+//	                 SYNCHRONOUS - records the row only (NO OS, NO task). Capture
 //	                 instance.id from the response.
 //
 //	PHASE 2  DEPLOY  POST   /instance/{id}/deploy
 //	                 body {image_id(REQUIRED),ssh_keys?,hostname?,timezone?,cloudcfg?}
 //	                 → 200 {success,message,task_id:"<uuid>"}  (task_id is TOP-LEVEL,
-//	                 no nested object). ASYNCHRONOUS — deploys the OS via a task.
+//	                 no nested object). ASYNCHRONOUS - deploys the OS via a task.
 //	                 NOTE: the ssh keys field is "ssh_keys" (array of ids), NOT
 //	                 "ssh_key_id"; "password" is ignored (server force-generates).
 //
@@ -46,7 +46,7 @@ import (
 
 // CreateCSInstance performs PHASE 1: it records the instance row from the
 // supplied body and returns the full instance object (with its id) under key
-// "instance". This call is synchronous and does NOT deploy an OS — call
+// "instance". This call is synchronous and does NOT deploy an OS - call
 // DeployInstance next with the returned id.
 func (c *Client) CreateCSInstance(ctx context.Context, body map[string]any) (map[string]any, error) {
 	return c.doItem(ctx, "POST", "/cloud-service/instances", body, "instance")

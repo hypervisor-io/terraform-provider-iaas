@@ -8,7 +8,7 @@ import "context"
 // named GET /connect (UserApi\AuthController@check) as the whoami source to
 // build this data source against. Inspecting the actual controller
 // (app/Http/Controllers/UserApi/AuthController.php in the Master repo) shows
-// check() returns ONLY {"success":true,"message":"Token is valid!"} — it
+// check() returns ONLY {"success":true,"message":"Token is valid!"} - it
 // validates the bearer token (and the UserApiAuthentication middleware's
 // IP-lock) and echoes a fixed, localized string. There is NO id/name/email/
 // is_admin/subuser field anywhere in that response. Building the data source
@@ -18,10 +18,10 @@ import "context"
 //
 // GET /profile (UserApi\ProfileController@show, also under routes/user_api.php)
 // is the actual authenticated-whoami endpoint: it returns the caller's full
-// account object — {"success":true,"data":{id,first_name,last_name,email,
+// account object - {"success":true,"data":{id,first_name,last_name,email,
 // company_name,status,is_admin,timezone,default_currency,two_factor_enabled,
 // self_provisioning,owner_id,last_login_at,created_at,updated_at,gravatar,
-// consumed_credit,consumed_hours}} — which is exactly the field set the plan
+// consumed_credit,consumed_hours}} - which is exactly the field set the plan
 // asks the data source to expose. GetAccount targets /profile instead of
 // /connect for that reason.
 //
@@ -32,7 +32,7 @@ import "context"
 //
 // owner_id is the account's subuser indicator: it is present (non-empty) when
 // the token belongs to a subuser invited by another account, and empty when
-// the token belongs to the account owner itself — this is the "subuser flag"
+// the token belongs to the account owner itself - this is the "subuser flag"
 // the plan asks to surface if present.
 
 // GetAccount fetches the authenticated caller's own account (whoami). The

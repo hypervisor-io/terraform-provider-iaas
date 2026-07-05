@@ -11,7 +11,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/tfdiag"
 )
 
-// Interface assertions — kubernetes_region is a lookup-by-name catalog data
+// Interface assertions - kubernetes_region is a lookup-by-name catalog data
 // source backed by the FLAT Select2 /kubernetes/search/regions endpoint.
 var (
 	_ datasource.DataSource              = &kubernetesRegionDataSource{}

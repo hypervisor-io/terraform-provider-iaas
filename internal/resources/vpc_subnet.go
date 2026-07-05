@@ -15,7 +15,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — vpc_subnet is the golden CHILD resource and implements
+// Interface assertions - vpc_subnet is the golden CHILD resource and implements
 // the full set of optional resource behaviours (Configure + ImportState). It
 // establishes the child-resource pattern later child resources copy:
 //   - the parent UUID lives in the URL path (vpc_id, RequiresReplace),
@@ -32,7 +32,7 @@ func NewVPCSubnetResource() resource.Resource {
 	return &vpcSubnetResource{}
 }
 
-// vpcSubnetResource manages an iaas_vpc_subnet — a subnet inside a parent VPC.
+// vpcSubnetResource manages an iaas_vpc_subnet - a subnet inside a parent VPC.
 //
 // The parent VPC id (vpc_id) is part of every request path, so it is Required +
 // RequiresReplace. Only name is mutable in place; cidr/type/gateway/netmask are
@@ -48,7 +48,7 @@ type vpcSubnetResource struct {
 //
 // Netmask/Gateway are server-DERIVED from cidr at create and stable thereafter
 // (Computed + UseStateForUnknown). Used/Free/UsedPercentage are server-MUTABLE
-// computed values (they change as IPs are allocated) — see the schema comment
+// computed values (they change as IPs are allocated) - see the schema comment
 // for why they deliberately omit UseStateForUnknown.
 type vpcSubnetModel struct {
 	ID             types.String  `tfsdk:"id"`
@@ -148,7 +148,7 @@ func (r *vpcSubnetResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			//
 			// The golden guardrail: do NOT attach UseStateForUnknown to
 			// server-mutable computed fields. UseStateForUnknown copies the prior
-			// state value into the plan, which would MASK real drift — the plan
+			// state value into the plan, which would MASK real drift - the plan
 			// would keep showing the stale used/free instead of the refreshed
 			// values Read pulled from the API. Omitting it lets the plan reflect
 			// the server's current values (the field re-plans as (known after
@@ -193,7 +193,7 @@ func (r *vpcSubnetResource) Configure(_ context.Context, req resource.ConfigureR
 
 // Create provisions the subnet under its parent VPC. cidr is always sent; name
 // and type are sent only when the user set them (omit, don't send null) so the
-// server applies its own defaults. The create is synchronous — the response
+// server applies its own defaults. The create is synchronous - the response
 // carries id plus the derived gateway/netmask, which we persist directly.
 func (r *vpcSubnetResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan vpcSubnetModel
@@ -226,7 +226,7 @@ func (r *vpcSubnetResource) Create(ctx context.Context, req resource.CreateReque
 
 // Read refreshes state from the API. The parent vpc_id is read from prior state
 // to build the request path. A 404 means the subnet (or its VPC) was deleted
-// out of band — remove it from state so Terraform plans a recreate.
+// out of band - remove it from state so Terraform plans a recreate.
 func (r *vpcSubnetResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state vpcSubnetModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -247,7 +247,7 @@ func (r *vpcSubnetResource) Read(ctx context.Context, req resource.ReadRequest, 
 	resp.Diagnostics.Append(resp.State.Set(ctx, vpcSubnetStateFromAPI(obj, state))...)
 }
 
-// Update changes the only mutable field — name. cidr/type/vpc_id all force
+// Update changes the only mutable field - name. cidr/type/vpc_id all force
 // replacement, so only name ever reaches here. The PATCH response is a full
 // fresh subnet object, so we rehydrate all computed fields from it.
 func (r *vpcSubnetResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {

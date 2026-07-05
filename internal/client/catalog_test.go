@@ -9,7 +9,7 @@ import (
 )
 
 // NOTE: like ssh_key_test.go / vpc_test.go, these tests use net/http/httptest
-// directly rather than internal/acctest.MockServer — acctest imports
+// directly rather than internal/acctest.MockServer - acctest imports
 // internal/provider which imports internal/client, so importing acctest here
 // would create an import cycle.
 

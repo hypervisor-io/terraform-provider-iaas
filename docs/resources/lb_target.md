@@ -37,11 +37,11 @@ resource "iaas_lb_target" "app1" {
   target_ip   = "10.0.0.5"
   target_port = 8080
 
-  # Optional: link the target to an instance (tracking only — the API does NOT
+  # Optional: link the target to an instance (tracking only - the API does NOT
   # derive target_ip from it). Changing it forces a new resource.
   # instance_id = "55555555-5555-5555-5555-555555555555"
 
-  # Optional: relative weight (1-256, default 100) and enabled flag — both
+  # Optional: relative weight (1-256, default 100) and enabled flag - both
   # updatable in place.
   weight  = 100
   enabled = true
@@ -65,7 +65,7 @@ resource "iaas_lb_target" "app1" {
 ### Optional
 
 - `enabled` (Boolean) Whether the target receives traffic. Defaults to true. Updatable in place.
-- `instance_id` (String) Optional UUID of the instance this target points at (link/tracking only — the API does NOT derive target_ip from it). Changing it forces a new resource. (API field: target_instance_id.)
+- `instance_id` (String) Optional UUID of the instance this target points at (link/tracking only - the API does NOT derive target_ip from it). Changing it forces a new resource. (API field: target_instance_id.)
 - `weight` (Number) Relative weight for load balancing (1-256, default 100). Updatable in place.
 
 ### Read-Only

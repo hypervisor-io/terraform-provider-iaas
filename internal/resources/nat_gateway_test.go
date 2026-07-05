@@ -15,14 +15,14 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccNatGateway_basic — LIVE acceptance test (manual staging gate).
+// TestAccNatGateway_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set (resource.Test enforces this). Requires a
 // reachable panel + IP-locked token (IAAS_API_ENDPOINT / IAAS_API_TOKEN), a VPC
 // in a NAT-gateway-enabled location that has at least one private subnet, and the
 // account's NAT gateway quota not exhausted. Supplied via:
 //
-//	IAAS_TEST_VPC_ID — UUID of a VPC in a natgw-enabled location with a private subnet
+//	IAAS_TEST_VPC_ID - UUID of a VPC in a natgw-enabled location with a private subnet
 //
 // The test skips cleanly when the var is absent so a bare TF_ACC=1 run does not
 // fail.
@@ -66,19 +66,19 @@ resource "iaas_nat_gateway" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitNatGateway_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitNatGateway_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the full CHILD + ASYNC resource lifecycle against canned API responses
 // with no live panel:
 //
-//  1. Create — POST /vpc/{vpcId}/nat-gateway returns {gateway:{id,status:"pending"}};
+//  1. Create - POST /vpc/{vpcId}/nat-gateway returns {gateway:{id,status:"pending"}};
 //     the SHOW then immediately returns status="active" (ready on the FIRST poll →
 //     the waiter converges instantly, no sleep). Asserts the create body
 //     (name + nat_enabled + subnet_ids).
-//  2. Import — by COMPOSITE id "<vpc_id>/<gateway_id>", verifies state matches.
-//  3. Update — rename (PATCH), disable NAT (POST /disable), and swap the attached
+//  2. Import - by COMPOSITE id "<vpc_id>/<gateway_id>", verifies state matches.
+//  3. Update - rename (PATCH), disable NAT (POST /disable), and swap the attached
 //     subnet (detach sub-1 / attach sub-2). Asserts EACH of those fired.
-//  4. Delete — implicit teardown; DELETE soft-deletes and the next SHOW 404s.
+//  4. Delete - implicit teardown; DELETE soft-deletes and the next SHOW 404s.
 //
 // The IAAS_INSTANCE_POLL_INTERVAL seam is set tiny so the waiter cannot hang;
 // combined with active-on-first-poll the test must NOT sleep. resource.UnitTest
@@ -134,7 +134,7 @@ func TestUnitNatGateway_lifecycle(t *testing.T) {
 		}
 	}
 
-	// CREATE — record the row (status "pending" in the create response); the first
+	// CREATE - record the row (status "pending" in the create response); the first
 	// SHOW already reports "active" so the waiter converges on the first poll. The
 	// requested subnet (subnet1) is recorded as the attached set.
 	srv.Handle("POST", base, func(w http.ResponseWriter, r *http.Request) {
@@ -150,7 +150,7 @@ func TestUnitNatGateway_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — 404 once delete has been enqueued.
+	// SHOW - 404 once delete has been enqueued.
 	srv.Handle("GET", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		gone := deleted
@@ -162,7 +162,7 @@ func TestUnitNatGateway_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "gateway": showGateway()})
 	})
 
-	// UPDATE — PATCH name (and/or nat_enabled).
+	// UPDATE - PATCH name (and/or nat_enabled).
 	srv.Handle("PATCH", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -177,7 +177,7 @@ func TestUnitNatGateway_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "updated", "gateway": showGateway()})
 	})
 
-	// DISABLE — POST /disable; clears nat_enabled.
+	// DISABLE - POST /disable; clears nat_enabled.
 	srv.Handle("POST", itemPath+"/disable", func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		currentNatEnabled = false
@@ -185,7 +185,7 @@ func TestUnitNatGateway_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "disabled", "gateway": showGateway()})
 	})
 
-	// ENABLE — POST /enable; sets nat_enabled (registered for completeness).
+	// ENABLE - POST /enable; sets nat_enabled (registered for completeness).
 	srv.Handle("POST", itemPath+"/enable", func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		currentNatEnabled = true
@@ -193,7 +193,7 @@ func TestUnitNatGateway_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "enabled", "gateway": showGateway()})
 	})
 
-	// ATTACH SUBNET — POST /subnet body {subnet_id}.
+	// ATTACH SUBNET - POST /subnet body {subnet_id}.
 	srv.Handle("POST", itemPath+"/subnet", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -205,7 +205,7 @@ func TestUnitNatGateway_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "attached", "gateway": showGateway()})
 	})
 
-	// DETACH SUBNET — DELETE /subnet/{subnetId}.
+	// DETACH SUBNET - DELETE /subnet/{subnetId}.
 	srv.Handle("DELETE", itemPath+"/subnet/"+subnet1, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		delete(currentSubnets, subnet1)
@@ -213,7 +213,7 @@ func TestUnitNatGateway_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "detached", "gateway": showGateway()})
 	})
 
-	// DELETE — soft-delete; the next SHOW 404s.
+	// DELETE - soft-delete; the next SHOW 404s.
 	srv.Handle("DELETE", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		deleted = true

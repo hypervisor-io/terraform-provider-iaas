@@ -13,7 +13,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccAlertRule_basic — LIVE acceptance test (manual staging gate).
+// TestAccAlertRule_basic - LIVE acceptance test (manual staging gate).
 // Auto-skips unless TF_ACC is set.
 // ---------------------------------------------------------------------------
 
@@ -63,7 +63,7 @@ resource "iaas_alert_rule" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// arMockServer — stateful mock of the alert rule API.
+// arMockServer - stateful mock of the alert rule API.
 // ---------------------------------------------------------------------------
 
 type arMockServer struct {
@@ -162,11 +162,11 @@ func (s *arMockServer) applyBody(body map[string]any) {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitAlertRule_lifecycle — MOCK-backed lifecycle test.
+// TestUnitAlertRule_lifecycle - MOCK-backed lifecycle test.
 //
 // Steps:
-//  1. Create a rule (no resource_id, one channel) — assert id, fields, channel.
-//  2. Import by id — state rehydrated from SHOW.
+//  1. Create a rule (no resource_id, one channel) - assert id, fields, channel.
+//  2. Import by id - state rehydrated from SHOW.
 //  3. Update: rename, change threshold, add second channel, set duration.
 //
 // Delete is implicit teardown.
@@ -183,7 +183,7 @@ func TestUnitAlertRule_lifecycle(t *testing.T) {
 
 	store := newARMock()
 
-	// CREATE — POST /alert-rules
+	// CREATE - POST /alert-rules
 	srv.Handle("POST", "/alert-rules", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -196,7 +196,7 @@ func TestUnitAlertRule_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — GET /alert-rule/{id}
+	// SHOW - GET /alert-rule/{id}
 	srv.Handle("GET", "/alert-rule/"+ruleID, func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -206,7 +206,7 @@ func TestUnitAlertRule_lifecycle(t *testing.T) {
 		})
 	})
 
-	// UPDATE — PATCH /alert-rule/{id}
+	// UPDATE - PATCH /alert-rule/{id}
 	srv.Handle("PATCH", "/alert-rule/"+ruleID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -219,7 +219,7 @@ func TestUnitAlertRule_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — DELETE /alert-rule/{id}
+	// DELETE - DELETE /alert-rule/{id}
 	srv.Handle("DELETE", "/alert-rule/"+ruleID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
@@ -258,7 +258,7 @@ resource "iaas_alert_rule" "test" {
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: acctest.Factories,
 		Steps: []resource.TestStep{
-			// 1. Create — global rule with one channel.
+			// 1. Create - global rule with one channel.
 			{
 				Config: createCfg,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -360,7 +360,7 @@ resource "iaas_alert_rule" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitAlertRule_noChannelsNoChurn — verifies that omitting channel_ids in
+// TestUnitAlertRule_noChannelsNoChurn - verifies that omitting channel_ids in
 // the config does not produce a perpetual diff when the API returns an empty
 // channels array. The post-apply refresh must result in an empty plan (null
 // channel_ids in config stays null in state after read).
@@ -375,7 +375,7 @@ func TestUnitAlertRule_noChannelsNoChurn(t *testing.T) {
 
 	store := newARMock()
 
-	// CREATE — POST /alert-rules (no channel_ids in body)
+	// CREATE - POST /alert-rules (no channel_ids in body)
 	srv.Handle("POST", "/alert-rules", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -388,7 +388,7 @@ func TestUnitAlertRule_noChannelsNoChurn(t *testing.T) {
 		})
 	})
 
-	// SHOW — GET /alert-rule/{id} — returns empty channels array
+	// SHOW - GET /alert-rule/{id} - returns empty channels array
 	srv.Handle("GET", "/alert-rule/"+ruleID, func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -398,7 +398,7 @@ func TestUnitAlertRule_noChannelsNoChurn(t *testing.T) {
 		})
 	})
 
-	// DELETE — DELETE /alert-rule/{id}
+	// DELETE - DELETE /alert-rule/{id}
 	srv.Handle("DELETE", "/alert-rule/"+ruleID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,

@@ -12,7 +12,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccIPSet_basic — LIVE acceptance test (manual staging gate).
+// TestAccIPSet_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set (resource.Test enforces this), so it never
 // runs or blocks CI. Requires a reachable panel + IP-locked token via
@@ -135,7 +135,7 @@ func (s *ipSetMockServer) ipSetObject(id string) map[string]any {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitIPSet_lifecycle — MOCK-backed lifecycle proof (the key test).
+// TestUnitIPSet_lifecycle - MOCK-backed lifecycle proof (the key test).
 //
 // Steps:
 //  1. Create with TWO entries → assert id, name, ip_version, entries.# = 2,
@@ -162,7 +162,7 @@ func TestUnitIPSet_lifecycle(t *testing.T) {
 		entries:   map[string]ipSetMockEntry{},
 	}
 
-	// CREATE — POST /ip-sets stores name/description/ip_version, returns ip_set.
+	// CREATE - POST /ip-sets stores name/description/ip_version, returns ip_set.
 	srv.Handle("POST", "/ip-sets", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -186,7 +186,7 @@ func TestUnitIPSet_lifecycle(t *testing.T) {
 		})
 	})
 
-	// ADD ENTRY — POST /ip-set/{id}/entries stores a new entry, returns it.
+	// ADD ENTRY - POST /ip-set/{id}/entries stores a new entry, returns it.
 	srv.Handle("POST", "/ip-set/"+setID+"/entries", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -212,7 +212,7 @@ func TestUnitIPSet_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — GET /ip-set/{id} returns the set with embedded entries.
+	// SHOW - GET /ip-set/{id} returns the set with embedded entries.
 	srv.Handle("GET", "/ip-set/"+setID, func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -222,7 +222,7 @@ func TestUnitIPSet_lifecycle(t *testing.T) {
 		})
 	})
 
-	// UPDATE — PATCH /ip-set/{id} applies name/description; NO ip_set body.
+	// UPDATE - PATCH /ip-set/{id} applies name/description; NO ip_set body.
 	srv.Handle("PATCH", "/ip-set/"+setID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -244,7 +244,7 @@ func TestUnitIPSet_lifecycle(t *testing.T) {
 		})
 	})
 
-	// REMOVE ENTRY — DELETE /ip-set/{id}/entry/{entryId} drops the entry.
+	// REMOVE ENTRY - DELETE /ip-set/{id}/entry/{entryId} drops the entry.
 	// The mock registers a catch-all per known entry id below via a prefix match
 	// is not supported, so we register a handler that inspects the path.
 	srv.Handle("DELETE", "/ip-set/"+setID+"/entry/entry-1", makeRemoveEntryHandler(store, "entry-1"))
@@ -252,7 +252,7 @@ func TestUnitIPSet_lifecycle(t *testing.T) {
 	srv.Handle("DELETE", "/ip-set/"+setID+"/entry/entry-3", makeRemoveEntryHandler(store, "entry-3"))
 	srv.Handle("DELETE", "/ip-set/"+setID+"/entry/entry-4", makeRemoveEntryHandler(store, "entry-4"))
 
-	// DELETE SET — DELETE /ip-set/{id}.
+	// DELETE SET - DELETE /ip-set/{id}.
 	srv.Handle("DELETE", "/ip-set/"+setID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,

@@ -3,15 +3,15 @@
 # The engine is immutable (changing it forces a new resource).
 # Parameters are replaced in full on each update.
 #
-# IMPORTANT — only suffix-free parameters are supported via Terraform.
+# IMPORTANT - only suffix-free parameters are supported via Terraform.
 # Memory-size parameters (innodb_buffer_pool_size, innodb_log_file_size,
 # innodb_redo_log_capacity, max_allowed_packet, tmp_table_size,
 # max_heap_table_size for MySQL/MariaDB; shared_buffers, effective_cache_size,
 # work_mem, maintenance_work_mem, wal_buffers, max_wal_size for PostgreSQL)
 # receive a non-idempotent unit suffix from the server on every write and
-# cannot be managed here — set them via the control panel instead.
+# cannot be managed here - set them via the control panel instead.
 #
-# Parameter groups are a billed add-on — billing must be enabled on the account.
+# Parameter groups are a billed add-on - billing must be enabled on the account.
 #
 # Applying a parameter group to a managed database:
 #   Use the PATCH /database/{id}/parameter-group API endpoint (not yet modelled

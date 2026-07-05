@@ -3,19 +3,19 @@
 page_title: "iaas_kubernetes_ssl_certificate Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a TLS certificate on a Kubernetes cluster's CP load balancer — either a manually-uploaded PEM certificate (source = "custom") or a Let's Encrypt issuance (source = "letsencrypt"). A certificate is a child of a cluster: its parent cluster_id is part of the API path, so changing it forces a new resource. There is NO update route — every field is immutable; changing any of them rotates (replaces) the certificate. certificate, private_key and chain are WRITE-ONLY and SENSITIVE: the cluster-scoped list endpoint never returns them (not even right after create), so they are taken from configuration and never refreshed from the server. Once an active certificate exists, the cluster's Kubeconfig download endpoint rewrites server: to use the certificate's domain instead of the bare LB IP. Import with a composite id: "<cluster_id>/<certificate_id>".
+  Manages a TLS certificate on a Kubernetes cluster's CP load balancer - either a manually-uploaded PEM certificate (source = "custom") or a Let's Encrypt issuance (source = "letsencrypt"). A certificate is a child of a cluster: its parent cluster_id is part of the API path, so changing it forces a new resource. There is NO update route - every field is immutable; changing any of them rotates (replaces) the certificate. certificate, private_key and chain are WRITE-ONLY and SENSITIVE: the cluster-scoped list endpoint never returns them (not even right after create), so they are taken from configuration and never refreshed from the server. Once an active certificate exists, the cluster's Kubeconfig download endpoint rewrites server: to use the certificate's domain instead of the bare LB IP. Import with a composite id: "<cluster_id>/<certificate_id>".
 ---
 
 # iaas_kubernetes_ssl_certificate (Resource)
 
-Manages a TLS certificate on a Kubernetes cluster's CP load balancer — either a manually-uploaded PEM certificate (source = "custom") or a Let's Encrypt issuance (source = "letsencrypt"). A certificate is a child of a cluster: its parent cluster_id is part of the API path, so changing it forces a new resource. There is NO update route — every field is immutable; changing any of them rotates (replaces) the certificate. certificate, private_key and chain are WRITE-ONLY and SENSITIVE: the cluster-scoped list endpoint never returns them (not even right after create), so they are taken from configuration and never refreshed from the server. Once an active certificate exists, the cluster's Kubeconfig download endpoint rewrites `server:` to use the certificate's domain instead of the bare LB IP. Import with a composite id: "<cluster_id>/<certificate_id>".
+Manages a TLS certificate on a Kubernetes cluster's CP load balancer - either a manually-uploaded PEM certificate (source = "custom") or a Let's Encrypt issuance (source = "letsencrypt"). A certificate is a child of a cluster: its parent cluster_id is part of the API path, so changing it forces a new resource. There is NO update route - every field is immutable; changing any of them rotates (replaces) the certificate. certificate, private_key and chain are WRITE-ONLY and SENSITIVE: the cluster-scoped list endpoint never returns them (not even right after create), so they are taken from configuration and never refreshed from the server. Once an active certificate exists, the cluster's Kubeconfig download endpoint rewrites `server:` to use the certificate's domain instead of the bare LB IP. Import with a composite id: "<cluster_id>/<certificate_id>".
 
 ## Example Usage
 
 ```terraform
 # A TLS certificate on a Kubernetes cluster's CP load balancer. A cert is a
 # CHILD of a cluster (its cluster_id is part of the API path, so changing it
-# forces a new resource). There is NO update endpoint — every field is
+# forces a new resource). There is NO update endpoint - every field is
 # IMMUTABLE, so changing any of them rotates (replaces) the certificate.
 #
 # Once an active certificate exists, the cluster's Kubeconfig download
@@ -24,7 +24,7 @@ Manages a TLS certificate on a Kubernetes cluster's CP load balancer — either 
 
 # ── source = "custom": manual PEM upload ──────────────────────────────────
 resource "iaas_kubernetes_ssl_certificate" "custom" {
-  # Parent cluster id — part of the API path. Changing it forces a new resource.
+  # Parent cluster id - part of the API path. Changing it forces a new resource.
   cluster_id = iaas_kubernetes_cluster.prod.id
 
   source = "custom"
@@ -56,7 +56,7 @@ resource "iaas_kubernetes_ssl_certificate" "le" {
 
   # certificate/private_key/chain are ignored for source = "letsencrypt" (the
   # server issues via ACME instead). Progress surfaces on letsencrypt_status
-  # ("pending_dns" -> "active"/"error") — this resource does NOT poll/wait for
+  # ("pending_dns" -> "active"/"error") - this resource does NOT poll/wait for
   # issuance to complete; re-run `terraform plan`/`refresh` to observe it.
 }
 
@@ -77,21 +77,21 @@ output "le_status" {
 
 - `cluster_id` (String) UUID of the parent Kubernetes cluster this certificate belongs to. This value is part of the API request path, so changing it forces a new resource.
 - `domain` (String) Primary certificate domain. The cluster's CP LB serves a single apiserver endpoint, so this must be a single hostname (no lists). Immutable; changing it forces a new resource.
-- `source` (String) Certificate source: "letsencrypt" (ACME issuance for `domain` + any `san_domains`) or "custom" (manual PEM upload — requires certificate + private_key). Immutable; changing it forces a new resource. NOTE: the API does not echo this field back; it is reconstructed on read from the persisted `type` ("letsencrypt" stays "letsencrypt", anything else reads back as "custom").
+- `source` (String) Certificate source: "letsencrypt" (ACME issuance for `domain` + any `san_domains`) or "custom" (manual PEM upload - requires certificate + private_key). Immutable; changing it forces a new resource. NOTE: the API does not echo this field back; it is reconstructed on read from the persisted `type` ("letsencrypt" stays "letsencrypt", anything else reads back as "custom").
 
 ### Optional
 
-- `certificate` (String, Sensitive) PEM-encoded leaf certificate. Required when source = "custom" (enforced at plan time); REJECTED AT PLAN TIME for source = "letsencrypt" (enforced by ConfigValidators — the server ignores it in favour of the ACME-issued certificate). WRITE-ONLY: the cluster ssl-certificates list never returns it, so it is taken from configuration and never refreshed. Immutable; changing it forces a new resource (rotation).
-- `chain` (String, Sensitive) Optional PEM-encoded intermediate certificate chain (source = "custom" only — REJECTED AT PLAN TIME for source = "letsencrypt", enforced by ConfigValidators). WRITE-ONLY: the cluster ssl-certificates list never returns it, so it is taken from configuration and never refreshed. Immutable; changing it forces a new resource.
-- `expires_at` (String) Certificate expiry (nullable date; source = "custom" only — accepted by the store validation though not documented on the endpoint — REJECTED AT PLAN TIME for source = "letsencrypt", enforced by ConfigValidators, since ACME issuance determines the real expiry). Null for a fresh "letsencrypt" cert until ACME issuance completes. Immutable; changing it forces a new resource.
-- `name` (String) Display name. Defaults to `domain` when omitted for source = "custom"; REJECTED AT PLAN TIME for source = "letsencrypt" (enforced by ConfigValidators) — the server always force-overrides it to "LE: <domain>", so setting it would only ever surface as an inconsistent-apply error. Immutable; changing it forces a new resource.
-- `private_key` (String, Sensitive) PEM-encoded private key. Required when source = "custom" (enforced at plan time); REJECTED AT PLAN TIME for source = "letsencrypt" (enforced by ConfigValidators — the server ignores it in favour of the ACME-issued key). WRITE-ONLY and SENSITIVE: never returned by the API (private_key is $hidden model-wide), so it is taken from configuration and never refreshed. Immutable; changing it forces a new resource.
-- `san_domains` (String) Comma-separated SAN domains (optional, either source — the server stores and uses san_domains for a "letsencrypt" issuance too, so this is NOT rejected for that source). Immutable; changing it forces a new resource.
+- `certificate` (String, Sensitive) PEM-encoded leaf certificate. Required when source = "custom" (enforced at plan time); REJECTED AT PLAN TIME for source = "letsencrypt" (enforced by ConfigValidators - the server ignores it in favour of the ACME-issued certificate). WRITE-ONLY: the cluster ssl-certificates list never returns it, so it is taken from configuration and never refreshed. Immutable; changing it forces a new resource (rotation).
+- `chain` (String, Sensitive) Optional PEM-encoded intermediate certificate chain (source = "custom" only - REJECTED AT PLAN TIME for source = "letsencrypt", enforced by ConfigValidators). WRITE-ONLY: the cluster ssl-certificates list never returns it, so it is taken from configuration and never refreshed. Immutable; changing it forces a new resource.
+- `expires_at` (String) Certificate expiry (nullable date; source = "custom" only - accepted by the store validation though not documented on the endpoint - REJECTED AT PLAN TIME for source = "letsencrypt", enforced by ConfigValidators, since ACME issuance determines the real expiry). Null for a fresh "letsencrypt" cert until ACME issuance completes. Immutable; changing it forces a new resource.
+- `name` (String) Display name. Defaults to `domain` when omitted for source = "custom"; REJECTED AT PLAN TIME for source = "letsencrypt" (enforced by ConfigValidators) - the server always force-overrides it to "LE: <domain>", so setting it would only ever surface as an inconsistent-apply error. Immutable; changing it forces a new resource.
+- `private_key` (String, Sensitive) PEM-encoded private key. Required when source = "custom" (enforced at plan time); REJECTED AT PLAN TIME for source = "letsencrypt" (enforced by ConfigValidators - the server ignores it in favour of the ACME-issued key). WRITE-ONLY and SENSITIVE: never returned by the API (private_key is $hidden model-wide), so it is taken from configuration and never refreshed. Immutable; changing it forces a new resource.
+- `san_domains` (String) Comma-separated SAN domains (optional, either source - the server stores and uses san_domains for a "letsencrypt" issuance too, so this is NOT rejected for that source). Immutable; changing it forces a new resource.
 
 ### Read-Only
 
 - `id` (String) UUID of the certificate, assigned by the API.
 - `letsencrypt_domains` (List of String) Full set of domains covered by a Let's Encrypt cert (domain + san_domains, as accepted by ACME). Null for source = "custom". Server-mutable.
 - `letsencrypt_error` (String) Let's Encrypt issuance error message, if any. Server-mutable.
-- `letsencrypt_status` (String) Let's Encrypt issuance status (e.g. "pending_dns", "active", "error"). Empty for source = "custom". Server-mutable — evolves in the background as ACME issuance progresses; this resource does not wait/poll for it.
+- `letsencrypt_status` (String) Let's Encrypt issuance status (e.g. "pending_dns", "active", "error"). Empty for source = "custom". Server-mutable - evolves in the background as ACME issuance progresses; this resource does not wait/poll for it.
 - `type` (String) Persisted certificate type: "manual" (source = "custom") or "letsencrypt". Server-mutable in principle (it is the source of truth `source` is derived from on read).

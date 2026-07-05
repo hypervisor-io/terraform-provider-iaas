@@ -11,7 +11,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/acctest"
 )
 
-// TestAccLBBackend_basic — LIVE acceptance test (manual staging gate).
+// TestAccLBBackend_basic - LIVE acceptance test (manual staging gate).
 // Auto-skips unless TF_ACC is set and IAAS_TEST_LB_ID is supplied.
 func TestAccLBBackend_basic(t *testing.T) {
 	t.Skip("TestAccLBBackend_basic: acceptance test runs only with TF_ACC + a real load balancer id (manual staging gate)")
@@ -20,12 +20,12 @@ func TestAccLBBackend_basic(t *testing.T) {
 // TestUnitLBBackend_lifecycle drives the full CHILD lifecycle against a stateful
 // mock:
 //
-//  1. Create — POST /load-balancer/{lbId}/backends; the backend appears in the
+//  1. Create - POST /load-balancer/{lbId}/backends; the backend appears in the
 //     LB SHOW embedded backends[]. Asserts the create body (algorithm, not balance).
-//  2. Read — scans the LB SHOW backends[] for the id.
-//  3. Import — composite id "<lb_id>/<backend_id>".
-//  4. Update — PATCH backend/{id} (rename + algorithm); asserts the PATCH body.
-//  5. Delete — removes the backend from the embedded array.
+//  2. Read - scans the LB SHOW backends[] for the id.
+//  3. Import - composite id "<lb_id>/<backend_id>".
+//  4. Update - PATCH backend/{id} (rename + algorithm); asserts the PATCH body.
+//  5. Delete - removes the backend from the embedded array.
 func TestUnitLBBackend_lifecycle(t *testing.T) {
 	ensureTFBinary(t)
 
@@ -57,7 +57,7 @@ func TestUnitLBBackend_lifecycle(t *testing.T) {
 		}
 	}
 
-	// Parent LB SHOW — embeds backends[] (the read/scan source).
+	// Parent LB SHOW - embeds backends[] (the read/scan source).
 	srv.Handle("GET", "/load-balancer/"+lbID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
@@ -82,7 +82,7 @@ func TestUnitLBBackend_lifecycle(t *testing.T) {
 		})
 	})
 
-	// UPDATE backend — reflect the new name/algorithm in the embedded array.
+	// UPDATE backend - reflect the new name/algorithm in the embedded array.
 	srv.Handle("PATCH", "/load-balancer/"+lbID+"/backend/"+backendID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)

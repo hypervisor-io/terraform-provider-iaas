@@ -23,7 +23,7 @@ import (
 //	                body {name (required,max:255),
 //	                      resource_type (required,in:instance|managed_database|
 //	                                     load_balancer|vpn_gateway),
-//	                      resource_id   (nullable|uuid — omit to match ALL
+//	                      resource_id   (nullable|uuid - omit to match ALL
 //	                                     resources of the given type),
 //	                      metric        (required|string, e.g. cpu_pct),
 //	                      operator      (required,in:gt|lt|gte|lte|eq),
@@ -49,12 +49,12 @@ import (
 //   - resource_id is optional; when omitted the rule fires for every resource of
 //     resource_type owned by the account.
 //   - status (ok/firing) and fired_at/resolved_at/last_notified_at are
-//     server-mutable computed fields — they are NOT sent in Create/Update bodies.
+//     server-mutable computed fields - they are NOT sent in Create/Update bodies.
 //   - acknowledge (POST /alert-rule/{id}/acknowledge) is an operational action,
 //     not IaC state; it is NOT modelled.
 //   - Routes are gated by subuser permissions (monitoring.view for LIST/SHOW/HISTORY,
 //     monitoring.manage for CREATE/UPDATE/DELETE/acknowledge).
-//   - success:false at HTTP 200 = error (C3) — handled by doItem/doVoid.
+//   - success:false at HTTP 200 = error (C3) - handled by doItem/doVoid.
 
 // ListAlertRules returns all alert rules belonging to the authenticated account.
 // Each item includes an embedded "channels" array of attached notification channels.

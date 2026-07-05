@@ -88,9 +88,9 @@ func (c *Client) ListISOs(ctx context.Context, query string) ([]map[string]any, 
 // decodeSelect2 unwraps a Select2 envelope ({"results":[…]}) into a flat list.
 //
 // Select2 has two shapes:
-//   - GROUPED: each result is an optgroup carrying a "children" array — the real
+//   - GROUPED: each result is an optgroup carrying a "children" array - the real
 //     items live in results[].children[]. We flatten all children.
-//   - FLAT: each result IS an item (no "children" key) — we take the result
+//   - FLAT: each result IS an item (no "children" key) - we take the result
 //     itself.
 //
 // A result with a present "children" array contributes its children; a result
@@ -109,7 +109,7 @@ func decodeSelect2(body []byte) ([]map[string]any, error) {
 	for i, result := range env.Results {
 		childrenRaw, hasChildren := result["children"]
 		if !hasChildren {
-			// Flat result — the result itself is an item.
+			// Flat result - the result itself is an item.
 			out = append(out, result)
 			continue
 		}

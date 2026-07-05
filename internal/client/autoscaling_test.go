@@ -72,7 +72,7 @@ func TestCreateAutoscalingGroup_Success(t *testing.T) {
 
 // TestCreateAutoscalingGroup_Failure verifies a 200 success:false response (e.g.
 // autoscaling not enabled on the hypervisor group, or min>max) surfaces the API
-// message as an error (C3 — gating is NOT a 403, it is success:false at 200).
+// message as an error (C3 - gating is NOT a 403, it is success:false at 200).
 func TestCreateAutoscalingGroup_Failure(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

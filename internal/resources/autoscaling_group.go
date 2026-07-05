@@ -18,7 +18,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/waiter"
 )
 
-// Interface assertions — iaas_autoscaling_group manages a fleet of identical
+// Interface assertions - iaas_autoscaling_group manages a fleet of identical
 // instances kept between min/max. It combines several golden patterns:
 //   - WRITE-ONLY create-only fields (ssh_keys) echoed from plan,
 //   - a `paused` bool toggled via dedicated pause/resume endpoints on diff,
@@ -95,7 +95,7 @@ func (r *autoscalingGroupResource) Schema(ctx context.Context, _ resource.Schema
 		Description: "Manages an autoscaling group: a fleet of identical instances kept between " +
 			"min_instances and max_instances. The launch placement (hypervisor_group_id, optional " +
 			"VPC/subnet, optional load balancer backend) and the injected ssh_keys are fixed at " +
-			"create time — changing any forces a new group. The launch template (plan_id, image_id, " +
+			"create time - changing any forces a new group. The launch template (plan_id, image_id, " +
 			"cloud_init), the min/max bounds, the name, and the attached security_group_ids can be " +
 			"changed in place. Set `paused` to true to stop the evaluator scaling the group (it calls " +
 			"the pause endpoint); set it back to false to resume (which re-enforces min_instances). " +
@@ -214,7 +214,7 @@ func (r *autoscalingGroupResource) Schema(ctx context.Context, _ resource.Schema
 				Computed: true,
 				Description: "Lifecycle status reported by the server: `active`, `paused`, or `error`. " +
 					"Server-mutable.",
-				// Server-mutable: NO UseStateForUnknown — the plan must always reflect
+				// Server-mutable: NO UseStateForUnknown - the plan must always reflect
 				// the refreshed value (e.g. the evaluator setting it to "error").
 			},
 			"current_count": schema.Int64Attribute{
@@ -411,7 +411,7 @@ func (r *autoscalingGroupResource) Update(ctx context.Context, req resource.Upda
 }
 
 // Delete enqueues destruction (background DestroyGroup job) and converges by
-// polling SHOW until it 404s — the same pattern as the instance resource.
+// polling SHOW until it 404s - the same pattern as the instance resource.
 func (r *autoscalingGroupResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state autoscalingGroupModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -476,7 +476,7 @@ func autoscalingGroupStateFromAPI(obj map[string]any, prior autoscalingGroupMode
 		ID:   stringFromAPI(obj, "id", prior.ID),
 		Name: stringFromAPI(obj, "name", prior.Name),
 
-		// Placement / launch template — preserve plan for the RequiresReplace ones
+		// Placement / launch template - preserve plan for the RequiresReplace ones
 		// (SHOW echoes them but config is authoritative); plan_id/image_id are
 		// mutable, so refresh from the API.
 		HypervisorGroupID: stringOrPrior(obj, "hypervisor_group_id", prior.HypervisorGroupID),
@@ -490,7 +490,7 @@ func autoscalingGroupStateFromAPI(obj map[string]any, prior autoscalingGroupMode
 		MinInstances: int64FromAPI(obj, "min_instances", prior.MinInstances),
 		MaxInstances: int64FromAPI(obj, "max_instances", prior.MaxInstances),
 
-		// WRITE-ONLY / config-authoritative — preserve prior verbatim.
+		// WRITE-ONLY / config-authoritative - preserve prior verbatim.
 		CloudInit: prior.CloudInit,
 		SSHKeys:   prior.SSHKeys,
 

@@ -13,7 +13,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// responseError — unit tests (no HTTP server needed)
+// responseError - unit tests (no HTTP server needed)
 // ---------------------------------------------------------------------------
 
 // TestResponseError_422_FieldErrors verifies that a 422 response with the
@@ -207,7 +207,7 @@ func TestIsNotFound_Non404APIError(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// do — retry integration tests (via httptest)
+// do - retry integration tests (via httptest)
 // ---------------------------------------------------------------------------
 
 // TestDo_429ThenOK verifies that do retries on 429 and returns the 200 response.

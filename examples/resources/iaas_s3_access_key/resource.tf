@@ -2,7 +2,7 @@
 # is captured into the (sensitive) secret_key attribute and preserved in state.
 # A key imported into Terraform will have an empty secret_key (it cannot be
 # recovered). The user API exposes no delete endpoint for access keys, so
-# destroying this resource only removes it from Terraform state — delete the key
+# destroying this resource only removes it from Terraform state - delete the key
 # in the control panel to remove it server-side.
 resource "iaas_s3_access_key" "app" {
   name = "app-key"

@@ -16,7 +16,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — iaas_s3_access_key is a SYNC resource modelling a
+// Interface assertions - iaas_s3_access_key is a SYNC resource modelling a
 // standalone S3 access key.
 //
 // ★ SHOWN-ONCE SECRET (the central design point):
@@ -24,7 +24,7 @@ import (
 //   - The CREATE response is the ONLY place the secret_key is ever returned
 //     ({success,message,data:{access_key,secret_key}}). The model marks
 //     secret_key as $hidden, so it never appears in the LIST (the only readback
-//     path — there is no SHOW route). The access_key (public) and id ARE in the
+//     path - there is no SHOW route). The access_key (public) and id ARE in the
 //     LIST.
 //   - secret_key is therefore a **Sensitive Computed** attribute that is CAPTURED
 //     from the create response and then PRESERVED in state forever
@@ -36,7 +36,7 @@ import (
 //
 // There is NO user-API delete route for access keys (only index/store/update),
 // so Delete is a state-only removal that warns the operator to delete the key in
-// the panel — Terraform stops tracking it but cannot tear it down server-side.
+// the panel - Terraform stops tracking it but cannot tear it down server-side.
 var (
 	_ resource.Resource                = &s3AccessKeyResource{}
 	_ resource.ResourceWithConfigure   = &s3AccessKeyResource{}
@@ -56,7 +56,7 @@ func NewS3AccessKeyResource() resource.Resource {
 //
 //	INDEX  GET   /object-storage/access-keys           (PLURAL) paginator
 //	                                                     {data:[{id,name,access_key,active}]}
-//	                                                     (secret_key $hidden — never listed)
+//	                                                     (secret_key $hidden - never listed)
 //	CREATE POST  /object-storage/access-keys           (PLURAL) body {name}
 //	                                                     → {success,message,
 //	                                                     data:{access_key,secret_key}}
@@ -95,7 +95,7 @@ func (r *s3AccessKeyResource) Schema(_ context.Context, _ resource.SchemaRequest
 		Description: "Manages a standalone S3 access key that can be attached to buckets (via the " +
 			"iaas_s3_bucket attached_keys set) with a per-bucket permission. The secret key is " +
 			"returned ONLY once, at creation, and is captured into the (sensitive) secret_key " +
-			"attribute and preserved in state thereafter — no read or import can recover it, so a " +
+			"attribute and preserved in state thereafter - no read or import can recover it, so a " +
 			"key imported into Terraform will have an empty secret_key. The key can be renamed and " +
 			"activated/deactivated in place. The platform's user API exposes no delete endpoint for " +
 			"access keys, so destroying this resource only removes it from Terraform state (a warning " +
@@ -138,7 +138,7 @@ func (r *s3AccessKeyResource) Schema(_ context.Context, _ resource.SchemaRequest
 					"and never again (it is hidden on every other endpoint). It is captured here on " +
 					"create and preserved in state; a read cannot refresh it and an imported key will " +
 					"have it empty. Marked sensitive so it is never shown in plan/CLI output.",
-				// Captured on create, preserved forever — the LIST (the only
+				// Captured on create, preserved forever - the LIST (the only
 				// readback) never returns it, so UseStateForUnknown keeps the
 				// prior value stable and a plan never re-marks it unknown.
 				PlanModifiers: []planmodifier.String{
@@ -191,7 +191,7 @@ func (r *s3AccessKeyResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	// C4 readback: the create response has no record id — find the key by its
+	// C4 readback: the create response has no record id - find the key by its
 	// just-issued public access_key to learn the id (and confirm name/active).
 	obj, err := r.client.GetS3AccessKeyByAccessKey(ctx, accessKey)
 	if err != nil {
@@ -241,9 +241,9 @@ func (r *s3AccessKeyResource) Create(ctx context.Context, req resource.CreateReq
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
-// Read refreshes state from the API (list-and-match by id — there is no SHOW
+// Read refreshes state from the API (list-and-match by id - there is no SHOW
 // route). A 404 (id absent from the listing) means the key was deleted out of
-// band — remove it from state. The shown-once secret_key is NOT returned by the
+// band - remove it from state. The shown-once secret_key is NOT returned by the
 // listing, so it is PRESERVED from prior state (never overwritten).
 func (r *s3AccessKeyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state s3AccessKeyModel
@@ -263,7 +263,7 @@ func (r *s3AccessKeyResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 
 	newState := s3AccessKeyStateFromAPI(obj, state)
-	// PRESERVE the shown-once secret — the listing never returns it.
+	// PRESERVE the shown-once secret - the listing never returns it.
 	newState.SecretKey = state.SecretKey
 	resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
 }
@@ -306,7 +306,7 @@ func (r *s3AccessKeyResource) Update(ctx context.Context, req resource.UpdateReq
 	newState.ID = types.StringValue(id)
 	// PRESERVE the shown-once secret.
 	newState.SecretKey = state.SecretKey
-	// active is a fire-and-forget async toggle the listing may not reflect yet —
+	// active is a fire-and-forget async toggle the listing may not reflect yet -
 	// trust the plan so update converges without churn.
 	if activeChanged {
 		newState.Active = types.BoolValue(wantActive)

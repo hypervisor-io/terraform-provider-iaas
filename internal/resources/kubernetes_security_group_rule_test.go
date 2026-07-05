@@ -20,7 +20,7 @@ func TestAccKubernetesSecurityGroupRule_basic(t *testing.T) {
 // TestUnitKubernetesSecurityGroupRule_rejectNoTarget is a NEGATIVE
 // ConfigValidators test: none of cidr/remote_group_id/ip_set_id set must be
 // rejected at PLAN time (mirrors the Master's SecurityGroupService::addRule
-// mutual-exclusivity rule) — no API call is ever made.
+// mutual-exclusivity rule) - no API call is ever made.
 func TestUnitKubernetesSecurityGroupRule_rejectNoTarget(t *testing.T) {
 	ensureTFBinary(t)
 
@@ -48,7 +48,7 @@ resource "iaas_kubernetes_security_group_rule" "bad" {
 
 // TestUnitKubernetesSecurityGroupRule_rejectMultipleTargets is a NEGATIVE
 // ConfigValidators test: setting BOTH cidr and remote_group_id must be
-// rejected at PLAN time — the two are mutually exclusive.
+// rejected at PLAN time - the two are mutually exclusive.
 func TestUnitKubernetesSecurityGroupRule_rejectMultipleTargets(t *testing.T) {
 	ensureTFBinary(t)
 
@@ -77,16 +77,16 @@ resource "iaas_kubernetes_security_group_rule" "bad" {
 }
 
 // TestUnitKubernetesSecurityGroupRule_lifecycle drives the CHILD lifecycle (no
-// update — every field is RequiresReplace):
+// update - every field is RequiresReplace):
 //
-//  1. Create — POST .../security-group/{scope} with direction/protocol/
+//  1. Create - POST .../security-group/{scope} with direction/protocol/
 //     port_range_min/port_range_max/ip_version/cidr/description; asserts the
 //     create body carried them AND the Idempotency-Key header
 //     (idempotency.user). The rule then appears in the (cluster,scope) LIST,
 //     carrying its own security_group_id + internal columns.
-//  2. Read — lists the cluster's scope rules and matches by id.
-//  3. Import — 3-part composite "<cluster_id>/<scope>/<rule_id>".
-//  4. Delete — DELETEs ".../security-group/{scope}/rule/{ruleId}", also
+//  2. Read - lists the cluster's scope rules and matches by id.
+//  3. Import - 3-part composite "<cluster_id>/<scope>/<rule_id>".
+//  4. Delete - DELETEs ".../security-group/{scope}/rule/{ruleId}", also
 //     carrying the Idempotency-Key header.
 //
 // Every recorded request is asserted to hit the CLUSTER+SCOPE-scoped path
@@ -247,7 +247,7 @@ resource "iaas_kubernetes_security_group_rule" "test" {
 	}
 
 	// Belt-and-braces: every recorded create/delete request hit the
-	// CLUSTER+SCOPE-scoped route — never a bare "/security-group/{id}/..."
+	// CLUSTER+SCOPE-scoped route - never a bare "/security-group/{id}/..."
 	// standalone-SG path.
 	for _, req := range append(append([]acctest.RecordedRequest{}, creates...), deletes...) {
 		if !strings.Contains(req.Path, "/kubernetes/cluster/"+clusterID+"/security-group/"+scope) {

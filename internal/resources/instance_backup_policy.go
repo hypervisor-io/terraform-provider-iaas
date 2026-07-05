@@ -29,7 +29,7 @@ func NewInstanceBackupPolicyResource() resource.Resource {
 	return &instanceBackupPolicyResource{}
 }
 
-// instanceBackupPolicyResource manages an iaas_instance_backup_policy — a
+// instanceBackupPolicyResource manages an iaas_instance_backup_policy - a
 // named backup schedule/retention configuration that instances can be attached
 // to (one instance per policy).
 //
@@ -88,7 +88,7 @@ func (r *instanceBackupPolicyResource) Metadata(_ context.Context, req resource.
 // Schema describes the iaas_instance_backup_policy resource.
 func (r *instanceBackupPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages an instance backup policy — a named schedule and retention " +
+		Description: "Manages an instance backup policy - a named schedule and retention " +
 			"configuration for KVM instance backups. Instances are attached to the policy " +
 			"one at a time via the `instance_ids` set attribute. Changes to that set " +
 			"attach or detach the corresponding instances in place. " +
@@ -126,11 +126,11 @@ func (r *instanceBackupPolicyResource) Schema(_ context.Context, _ resource.Sche
 			"max_incremental_chain": schema.Int64Attribute{
 				Required: true,
 				Description: "Maximum number of incremental backups to chain between full " +
-					"backups (0–30). Zero disables incrementals.",
+					"backups (0-30). Zero disables incrementals.",
 			},
 			"retention_count": schema.Int64Attribute{
 				Required:    true,
-				Description: "Number of full backups to retain (1–365). Older backups are pruned.",
+				Description: "Number of full backups to retain (1-365). Older backups are pruned.",
 			},
 			"backup_device": schema.StringAttribute{
 				Required: true,
@@ -240,7 +240,7 @@ func (r *instanceBackupPolicyResource) Create(ctx context.Context, req resource.
 }
 
 // Read refreshes state from the API. A 404 means the policy was deleted
-// out of band — remove it from state so Terraform plans a recreate.
+// out of band - remove it from state so Terraform plans a recreate.
 func (r *instanceBackupPolicyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state instanceBackupPolicyModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

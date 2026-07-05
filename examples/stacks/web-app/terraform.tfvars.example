@@ -9,12 +9,12 @@
 #   export IAAS_API_TOKEN="your-ip-locked-bearer-token"
 #
 # If you would rather set them here, uncomment the two lines below (terraform.tfvars
-# is gitignored by convention — do not commit real secrets):
+# is gitignored by convention - do not commit real secrets):
 #
 # iaas_api_endpoint = "https://panel.example.com/api"
 # iaas_api_token    = "your-ip-locked-bearer-token"
 
-# Deploy location — slug or display name (resolved via the iaas_location data source).
+# Deploy location - slug or display name (resolved via the iaas_location data source).
 location_name = "nyc"
 
 # Instance plan name within the location.

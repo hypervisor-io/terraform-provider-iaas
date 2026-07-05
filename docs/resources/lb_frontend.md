@@ -28,7 +28,7 @@ resource "iaas_lb_backend" "web" {
 }
 
 resource "iaas_lb_frontend" "http" {
-  # Parent load balancer id — part of the API path. Changing it forces a new resource.
+  # Parent load balancer id - part of the API path. Changing it forces a new resource.
   load_balancer_id = iaas_load_balancer.example.id
 
   name     = "http-in"

@@ -20,7 +20,7 @@ func TestCreateLBCertificate_Success(t *testing.T) {
 		gotPath = r.URL.Path
 		_ = json.NewDecoder(r.Body).Decode(&gotBody)
 		w.WriteHeader(http.StatusOK)
-		// private_key is $hidden — NOT echoed back.
+		// private_key is $hidden - NOT echoed back.
 		_, _ = w.Write([]byte(`{"success":true,"message":"Certificate added.","certificate":{"id":"ct-1","name":"my-cert","certificate":"-----CERT-----"},"sync":{}}`))
 	}))
 	defer srv.Close()

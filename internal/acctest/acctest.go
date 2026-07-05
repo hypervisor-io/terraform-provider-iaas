@@ -37,7 +37,7 @@ var Factories = map[string]func() (tfprotov6.ProviderServer, error){
 //
 // Live acceptance tests are additionally gated by the TF_ACC environment
 // variable (handled automatically by resource.Test). They require a reachable
-// panel and an IP-locked API token. CI does NOT set TF_ACC or these variables —
+// panel and an IP-locked API token. CI does NOT set TF_ACC or these variables -
 // live acceptance tests are a manual gate only.
 //
 // Usage:

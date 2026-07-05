@@ -14,7 +14,7 @@ import (
 // regions endpoint returns (text == region name, plus slug + feature flags).
 const k8sRegionsBody = `{"results":[{"id":"hg-1","text":"NYC1","slug":"nyc1","kubernetes_enabled":1,"vpc_enabled":1,"lb_enabled":1},{"id":"hg-2","text":"LON1","slug":"lon1","kubernetes_enabled":1,"vpc_enabled":1,"lb_enabled":1}],"pagination":{"more":false}}`
 
-// TestUnitKubernetesRegion_lookupBySlug — a lookup matching the region slug
+// TestUnitKubernetesRegion_lookupBySlug - a lookup matching the region slug
 // resolves the id + display name.
 func TestUnitKubernetesRegion_lookupBySlug(t *testing.T) {
 	ensureTFBinary(t)
@@ -45,7 +45,7 @@ data "iaas_kubernetes_region" "t" {
 	})
 }
 
-// TestUnitKubernetesRegion_lookupByName — a lookup matching the region display
+// TestUnitKubernetesRegion_lookupByName - a lookup matching the region display
 // name (text) also resolves.
 func TestUnitKubernetesRegion_lookupByName(t *testing.T) {
 	ensureTFBinary(t)
@@ -73,7 +73,7 @@ data "iaas_kubernetes_region" "t" {
 	})
 }
 
-// TestUnitKubernetesRegion_noMatch — a region matching nothing errors clearly.
+// TestUnitKubernetesRegion_noMatch - a region matching nothing errors clearly.
 func TestUnitKubernetesRegion_noMatch(t *testing.T) {
 	ensureTFBinary(t)
 

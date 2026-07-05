@@ -10,7 +10,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/acctest"
 )
 
-// TestUnitLocation_lookup — mock-backed data-source proof.
+// TestUnitLocation_lookup - mock-backed data-source proof.
 //
 // data "iaas_location" "t" { name = "nyc" } reads GET
 // /cloud-service/locations (paginator), matches the SLUG name, and exposes the
@@ -51,7 +51,7 @@ data "iaas_location" "t" {
 	})
 }
 
-// TestUnitLocation_matchByDisplayName — a lookup that matches display_name
+// TestUnitLocation_matchByDisplayName - a lookup that matches display_name
 // rather than the slug name still resolves.
 func TestUnitLocation_matchByDisplayName(t *testing.T) {
 	ensureTFBinary(t)
@@ -82,7 +82,7 @@ data "iaas_location" "t" {
 	})
 }
 
-// TestUnitLocation_ambiguousOR — a name that matches one location's slug AND a
+// TestUnitLocation_ambiguousOR - a name that matches one location's slug AND a
 // different location's display_name produces a "multiple * match" error.
 //
 // locA has slug "london" (matches by slug); locB has display_name "london"
@@ -123,7 +123,7 @@ data "iaas_location" "t" {
 	})
 }
 
-// TestUnitLocation_noMatch — a name matching nothing errors clearly.
+// TestUnitLocation_noMatch - a name matching nothing errors clearly.
 func TestUnitLocation_noMatch(t *testing.T) {
 	ensureTFBinary(t)
 

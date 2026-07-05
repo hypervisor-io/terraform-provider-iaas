@@ -3,12 +3,12 @@
 page_title: "iaas_ip_set Resource - iaas"
 subcategory: ""
 description: |-
-  Manages an IP set — a named, version-scoped collection of CIDR entries that can be referenced from security group rules. The CIDR entries are managed inline as an order-independent set: adding or removing an entry from the config adds or removes it on the server in place, without replacing the IP set. The ip_version cannot be changed once the set has entries, so changing it forces a new resource.
+  Manages an IP set - a named, version-scoped collection of CIDR entries that can be referenced from security group rules. The CIDR entries are managed inline as an order-independent set: adding or removing an entry from the config adds or removes it on the server in place, without replacing the IP set. The ip_version cannot be changed once the set has entries, so changing it forces a new resource.
 ---
 
 # iaas_ip_set (Resource)
 
-Manages an IP set — a named, version-scoped collection of CIDR entries that can be referenced from security group rules. The CIDR entries are managed inline as an order-independent set: adding or removing an entry from the config adds or removes it on the server in place, without replacing the IP set. The `ip_version` cannot be changed once the set has entries, so changing it forces a new resource.
+Manages an IP set - a named, version-scoped collection of CIDR entries that can be referenced from security group rules. The CIDR entries are managed inline as an order-independent set: adding or removing an entry from the config adds or removes it on the server in place, without replacing the IP set. The `ip_version` cannot be changed once the set has entries, so changing it forces a new resource.
 
 ## Example Usage
 

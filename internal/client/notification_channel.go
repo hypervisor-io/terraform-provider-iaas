@@ -48,13 +48,13 @@ import (
 //   - config is returned by SHOW/UPDATE (encrypted at rest, decrypted on read).
 //     It is NOT write-only; model it as a regular (Sensitive if desired) MapAttribute.
 //   - type is updatable (update request accepts any valid type with matching config).
-//   - test (POST /notification-channel/{id}/test) is NOT modelled — operational action.
+//   - test (POST /notification-channel/{id}/test) is NOT modelled - operational action.
 //   - Routes are gated by subuser permissions (monitoring.view for LIST/SHOW,
 //     monitoring.manage for CREATE/UPDATE/DELETE). The IP-locked Bearer token
 //     controls access; a 403 means the token lacks the monitoring.manage scope
 //     (e.g. read-only token or subuser restriction).
 //   - No billing gate.
-//   - success:false at HTTP 200 = error (C3) — handled by doItem/doVoid.
+//   - success:false at HTTP 200 = error (C3) - handled by doItem/doVoid.
 
 // ListNotificationChannels returns all notification channels belonging to the
 // authenticated account. The API wraps the Laravel paginator under the
@@ -73,7 +73,7 @@ func (c *Client) ListNotificationChannels(ctx context.Context) ([]map[string]any
 
 	dataRaw, ok := paginatorObj["data"]
 	if !ok {
-		// Empty or unexpected shape — return empty slice rather than error.
+		// Empty or unexpected shape - return empty slice rather than error.
 		return []map[string]any{}, nil
 	}
 	dataSlice, ok := dataRaw.([]any)

@@ -21,11 +21,11 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — iaas_kubernetes_security_group_rule is a STANDALONE
+// Interface assertions - iaas_kubernetes_security_group_rule is a STANDALONE
 // CHILD resource of a Kubernetes cluster's auto-provisioned "lb"/"cp"/"worker"
 // security group (Gap G7). Unlike iaas_security_group's nested `rules`
 // SetNestedAttribute (rules owned inline by the parent SG), each rule here is
-// its own resource — keyed by (cluster_id, scope, id) — because the cluster's
+// its own resource - keyed by (cluster_id, scope, id) - because the cluster's
 // SG is not itself a Terraform-managed resource (it is auto-provisioned at
 // cluster-create time, not created by this provider).
 //
@@ -63,10 +63,10 @@ type kubernetesSecurityGroupRuleResource struct {
 
 // kubernetesSecurityGroupRuleModel maps the Terraform state/plan for
 // iaas_kubernetes_security_group_rule. Every writable field is RequiresReplace
-// — the API has no rule-update endpoint, so any change is a delete+add.
+// - the API has no rule-update endpoint, so any change is a delete+add.
 // security_group_id and internal are server-only Computed fields (the resolved
 // scope SG's id, and whether the rule is one of the cluster's own
-// auto-provisioned rules — deleting an `internal` rule may break connectivity).
+// auto-provisioned rules - deleting an `internal` rule may break connectivity).
 type kubernetesSecurityGroupRuleModel struct {
 	ID        types.String `tfsdk:"id"`
 	ClusterID types.String `tfsdk:"cluster_id"`
@@ -100,7 +100,7 @@ func (r *kubernetesSecurityGroupRuleResource) Schema(_ context.Context, _ resour
 			"to the CP load balancer instance), `cp` (control-plane node ingress) or `worker` " +
 			"(worker node ingress). The security groups themselves are provisioned automatically " +
 			"when the cluster is created (they are not a Terraform-managed resource); this " +
-			"resource only adds/removes individual rules on them. There is NO update route — " +
+			"resource only adds/removes individual rules on them. There is NO update route - " +
 			"changing any field replaces the rule (delete old + add new). Import with a 3-part " +
 			"composite id: \"<cluster_id>/<scope>/<rule_id>\".",
 		Attributes: map[string]schema.Attribute{
@@ -147,7 +147,7 @@ func (r *kubernetesSecurityGroupRuleResource) Schema(_ context.Context, _ resour
 					"\"all\", or \"any\". Ports (port_range_min/port_range_max) are required for " +
 					"\"tcp\"/\"udp\". NOTE: the Master API's `security_group_rules.protocol` DB " +
 					"column has no \"any\" enum member, so submitting protocol = \"any\" is accepted " +
-					"by the request validator but currently fails at insert time with a 422 — this " +
+					"by the request validator but currently fails at insert time with a 422 - this " +
 					"is a Master-side inconsistency, not a client-side restriction.",
 				Validators: []validator.String{
 					stringvalidator.OneOf("tcp", "udp", "icmp", "icmpv6", "all", "any"),
@@ -185,7 +185,7 @@ func (r *kubernetesSecurityGroupRuleResource) Schema(_ context.Context, _ resour
 			"cidr": schema.StringAttribute{
 				Optional: true,
 				Description: "CIDR source (ingress) or destination (egress), e.g. \"10.0.0.0/8\". " +
-					"Mutually exclusive with remote_group_id and ip_set_id — exactly one of the " +
+					"Mutually exclusive with remote_group_id and ip_set_id - exactly one of the " +
 					"three must be set.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -234,7 +234,7 @@ func (r *kubernetesSecurityGroupRuleResource) Schema(_ context.Context, _ resour
 
 // ConfigValidators enforces the store endpoint's mutual-exclusivity rule
 // (SecurityGroupService::addRule): exactly one of cidr, remote_group_id, or
-// ip_set_id must be set — mirrors kubernetes_ssl_certificate.go's
+// ip_set_id must be set - mirrors kubernetes_ssl_certificate.go's
 // source-conditional validators.
 func (r *kubernetesSecurityGroupRuleResource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
 	return []resource.ConfigValidator{
@@ -262,7 +262,7 @@ func (v *kubernetesSecurityGroupRuleTargetValidator) ValidateResource(ctx contex
 	}
 
 	// Don't evaluate presence checks against an unknown value (e.g. derived
-	// from another resource) — defer to a later validation pass.
+	// from another resource) - defer to a later validation pass.
 	if cfg.Cidr.IsUnknown() || cfg.RemoteGroupID.IsUnknown() || cfg.IPSetID.IsUnknown() {
 		return
 	}
@@ -288,7 +288,7 @@ func (v *kubernetesSecurityGroupRuleTargetValidator) ValidateResource(ctx contex
 	case count > 1:
 		resp.Diagnostics.AddError(
 			"Invalid Field Combination",
-			"cidr, remote_group_id, and ip_set_id are mutually exclusive — set exactly one (mirrors "+
+			"cidr, remote_group_id, and ip_set_id are mutually exclusive - set exactly one (mirrors "+
 				"the Master API's SecurityGroupService::addRule rule).",
 		)
 	}

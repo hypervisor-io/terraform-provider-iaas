@@ -9,7 +9,7 @@ import (
 // VPC subnet endpoints (verified against the real controller, routes/user_api.php).
 //
 // vpc_subnet is a CHILD resource of vpc: the parent VPC id is part of every URL
-// path. Note the path asymmetry the controller exposes — the collection/create
+// path. Note the path asymmetry the controller exposes - the collection/create
 // path is PLURAL but the item paths are SINGULAR:
 //
 //	CREATE  POST   /vpc/{vpcId}/subnets       (PLURAL)  body {cidr (required IPv4),
@@ -17,7 +17,7 @@ import (
 //	                                           → 200 {success,message,subnet:{...}}
 //	SHOW    GET    /vpc/{vpcId}/subnet/{id}    (SINGULAR) → {success,subnet:{...,ips:[...]}};
 //	                                           404 when absent / wrong vpc
-//	UPDATE  PATCH  /vpc/{vpcId}/subnet/{id}    (SINGULAR) body {name} — only name is
+//	UPDATE  PATCH  /vpc/{vpcId}/subnet/{id}    (SINGULAR) body {name} - only name is
 //	                                           mutable → 200 {success,message,subnet}
 //	DELETE  DELETE /vpc/{vpcId}/subnet/{id}    (SINGULAR) → 200 {success,message};
 //	                                           200 success:false on failure (IP in use)
@@ -27,7 +27,7 @@ import (
 //     immediately with its id and the server-DERIVED gateway/netmask. The gateway
 //     and netmask are computed server-side from the cidr, so they are NEVER sent
 //     in the request body. IP generation (which populates used/free) is async on
-//     a queue — there is NO status field to wait on, so there is no waiter.
+//     a queue - there is NO status field to wait on, so there is no waiter.
 //   - Failure is signalled with success:false at HTTP 200 (overlap, out-of-range,
 //     IP-in-use on delete). doItem/doVoid surface this as an error.
 //   - CreateVPCSubnet takes a prebuilt body so the resource controls which

@@ -1,6 +1,6 @@
 # A managed Kubernetes cluster: a control plane (1 or 3 nodes) behind a dedicated
 # CP load balancer, plus a default worker node pool. Creation is ASYNCHRONOUS and
-# multi-stage — this resource waits for the cluster state to become "running"
+# multi-stage - this resource waits for the cluster state to become "running"
 # (created -> starting -> running, or "error" on failure).
 #
 # PRE-REQS (the API enforces these, returning a clear error otherwise):
@@ -17,7 +17,7 @@ resource "iaas_kubernetes_cluster" "prod" {
   name = "prod"
   slug = "prod" # url-safe, unique within the account, immutable
 
-  # Region + networking (all immutable — changing any forces a new cluster).
+  # Region + networking (all immutable - changing any forces a new cluster).
   hypervisor_group_id  = "22222222-2222-2222-2222-222222222222"
   vpc_id               = "33333333-3333-3333-3333-333333333333"
   cp_vpc_subnet_id     = "44444444-4444-4444-4444-444444444444" # MUST be private

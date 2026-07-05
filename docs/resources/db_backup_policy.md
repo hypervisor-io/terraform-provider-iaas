@@ -3,12 +3,12 @@
 page_title: "iaas_db_backup_policy Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a database backup policy — an off-host S3-based backup configuration for managed databases. The policy specifies the target S3 bucket (credentials, path prefix), the full/incremental backup schedule, optional point-in-time recovery (PITR), and retention settings. Managed databases are attached to the policy via the database_ids set attribute. S3 credentials (s3_access_key, s3_secret_key) are write-only: the server stores them encrypted and never returns them, so they are preserved in state between refreshes.
+  Manages a database backup policy - an off-host S3-based backup configuration for managed databases. The policy specifies the target S3 bucket (credentials, path prefix), the full/incremental backup schedule, optional point-in-time recovery (PITR), and retention settings. Managed databases are attached to the policy via the database_ids set attribute. S3 credentials (s3_access_key, s3_secret_key) are write-only: the server stores them encrypted and never returns them, so they are preserved in state between refreshes.
 ---
 
 # iaas_db_backup_policy (Resource)
 
-Manages a database backup policy — an off-host S3-based backup configuration for managed databases. The policy specifies the target S3 bucket (credentials, path prefix), the full/incremental backup schedule, optional point-in-time recovery (PITR), and retention settings. Managed databases are attached to the policy via the `database_ids` set attribute. S3 credentials (`s3_access_key`, `s3_secret_key`) are write-only: the server stores them encrypted and never returns them, so they are preserved in state between refreshes.
+Manages a database backup policy - an off-host S3-based backup configuration for managed databases. The policy specifies the target S3 bucket (credentials, path prefix), the full/incremental backup schedule, optional point-in-time recovery (PITR), and retention settings. Managed databases are attached to the policy via the `database_ids` set attribute. S3 credentials (`s3_access_key`, `s3_secret_key`) are write-only: the server stores them encrypted and never returns them, so they are preserved in state between refreshes.
 
 ## Example Usage
 
@@ -67,14 +67,14 @@ variable "db_backup_s3_secret_key" {
 - `full_backup_time` (String) Time of day for the full backup in HH:MM format (UTC). Updatable in place.
 - `incremental_frequency` (String) Frequency of incremental backups between full backups: "none", "1h", "2h", "4h", "6h", or "12h".
 - `name` (String) Display name for the backup policy. Maximum 255 characters. Updatable in place.
-- `retention_full_count` (Number) Number of full backups to retain (1–365).
-- `retention_incremental_days` (Number) Number of days to retain incremental backups (1–365).
-- `retention_pitr_hours` (Number) Number of hours of PITR (WAL/binlog) history to retain (1–720). Only used when pitr_enabled is true.
-- `s3_access_key` (String, Sensitive) S3 access key ID. Stored encrypted on the server and never returned by the API — preserved in Terraform state between refreshes. Set to update the credentials (empty string is treated as no-change by the server). Sensitive.
+- `retention_full_count` (Number) Number of full backups to retain (1-365).
+- `retention_incremental_days` (Number) Number of days to retain incremental backups (1-365).
+- `retention_pitr_hours` (Number) Number of hours of PITR (WAL/binlog) history to retain (1-720). Only used when pitr_enabled is true.
+- `s3_access_key` (String, Sensitive) S3 access key ID. Stored encrypted on the server and never returned by the API - preserved in Terraform state between refreshes. Set to update the credentials (empty string is treated as no-change by the server). Sensitive.
 - `s3_bucket` (String) Name of the S3 bucket where backups are stored. Updatable in place.
 - `s3_endpoint` (String) Hostname (or host:port) of the S3-compatible storage endpoint. For AWS S3 use the regional endpoint; for S3-compatible stores (RustFS, Ceph, Wasabi) provide the custom endpoint. Updatable in place.
 - `s3_region` (String) AWS region (or equivalent) for the S3 bucket. Updatable in place.
-- `s3_secret_key` (String, Sensitive) S3 secret access key. Stored encrypted on the server and never returned by the API — preserved in Terraform state between refreshes. Set to update the credentials (empty string is treated as no-change by the server). Sensitive.
+- `s3_secret_key` (String, Sensitive) S3 secret access key. Stored encrypted on the server and never returned by the API - preserved in Terraform state between refreshes. Set to update the credentials (empty string is treated as no-change by the server). Sensitive.
 
 ### Optional
 

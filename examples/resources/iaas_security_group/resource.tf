@@ -41,7 +41,7 @@ resource "iaas_security_group" "web" {
       cidr           = "0.0.0.0/0"
       description    = "HTTPS"
     },
-    # Allow inbound ICMP (ping) from anywhere — no ports for icmp.
+    # Allow inbound ICMP (ping) from anywhere - no ports for icmp.
     {
       direction  = "ingress"
       protocol   = "icmp"

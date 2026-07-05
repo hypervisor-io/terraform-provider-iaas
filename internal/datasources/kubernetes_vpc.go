@@ -47,7 +47,7 @@ func (d *kubernetesVPCDataSource) Schema(_ context.Context, _ datasource.SchemaR
 	resp.Schema = schema.Schema{
 		Description: "Looks up a VPC that can host a Kubernetes cluster by name, resolving the `id` " +
 			"you pass as `vpc_id` on an `iaas_kubernetes_cluster`. Only VPCs owned by your account " +
-			"are searched. `has_nat_gateway` reports whether the VPC has NAT egress — a private " +
+			"are searched. `has_nat_gateway` reports whether the VPC has NAT egress - a private " +
 			"control plane needs it for kubeadm image pulls. Exactly one VPC must match.",
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{
@@ -56,7 +56,7 @@ func (d *kubernetesVPCDataSource) Schema(_ context.Context, _ datasource.SchemaR
 			},
 			"hypervisor_group_id": schema.StringAttribute{
 				Optional: true,
-				Description: "Optional region (hypervisor group) UUID to constrain the search — use to " +
+				Description: "Optional region (hypervisor group) UUID to constrain the search - use to " +
 					"disambiguate identically-named VPCs across regions.",
 			},
 			"id": schema.StringAttribute{

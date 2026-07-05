@@ -15,7 +15,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccKubernetesNodePool_basic — LIVE acceptance test (manual staging gate).
+// TestAccKubernetesNodePool_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set. Requires an existing K8s cluster id and a
 // worker instance plan id, supplied via env vars. Skips cleanly when absent.
@@ -63,17 +63,17 @@ resource "iaas_kubernetes_node_pool" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitKubernetesNodePool_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitKubernetesNodePool_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the full child-resource lifecycle against canned API responses with no
 // live panel:
 //
-//  1. Create — POST /kubernetes/cluster/{id}/pools returns {pool:{id,...}}; the
+//  1. Create - POST /kubernetes/cluster/{id}/pools returns {pool:{id,...}}; the
 //     LIST read-back then reports the same pool (no per-pool SHOW exists, so Read
 //     scans the pool list). Asserts the create body and the Idempotency-Key.
-//  2. Import — by composite "<cluster_id>/<pool_id>", verifies state matches.
-//  3. Update — scale target_count + rename + change labels (PATCH) → read-back.
-//  4. Delete — DELETE with force=true; the next LIST omits the pool.
+//  2. Import - by composite "<cluster_id>/<pool_id>", verifies state matches.
+//  3. Update - scale target_count + rename + change labels (PATCH) → read-back.
+//  4. Delete - DELETE with force=true; the next LIST omits the pool.
 //
 // SYNC (no waiter), so no poll-interval seam is needed; the test cannot hang.
 // resource.UnitTest needs an OpenTofu/Terraform binary (ensureTFBinary); absent
@@ -98,7 +98,7 @@ func TestUnitKubernetesNodePool_lifecycle(t *testing.T) {
 	target := int64(2)
 	labels := map[string]any{"role": "gpu"}
 
-	// poolObject — the canonical pool row echoed by create / list / patch.
+	// poolObject - the canonical pool row echoed by create / list / patch.
 	poolObject := func() map[string]any {
 		mu.Lock()
 		defer mu.Unlock()
@@ -124,12 +124,12 @@ func TestUnitKubernetesNodePool_lifecycle(t *testing.T) {
 		}
 	}
 
-	// CREATE — record the pool; return it under the "pool" envelope (HTTP 201).
+	// CREATE - record the pool; return it under the "pool" envelope (HTTP 201).
 	srv.Handle("POST", poolsPath, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusCreated, map[string]any{"pool": poolObject()})
 	})
 
-	// LIST — read-by-scan source; empty once deleted.
+	// LIST - read-by-scan source; empty once deleted.
 	srv.Handle("GET", poolsPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		gone := deleted
@@ -141,7 +141,7 @@ func TestUnitKubernetesNodePool_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"pools": []any{poolObject()}})
 	})
 
-	// UPDATE — apply rename / scale / labels; echo the updated pool.
+	// UPDATE - apply rename / scale / labels; echo the updated pool.
 	srv.Handle("PATCH", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -159,7 +159,7 @@ func TestUnitKubernetesNodePool_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"pool": poolObject()})
 	})
 
-	// DELETE — soft-delete; the next LIST omits the pool. Returns a task_id.
+	// DELETE - soft-delete; the next LIST omits the pool. Returns a task_id.
 	srv.Handle("DELETE", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		deleted = true
@@ -211,7 +211,7 @@ resource "iaas_kubernetes_node_pool" "test" {
 				ImportStateId:     clusterID + "/" + poolID,
 				ImportStateVerify: true,
 			},
-			// Update — rename + scale to 4 + change label.
+			// Update - rename + scale to 4 + change label.
 			{
 				Config: cfg("gpu-renamed", 4, "ml"),
 				Check: resource.ComposeAggregateTestCheckFunc(

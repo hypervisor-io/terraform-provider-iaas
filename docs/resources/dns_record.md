@@ -34,10 +34,10 @@ resource "iaas_dns_record" "www_a1" {
   zone_id       = iaas_dns_zone.example.id
   record_set_id = iaas_dns_record_set.www.id
 
-  # The record value — an IPv4 address for an A set. Updatable in place.
+  # The record value - an IPv4 address for an A set. Updatable in place.
   value = "10.0.0.10"
 
-  # Required for the "weighted" policy; ignored otherwise (1–255).
+  # Required for the "weighted" policy; ignored otherwise (1-255).
   weight = 60
 
   # Optional active health check (single nested attribute, assigned with `= {}`).
@@ -74,7 +74,7 @@ resource "iaas_dns_record" "www_a2" {
 - `enabled` (Boolean) Whether this record participates in resolution. Defaults to true. Updatable in place.
 - `failover_role` (String) Role for failover routing: "primary" or "secondary". Required by the API when the record set uses the "failover" policy; ignored otherwise. Updatable in place.
 - `health_check` (Attributes) Optional active health check for this record. When present, the record is withheld from resolution while unhealthy (fail-open if all records in the set are unhealthy). Remove the block to detach the check. (see [below for nested schema](#nestedatt--health_check))
-- `weight` (Number) Relative weight (1–255) for weighted routing. Required by the API when the record set uses the "weighted" policy; ignored otherwise. Updatable in place.
+- `weight` (Number) Relative weight (1-255) for weighted routing. Required by the API when the record set uses the "weighted" policy; ignored otherwise. Updatable in place.
 
 ### Read-Only
 
@@ -90,10 +90,10 @@ Required:
 
 Optional:
 
-- `expected_status` (Number) Expected HTTP status code (100–599) for http/https probes.
-- `healthy_threshold` (Number) Consecutive successes before the record is marked healthy again (1–10). Optional; null is stored when omitted — the check agent applies its own default.
-- `interval` (Number) Seconds between probes (10–300). Optional; null is stored when omitted — the check agent applies its own default.
+- `expected_status` (Number) Expected HTTP status code (100-599) for http/https probes.
+- `healthy_threshold` (Number) Consecutive successes before the record is marked healthy again (1-10). Optional; null is stored when omitted - the check agent applies its own default.
+- `interval` (Number) Seconds between probes (10-300). Optional; null is stored when omitted - the check agent applies its own default.
 - `path` (String) HTTP(S) probe path, e.g. "/health". For http/https only.
-- `port` (Number) Probe port (1–65535). Defaults server-side by type.
-- `timeout` (Number) Probe timeout in seconds (2–60). Optional; null is stored when omitted — the check agent applies its own default.
-- `unhealthy_threshold` (Number) Consecutive failures before the record is marked unhealthy (1–10). Optional; null is stored when omitted — the check agent applies its own default.
+- `port` (Number) Probe port (1-65535). Defaults server-side by type.
+- `timeout` (Number) Probe timeout in seconds (2-60). Optional; null is stored when omitted - the check agent applies its own default.
+- `unhealthy_threshold` (Number) Consecutive failures before the record is marked unhealthy (1-10). Optional; null is stored when omitted - the check agent applies its own default.

@@ -260,7 +260,7 @@ func TestDeleteStaticIP_EmptyID(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// GetStaticIP — page-2 scan
+// GetStaticIP - page-2 scan
 // ---------------------------------------------------------------------------
 
 // TestGetStaticIP_Page2 verifies that GetStaticIP finds an item that lives on
@@ -288,7 +288,7 @@ func TestGetStaticIP_Page2(t *testing.T) {
 	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
 	obj, err := c.GetStaticIP(context.Background(), "sip-page2")
 	if err != nil {
-		t.Fatalf("GetStaticIP returned error: %v (item is on page 2 — pagination bug?)", err)
+		t.Fatalf("GetStaticIP returned error: %v (item is on page 2 - pagination bug?)", err)
 	}
 	if obj["id"] != "sip-page2" {
 		t.Errorf("obj[id] = %v; want sip-page2", obj["id"])

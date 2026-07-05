@@ -18,7 +18,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — iaas_db_parameter_group follows the golden ssh_key
+// Interface assertions - iaas_db_parameter_group follows the golden ssh_key
 // resource pattern (simple sync CRUD) plus ResourceWithConfigValidators.
 var (
 	_ resource.Resource                     = &dbParameterGroupResource{}
@@ -31,7 +31,7 @@ var (
 // server's appendParameterSuffixes() transforms non-idempotently (appending a
 // unit suffix such as "M" or "MB" to the stored value on every write).
 //
-// Source of truth: Master config/managed_database_parameters.php — every entry
+// Source of truth: Master config/managed_database_parameters.php - every entry
 // that carries a 'suffix' key is listed here.  When that PHP file changes,
 // re-sync the sets below.
 //
@@ -86,7 +86,7 @@ func NewDBParameterGroupResource() resource.Resource {
 	return &dbParameterGroupResource{}
 }
 
-// dbParameterGroupResource manages an iaas_db_parameter_group — a named,
+// dbParameterGroupResource manages an iaas_db_parameter_group - a named,
 // engine-scoped collection of key→value database configuration parameters that
 // can be applied to a managed database.
 //
@@ -117,7 +117,7 @@ func NewDBParameterGroupResource() resource.Resource {
 //     Only suffix-free parameters (see suffixBearingKeys) may be managed via
 //     Terraform; suffix-bearing parameters must be set via the control panel.
 //   - This is a simple flat map (no per-param add/remove endpoints, no nested
-//     set) — update sends the full replacement map.
+//     set) - update sends the full replacement map.
 //   - The map is Required on create and updatable in place.
 //
 // Applying a parameter group to a database is done via the separate PATCH
@@ -147,7 +147,7 @@ func (r *dbParameterGroupResource) Metadata(_ context.Context, req resource.Meta
 // Schema describes the iaas_db_parameter_group resource.
 func (r *dbParameterGroupResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a database parameter group — a named, engine-scoped collection of " +
+		Description: "Manages a database parameter group - a named, engine-scoped collection of " +
 			"key→value configuration parameters that can be applied to a managed database. " +
 			"The engine is immutable (changing it forces a new resource); the name and " +
 			"parameters map can be updated in place. Updating parameters sends the full " +
@@ -194,7 +194,7 @@ func (r *dbParameterGroupResource) Schema(_ context.Context, _ resource.SchemaRe
 					"`tmp_table_size`, `max_heap_table_size` for MySQL/MariaDB; " +
 					"`shared_buffers`, `effective_cache_size`, `work_mem`, " +
 					"`maintenance_work_mem`, `wal_buffers`, `max_wal_size` for PostgreSQL) " +
-					"cannot be managed via Terraform reliably — set them via the control panel. " +
+					"cannot be managed via Terraform reliably - set them via the control panel. " +
 					"Updating this attribute sends the full replacement map; use an empty " +
 					"map (`{}`) to clear all custom parameters.",
 				// UseStateForUnknown is intentionally omitted on a Required attribute.
@@ -250,7 +250,7 @@ func (v *dbParameterGroupSuffixValidator) ValidateResource(ctx context.Context, 
 	engine := cfg.Engine.ValueString()
 	suffixKeys, known := suffixBearingKeys[engine]
 	if !known {
-		// Unknown engine — server will validate; nothing for us to check.
+		// Unknown engine - server will validate; nothing for us to check.
 		return
 	}
 
@@ -521,7 +521,7 @@ func apiMapToParameters(ctx context.Context, raw any) (types.Map, error) {
 
 	apiMap, ok := raw.(map[string]any)
 	if !ok {
-		// Unexpected type — return an empty map rather than failing hard.
+		// Unexpected type - return an empty map rather than failing hard.
 		// This preserves forward-compatibility: if a future API schema migration
 		// returns parameters in a shape we don't recognise, an empty state is far
 		// safer than an error that would leave the resource unmanageable.

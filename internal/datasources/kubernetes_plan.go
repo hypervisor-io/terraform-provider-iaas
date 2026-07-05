@@ -14,7 +14,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/tfdiag"
 )
 
-// Interface assertions — kubernetes_plan is a lookup-by-name catalog data source
+// Interface assertions - kubernetes_plan is a lookup-by-name catalog data source
 // backed by the FLAT Select2 /kubernetes/search/{plans|cp-plans|lb-plans}
 // endpoints, selected by the `kind` argument.
 var (
@@ -22,7 +22,7 @@ var (
 	_ datasource.DataSourceWithConfigure = &kubernetesPlanDataSource{}
 )
 
-// Plan kinds. worker/cp resolve to instance plans (the SAME underlying list —
+// Plan kinds. worker/cp resolve to instance plans (the SAME underlying list -
 // the server splits the route only for semantic clarity); lb resolves to LB
 // plans (which have no storage).
 const (
@@ -72,7 +72,7 @@ func (d *kubernetesPlanDataSource) Schema(_ context.Context, _ datasource.Schema
 		Description: "Looks up a Kubernetes cluster plan by name from the cluster-create " +
 			"catalog, resolving the `id` you pass on an `iaas_kubernetes_cluster`. The `kind` " +
 			"argument selects the picker: `worker` and `cp` resolve instance plans (the same " +
-			"underlying list — use the result as `worker_instance_plan_id` / " +
+			"underlying list - use the result as `worker_instance_plan_id` / " +
 			"`cp_instance_plan_id`), and `lb` resolves the control-plane load-balancer plan " +
 			"(use as `cp_lb_plan_id`). Only enabled plans are returned; exactly one plan must " +
 			"match the given `name`.",
@@ -80,7 +80,7 @@ func (d *kubernetesPlanDataSource) Schema(_ context.Context, _ datasource.Schema
 			"kind": schema.StringAttribute{
 				Required: true,
 				Description: "Which plan catalog to search: `worker` (worker instance plan), `cp` " +
-					"(control-plane instance plan — identical list to `worker`), or `lb` " +
+					"(control-plane instance plan - identical list to `worker`), or `lb` " +
 					"(control-plane load-balancer plan). Any other value errors.",
 				Validators: []validator.String{
 					stringvalidator.OneOf("worker", "cp", "lb"),
@@ -153,7 +153,7 @@ func (d *kubernetesPlanDataSource) Read(ctx context.Context, req datasource.Read
 	case k8sPlanKindLB:
 		plans, err = d.client.SearchK8sLoadBalancerPlans(ctx, name)
 	default:
-		// Defensive — the schema validator already constrains kind.
+		// Defensive - the schema validator already constrains kind.
 		resp.Diagnostics.AddError("Invalid plan kind", fmt.Sprintf("unknown kind %q (want worker, cp, or lb)", kind))
 		return
 	}

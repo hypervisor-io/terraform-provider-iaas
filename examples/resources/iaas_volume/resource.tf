@@ -6,7 +6,7 @@
 #      and offer the chosen volume plan.
 #   3. volume_plan_id selects the size and IO tier (sizing is PLAN-BASED, not a
 #      free-form size_gb). To resize, switch to a larger plan of the same storage
-#      class and datastore type — the provider issues an in-place resize.
+#      class and datastore type - the provider issues an in-place resize.
 #
 # Creation is asynchronous: the provider waits for the volume's status to become
 # "available" before completing. The create timeout is configurable below.
@@ -16,7 +16,7 @@
 # (attach/detach).
 
 resource "iaas_volume" "data" {
-  # Display name. Immutable — changing it replaces the volume.
+  # Display name. Immutable - changing it replaces the volume.
   name = "app-data"
 
   # UUID of the volume plan (size + IO limits). Change to a larger plan to resize.

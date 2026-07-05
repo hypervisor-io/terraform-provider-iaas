@@ -53,7 +53,7 @@ import (
 //   - The service converts the user's local time → UTC on store/update and
 //     converts UTC → user's local time for display on SHOW. The provider
 //     stores and sends UTC times directly (no timezone conversion).
-//   - success:false at HTTP 200 = error (C3) — handled by doItem/doVoid.
+//   - success:false at HTTP 200 = error (C3) - handled by doItem/doVoid.
 //   - There is no billing gate (routes are NOT wrapped in billing.enabled).
 //   - testConnection is NOT modelled (not IaC state).
 //   - reset-failures is NOT modelled (operational, not IaC state).

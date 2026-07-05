@@ -14,7 +14,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — static_ip mirrors the golden vpc resource pattern
+// Interface assertions - static_ip mirrors the golden vpc resource pattern
 // (synchronous create-only, no update endpoint → all configurable attrs RequiresReplace).
 var (
 	_ resource.Resource                = &staticIPResource{}
@@ -30,9 +30,9 @@ func NewStaticIPResource() resource.Resource {
 // staticIPResource manages an iaas_static_ip.
 //
 // The Static IP API has:
-//   - NO individual SHOW route — Read uses GET /static-ips (paginator) + scan-by-id.
-//   - NO UPDATE route — every configurable attribute is RequiresReplace.
-//   - Create (allocate) is SYNCHRONOUS — the allocate response carries the id directly.
+//   - NO individual SHOW route - Read uses GET /static-ips (paginator) + scan-by-id.
+//   - NO UPDATE route - every configurable attribute is RequiresReplace.
+//   - Create (allocate) is SYNCHRONOUS - the allocate response carries the id directly.
 //   - All routes are gated behind billing.enabled middleware; 403 is surfaced as an error.
 //
 // Route summary (verified against the real controller):
@@ -91,7 +91,7 @@ func (r *staticIPResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"disabled the API returns a 403 error.\n\n" +
 			"The Static IP API has no update endpoint, so changing any configurable " +
 			"attribute forces the resource to be replaced (deallocated and re-allocated). " +
-			"Deallocating an IP that is currently attached to an instance will fail — " +
+			"Deallocating an IP that is currently attached to an instance will fail - " +
 			"detach it from the instance first.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -173,7 +173,7 @@ func (r *staticIPResource) Configure(_ context.Context, req resource.ConfigureRe
 }
 
 // Create allocates the static IP. ip_id and hypervisor_group_id are always
-// sent (both are required by the server). The allocate is synchronous — the
+// sent (both are required by the server). The allocate is synchronous - the
 // response carries id and the nested ip object with the address directly, so
 // no task/waiter and no list-and-match read-back are needed.
 func (r *staticIPResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -200,7 +200,7 @@ func (r *staticIPResource) Create(ctx context.Context, req resource.CreateReques
 // Read refreshes state from the API. Because there is no individual SHOW route
 // for static IPs, Read uses GetStaticIP (which lists all IPs and scans for the
 // matching id). A 404 (id absent from list) means the IP was deallocated out
-// of band — remove it from state so Terraform plans a re-allocation.
+// of band - remove it from state so Terraform plans a re-allocation.
 func (r *staticIPResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state staticIPModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

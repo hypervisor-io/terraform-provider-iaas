@@ -20,7 +20,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/waiter"
 )
 
-// Interface assertions — instance is the GOLDEN ASYNC resource. It establishes
+// Interface assertions - instance is the GOLDEN ASYNC resource. It establishes
 // the pattern every later async resource (load_balancer, managed_database,
 // kubernetes_cluster) copies:
 //   - TWO-PHASE create (record row → deploy OS) with a task-poll waiter,
@@ -226,7 +226,7 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			},
 			// deployed / status are SERVER-MUTABLE computed fields: a stop, suspend,
 			// or admin action changes them over the instance's life. Per the golden
-			// guardrail, do NOT attach UseStateForUnknown — that would copy the stale
+			// guardrail, do NOT attach UseStateForUnknown - that would copy the stale
 			// prior value into the plan and MASK real drift. Omitting it lets the plan
 			// reflect the server's refreshed value.
 			"deployed": schema.BoolAttribute{
@@ -423,7 +423,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 }
 
 // Read refreshes state from the API. A 404 means the instance was deleted out of
-// band — remove it from state so Terraform plans a recreate (drift handling).
+// band - remove it from state so Terraform plans a recreate (drift handling).
 //
 // The write-only deploy fields (ssh_keys/timezone/cloudcfg) are NOT in the SHOW
 // payload, so instanceStateFromAPI preserves their prior state values to avoid
@@ -448,7 +448,7 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	resp.Diagnostics.Append(resp.State.Set(ctx, instanceStateFromAPI(obj, state))...)
 }
 
-// Update changes the only mutable fields — display_name and hostname. Everything
+// Update changes the only mutable fields - display_name and hostname. Everything
 // else is RequiresReplace, so only those two ever reach here. We PATCH the
 // changed fields then GetInstance to refresh, since the PATCH response is a
 // thinner envelope than SHOW.
@@ -487,7 +487,7 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 
 // Delete removes the instance. DELETE is asynchronous (the slave finalizes and
 // the row soft-deletes later), so after the enqueue we poll GetInstance until it
-// reports 404 (IsNotFound) — that is the convergence signal. A protection_enabled
+// reports 404 (IsNotFound) - that is the convergence signal. A protection_enabled
 // failure surfaces as an error from DeleteCSInstance (success:false at 200).
 func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state instanceModel
@@ -544,20 +544,20 @@ func (r *instanceResource) ImportState(ctx context.Context, req resource.ImportS
 // instanceStateFromAPI builds the model from a SHOW instance object. Computed and
 // metadata fields come from the API; the RequiresReplace inputs and WRITE-ONLY
 // deploy fields are preserved from the prior model (plan on create/update, state
-// on read) because SHOW does not return them — this is what keeps ssh_keys /
+// on read) because SHOW does not return them - this is what keeps ssh_keys /
 // timezone / cloudcfg drift-free.
 func instanceStateFromAPI(obj map[string]any, prior instanceModel) instanceModel {
 	return instanceModel{
 		ID: stringFromAPI(obj, "id", prior.ID),
 
-		// RequiresReplace inputs — SHOW may or may not echo them; preserve plan.
+		// RequiresReplace inputs - SHOW may or may not echo them; preserve plan.
 		LocationID:  stringOrPrior(obj, "location_id", prior.LocationID),
 		PlanID:      stringOrPrior(obj, "plan_id", prior.PlanID),
 		ImageID:     stringOrPrior(obj, "image_id", prior.ImageID),
 		VPCID:       optionalStringFromAPI(obj, "vpc_id", prior.VPCID),
 		VPCSubnetID: optionalStringFromAPI(obj, "vpc_subnet_id", prior.VPCSubnetID),
 
-		// WRITE-ONLY deploy fields — never in SHOW; preserve prior verbatim.
+		// WRITE-ONLY deploy fields - never in SHOW; preserve prior verbatim.
 		SSHKeys:  prior.SSHKeys,
 		Timezone: prior.Timezone,
 		Cloudcfg: prior.Cloudcfg,
@@ -593,7 +593,7 @@ func stringOrPrior(obj map[string]any, key string, fallback types.String) types.
 	return fallback
 }
 
-// boolFromIntAPI maps an API integer flag (0/1) — or a native bool — to a
+// boolFromIntAPI maps an API integer flag (0/1) - or a native bool - to a
 // types.Bool. An absent/unrecognised value falls back to the prior value.
 func boolFromIntAPI(obj map[string]any, key string, fallback types.Bool) types.Bool {
 	raw, ok := obj[key]
@@ -616,14 +616,14 @@ func boolFromIntAPI(obj map[string]any, key string, fallback types.Bool) types.B
 
 // nestedStringFromAPI extracts a string sub-field (e.g. "ip") from an appended
 // nested object (e.g. primary_public_ip{ip:"…"}). A missing parent, null, or
-// missing sub-field falls back to the prior value, so the appended IP objects —
-// which are absent before deploy completes — never crash mapping.
+// missing sub-field falls back to the prior value, so the appended IP objects -
+// which are absent before deploy completes - never crash mapping.
 //
 // Because these map to COMPUTED attributes, the value must be KNOWN after apply:
 // if the field is absent and the prior value is null/unknown (the first-create
 // case), it resolves to "" rather than leaking an unknown into state.
 func nestedStringFromAPI(obj map[string]any, parent, sub string, fallback types.String) types.String {
-	// "" means "absent or empty by design" for these Computed string fields —
+	// "" means "absent or empty by design" for these Computed string fields -
 	// required for known-after-apply. Later async resources copying this pattern
 	// should note that an empty string is indistinguishable from a genuinely-absent
 	// value; use a sentinel (e.g. "none") if the distinction matters.

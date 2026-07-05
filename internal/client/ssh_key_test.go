@@ -17,7 +17,7 @@ import (
 
 // TestCreateSSHKey_Success verifies that CreateSSHKey:
 //   - POSTs to /ssh-keys
-//   - sends only {"name","public_key"} (NOT comments — the server derives it)
+//   - sends only {"name","public_key"} (NOT comments - the server derives it)
 //   - returns the unwrapped ssh_key object.
 func TestCreateSSHKey_Success(t *testing.T) {
 	var gotMethod, gotPath string
@@ -64,7 +64,7 @@ func TestCreateSSHKey_Success(t *testing.T) {
 }
 
 // TestCreateSSHKey_Failure verifies that a 200 success:false response surfaces
-// the API message as an error (C3 — the create endpoint signals failure at 200).
+// the API message as an error (C3 - the create endpoint signals failure at 200).
 func TestCreateSSHKey_Failure(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

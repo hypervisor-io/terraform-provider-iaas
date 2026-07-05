@@ -6,7 +6,7 @@ import (
 	"net/url"
 )
 
-// S3 Object Storage endpoints — buckets + standalone access keys + their
+// S3 Object Storage endpoints - buckets + standalone access keys + their
 // bucket↔key attachments. Verified against the real UserApi\S3BucketController,
 // UserApi\S3AccessKeyController, S3BucketService, S3AccessKeyService, the
 // Store/Update FormRequests, the S3Bucket / UserS3AccessKey models, and
@@ -40,7 +40,7 @@ import (
 //
 //	INDEX   GET    /object-storage/access-keys             (PLURAL) → paginator
 //	                                                         {data:[{id,name,access_key,
-//	                                                         active,...}]} — secret_key is
+//	                                                         active,...}]} - secret_key is
 //	                                                         $hidden, NEVER listed
 //	CREATE  POST   /object-storage/access-keys             (PLURAL) body {name (req)}
 //	                                                         → 200 {success:true,message,
@@ -65,20 +65,20 @@ import (
 //	                                                         → {success,message}
 //	UPDATE  PATCH  /object-storage/bucket/{bid}/update/{kid}  body {permission (req)}
 //	                                                         → {success,message}  (in-place
-//	                                                         permission change — NOT a
+//	                                                         permission change - NOT a
 //	                                                         delete+add)
 //	DETACH  POST   /object-storage/bucket/{bid}/detach/{kid}                  → {success,message}
 //	                                                         (POST, not DELETE)
 //
 // Notes:
-//   - The S3 routes are NOT wrapped in billing.enabled — they are reachable with
+//   - The S3 routes are NOT wrapped in billing.enabled - they are reachable with
 //     billing disabled (matches LB/natgw; differs from managed_database/static_ip).
 //     A billing record (CsS3Bucket) is created internally but does not 403 the route.
 //   - All writes are SYNCHRONOUS at HTTP 200 (no task/state, no waiter). The bucket
 //     DELETE dispatches an async DeleteS3Bucket job, but the API call returns
 //     immediately and a subsequent SHOW 404s once the row is removed.
 //   - Failures surface as 200 success:false (quota exceeded, plan/server disabled,
-//     key not attached, bucket suspended) OR HTTP 422 (validation, quota guard) —
+//     key not attached, bucket suspended) OR HTTP 422 (validation, quota guard) -
 //     doItem/doVoid surface both (C3 + responseError).
 //   - Every id is url.PathEscape'd into the path; empty-id guards on every path arg.
 
@@ -92,12 +92,12 @@ func (c *Client) ListS3Buckets(ctx context.Context) ([]map[string]any, error) {
 
 // CreateS3Bucket creates a bucket from the supplied prebuilt body
 // (name + s3_plan_id + s3_server_id, all required). The create is SYNCHRONOUS
-// but the response is only {success:true,message} — it carries NEITHER an id NOR
-// a body — so the caller MUST list-and-match by the unique bucket name to
+// but the response is only {success:true,message} - it carries NEITHER an id NOR
+// a body - so the caller MUST list-and-match by the unique bucket name to
 // discover the id (C4 readback). The collection path is PLURAL.
 //
 // On failure the controller returns HTTP 422 {success:false,message} (quota,
-// plan/server disabled) or a validation 422 — both surfaced by doItem.
+// plan/server disabled) or a validation 422 - both surfaced by doItem.
 func (c *Client) CreateS3Bucket(ctx context.Context, body map[string]any) (map[string]any, error) {
 	return c.doItem(ctx, "POST", "/object-storage/buckets", body, "")
 }
@@ -116,7 +116,7 @@ func (c *Client) GetS3Bucket(ctx context.Context, id string) (map[string]any, er
 
 // GetS3BucketByName lists all buckets and returns the one whose name matches.
 // Used as the C4 create-without-id readback (the create response has no id, but
-// the bucket name is unique — StoreBucketRequest enforces unique:s3_buckets,name).
+// the bucket name is unique - StoreBucketRequest enforces unique:s3_buckets,name).
 // A missing name is surfaced as a 404 *APIError (IsNotFound = true).
 func (c *Client) GetS3BucketByName(ctx context.Context, name string) (map[string]any, error) {
 	if name == "" {
@@ -193,7 +193,7 @@ func (c *Client) AttachS3BucketKey(ctx context.Context, bucketID, keyID, permiss
 // UpdateS3BucketKey changes an already-attached key's permission IN PLACE via
 // PATCH /object-storage/bucket/{bid}/update/{kid} {permission}. This is a true
 // in-place update (the pivot's permission column is updated and the S3 policy is
-// rewritten) — NOT a delete+add. A failure is surfaced by doVoid.
+// rewritten) - NOT a delete+add. A failure is surfaced by doVoid.
 func (c *Client) UpdateS3BucketKey(ctx context.Context, bucketID, keyID, permission string) error {
 	if bucketID == "" {
 		return fmt.Errorf("UpdateS3BucketKey: empty bucket id")
@@ -223,7 +223,7 @@ func (c *Client) DetachS3BucketKey(ctx context.Context, bucketID, keyID string) 
 
 // ListS3AccessKeys returns all standalone S3 access keys owned by the
 // authenticated account (paginator-aware). The collection path is PLURAL. The
-// secret_key is $hidden on the model, so it is NEVER present in this listing —
+// secret_key is $hidden on the model, so it is NEVER present in this listing -
 // only id, name, access_key, active.
 func (c *Client) ListS3AccessKeys(ctx context.Context) ([]map[string]any, error) {
 	return c.doList(ctx, "GET", "/object-storage/access-keys", nil)
@@ -242,7 +242,7 @@ func (c *Client) CreateS3AccessKey(ctx context.Context, body map[string]any) (ma
 
 // GetS3AccessKey fetches a single access key by id. There is NO SHOW route, so
 // this lists all keys and scans for the matching id (C4). The returned object
-// carries id, name, access_key, active — but NEVER secret_key ($hidden). A
+// carries id, name, access_key, active - but NEVER secret_key ($hidden). A
 // missing id is surfaced as a 404 *APIError (IsNotFound = true).
 func (c *Client) GetS3AccessKey(ctx context.Context, id string) (map[string]any, error) {
 	if id == "" {

@@ -37,7 +37,7 @@ const accountProfileBody = `{
   }
 }`
 
-// TestUnitAccount_whoami — the singleton account data source has no input
+// TestUnitAccount_whoami - the singleton account data source has no input
 // filter; Read calls GET /profile and every attribute resolves from the mock
 // response, including the derived id used elsewhere in a config
 // (data.iaas_account.current.id).
@@ -79,7 +79,7 @@ data "iaas_account" "current" {}
 	})
 }
 
-// TestUnitAccount_subuser — owner_id populates when the profile belongs to a
+// TestUnitAccount_subuser - owner_id populates when the profile belongs to a
 // subuser, confirming the subuser-flag mapping the plan calls out.
 func TestUnitAccount_subuser(t *testing.T) {
 	ensureTFBinary(t)
@@ -108,7 +108,7 @@ data "iaas_account" "current" {}
 	})
 }
 
-// TestUnitAccount_unauthorized — a 401 from /profile (bad/IP-mismatched
+// TestUnitAccount_unauthorized - a 401 from /profile (bad/IP-mismatched
 // token) surfaces the shared IP-lock diagnostic hint, letting a config fail
 // fast on a misconfigured provider token.
 func TestUnitAccount_unauthorized(t *testing.T) {

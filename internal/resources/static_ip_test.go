@@ -13,7 +13,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccStaticIP_basic — LIVE acceptance test (manual staging gate).
+// TestAccStaticIP_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set (resource.Test enforces this), so it never
 // runs or blocks CI. Requires a reachable panel + IP-locked token via
@@ -23,8 +23,8 @@ import (
 // skips cleanly when either var is absent so a bare TF_ACC=1 run does not
 // fail with a confusing 404/422.
 //
-//	IAAS_TEST_STATIC_IP_ID   — UUID of an available (unallocated) IP
-//	IAAS_TEST_HG_ID          — UUID of the hypervisor group that owns the IP
+//	IAAS_TEST_STATIC_IP_ID   - UUID of an available (unallocated) IP
+//	IAAS_TEST_HG_ID          - UUID of the hypervisor group that owns the IP
 //
 // ---------------------------------------------------------------------------
 func TestAccStaticIP_basic(t *testing.T) {
@@ -63,14 +63,14 @@ resource "iaas_static_ip" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitStaticIP_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitStaticIP_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the full resource lifecycle against canned API responses, with no
 // live panel. The Steps execute in this order:
 //
-//  1. Create + read-back — applies createCfg; checks id, address, status,
+//  1. Create + read-back - applies createCfg; checks id, address, status,
 //     hypervisor_group_id, ip_id, hypervisor_group_name.
-//  2. Import — imports the resource by UUID and verifies state matches.
+//  2. Import - imports the resource by UUID and verifies state matches.
 //
 // There is NO update step: Static IP has no UPDATE route, so every configurable
 // attribute is RequiresReplace and the resource is effectively immutable in place.
@@ -97,7 +97,7 @@ func TestUnitStaticIP_lifecycle(t *testing.T) {
 	// currentStatus tracks server-side status so READ always reflects the current value.
 	currentStatus := "allocated"
 
-	// ALLOCATE — POST /static-ips/allocate returns 200 + {success,message,static_ip}.
+	// ALLOCATE - POST /static-ips/allocate returns 200 + {success,message,static_ip}.
 	// The static_ip object carries id, status, and the nested ip + hypervisor_group objects.
 	srv.Handle("POST", "/static-ips/allocate", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
@@ -107,7 +107,7 @@ func TestUnitStaticIP_lifecycle(t *testing.T) {
 		})
 	})
 
-	// READ — GET /static-ips (paginator) — the resource uses list+scan-by-id
+	// READ - GET /static-ips (paginator) - the resource uses list+scan-by-id
 	// because there is no individual SHOW route.
 	srv.Handle("GET", "/static-ips", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
@@ -119,7 +119,7 @@ func TestUnitStaticIP_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — DELETE /static-ip/{id} (singular) succeeds at 200.
+	// DELETE - DELETE /static-ip/{id} (singular) succeeds at 200.
 	srv.Handle("DELETE", "/static-ip/"+staticIPID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,

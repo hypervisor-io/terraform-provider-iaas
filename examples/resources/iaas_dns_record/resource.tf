@@ -19,10 +19,10 @@ resource "iaas_dns_record" "www_a1" {
   zone_id       = iaas_dns_zone.example.id
   record_set_id = iaas_dns_record_set.www.id
 
-  # The record value — an IPv4 address for an A set. Updatable in place.
+  # The record value - an IPv4 address for an A set. Updatable in place.
   value = "10.0.0.10"
 
-  # Required for the "weighted" policy; ignored otherwise (1–255).
+  # Required for the "weighted" policy; ignored otherwise (1-255).
   weight = 60
 
   # Optional active health check (single nested attribute, assigned with `= {}`).

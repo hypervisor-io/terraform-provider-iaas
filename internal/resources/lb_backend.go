@@ -32,7 +32,7 @@ func NewLBBackendResource() resource.Resource {
 	return &lbBackendResource{}
 }
 
-// lbBackendResource manages an iaas_lb_backend — a backend pool of a load balancer.
+// lbBackendResource manages an iaas_lb_backend - a backend pool of a load balancer.
 type lbBackendResource struct {
 	client *client.Client
 }
@@ -149,7 +149,7 @@ func (r *lbBackendResource) Create(ctx context.Context, req resource.CreateReque
 
 	// Read-back by scanning the LB SHOW so the server defaults (algorithm/mode)
 	// are reflected. Fall back to the create response if the scan can't find it
-	// yet (defensive — syncConfig is synchronous so it should be present).
+	// yet (defensive - syncConfig is synchronous so it should be present).
 	obj, err := r.client.GetLBBackend(ctx, lbID, id)
 	if err != nil {
 		obj = created

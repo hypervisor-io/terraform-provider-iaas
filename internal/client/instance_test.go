@@ -66,7 +66,7 @@ func TestCreateCSInstance_Success(t *testing.T) {
 }
 
 // TestCreateCSInstance_Failure verifies a 200 success:false response surfaces the
-// API message as an error (C3 — e.g. plan_id not offered at location_id).
+// API message as an error (C3 - e.g. plan_id not offered at location_id).
 func TestCreateCSInstance_Failure(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

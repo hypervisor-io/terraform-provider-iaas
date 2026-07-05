@@ -1,6 +1,6 @@
 # A certificate is a CHILD of a load balancer: a manually-uploaded SSL/TLS
 # certificate (PEM cert + private key, optional chain). Certificates are
-# IMMUTABLE — there is no update endpoint — so changing any field rotates
+# IMMUTABLE - there is no update endpoint - so changing any field rotates
 # (replaces) the certificate. (Let's Encrypt issuance is not managed here.)
 resource "iaas_load_balancer" "example" {
   name                = "web-lb"
@@ -9,7 +9,7 @@ resource "iaas_load_balancer" "example" {
 }
 
 resource "iaas_lb_certificate" "example" {
-  # Parent load balancer id — part of the API path. Changing it forces a new resource.
+  # Parent load balancer id - part of the API path. Changing it forces a new resource.
   load_balancer_id = iaas_load_balancer.example.id
 
   name        = "example-com"

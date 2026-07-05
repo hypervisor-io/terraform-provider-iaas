@@ -24,14 +24,14 @@ import (
 // annotation documents "instance_id" and "port", but the real service
 // (LoadBalancerService::createTarget / updateTarget) reads the DB columns
 // "target_instance_id", "target_ip", "target_port". A target is keyed by
-// (lb_backend_id, target_ip, target_port) — the unique index — so target_ip and
+// (lb_backend_id, target_ip, target_port) - the unique index - so target_ip and
 // target_port are the real required inputs; target_instance_id is nullable (it
 // links the target to an instance for tracking but is NOT used to derive the ip).
 //
 // Child writes are SYNCHRONOUS (syncConfig runs internally). A duplicate
 // (target_ip, target_port) returns HTTP 422 success:false → an error (C3).
 //
-// There is NO individual target SHOW route — targets are EMBEDDED in the LB SHOW
+// There is NO individual target SHOW route - targets are EMBEDDED in the LB SHOW
 // under load_balancer.backends[].targets[]. GetLBTarget reads-by-scan: it calls
 // GetLoadBalancer, finds the backend, then scans that backend's targets[].
 

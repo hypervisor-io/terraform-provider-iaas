@@ -12,7 +12,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccInstanceBackupPolicy_basic — LIVE acceptance test (manual staging gate).
+// TestAccInstanceBackupPolicy_basic - LIVE acceptance test (manual staging gate).
 // Auto-skips unless TF_ACC is set.
 // ---------------------------------------------------------------------------
 func TestAccInstanceBackupPolicy_basic(t *testing.T) {
@@ -49,7 +49,7 @@ resource "iaas_instance_backup_policy" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// ibpMockServer — stateful mock of the instance backup policy API.
+// ibpMockServer - stateful mock of the instance backup policy API.
 // ---------------------------------------------------------------------------
 type ibpMockServer struct {
 	mu sync.Mutex
@@ -97,7 +97,7 @@ func (s *ibpMockServer) policyObject(id string) map[string]any {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitInstanceBackupPolicy_lifecycle — MOCK-backed lifecycle test.
+// TestUnitInstanceBackupPolicy_lifecycle - MOCK-backed lifecycle test.
 //
 // Steps:
 //  1. Create with daily schedule + ONE attached instance → assert id/name,
@@ -119,7 +119,7 @@ func TestUnitInstanceBackupPolicy_lifecycle(t *testing.T) {
 		attached: map[string]struct{}{},
 	}
 
-	// CREATE — POST /backup-policies
+	// CREATE - POST /backup-policies
 	srv.Handle("POST", "/backup-policies", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -150,7 +150,7 @@ func TestUnitInstanceBackupPolicy_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — GET /backup-policy/{id}
+	// SHOW - GET /backup-policy/{id}
 	srv.Handle("GET", "/backup-policy/"+policyID, func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -160,7 +160,7 @@ func TestUnitInstanceBackupPolicy_lifecycle(t *testing.T) {
 		})
 	})
 
-	// UPDATE — PATCH /backup-policy/{id}
+	// UPDATE - PATCH /backup-policy/{id}
 	srv.Handle("PATCH", "/backup-policy/"+policyID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -191,7 +191,7 @@ func TestUnitInstanceBackupPolicy_lifecycle(t *testing.T) {
 		})
 	})
 
-	// ATTACH — POST /backup-policy/{id}/attach
+	// ATTACH - POST /backup-policy/{id}/attach
 	srv.Handle("POST", "/backup-policy/"+policyID+"/attach", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -207,7 +207,7 @@ func TestUnitInstanceBackupPolicy_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DETACH — POST /backup-policy/{id}/detach
+	// DETACH - POST /backup-policy/{id}/detach
 	srv.Handle("POST", "/backup-policy/"+policyID+"/detach", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -223,7 +223,7 @@ func TestUnitInstanceBackupPolicy_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — DELETE /backup-policy/{id}
+	// DELETE - DELETE /backup-policy/{id}
 	srv.Handle("DELETE", "/backup-policy/"+policyID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,

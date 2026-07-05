@@ -151,7 +151,7 @@ func TestListKubernetesClusterSgRules_Success(t *testing.T) {
 }
 
 // TestListKubernetesClusterSgRules_UnprovisionedScope verifies a scope with no
-// SG provisioned on the cluster decodes to an empty slice (not an error) —
+// SG provisioned on the cluster decodes to an empty slice (not an error) -
 // the controller returns 200 {rules:[],security_group:null} rather than 404.
 func TestListKubernetesClusterSgRules_UnprovisionedScope(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -182,7 +182,7 @@ func TestListKubernetesClusterSgRules_EmptyIDs(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// GetKubernetesClusterSgRule (list-and-match — no SHOW endpoint exists)
+// GetKubernetesClusterSgRule (list-and-match - no SHOW endpoint exists)
 // ---------------------------------------------------------------------------
 
 // TestGetKubernetesClusterSgRule_Found verifies the read-by-scan over the rule

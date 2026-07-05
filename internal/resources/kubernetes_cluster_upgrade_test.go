@@ -13,7 +13,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestUnitKubernetesCluster_versionUpgrade — MOCK-backed proof of the T7/id-G8
+// TestUnitKubernetesCluster_versionUpgrade - MOCK-backed proof of the T7/id-G8
 // in-place version-upgrade path folded into iaas_kubernetes_cluster's Update.
 //
 // Drives: create at version A → update kubernetes_version_id to version B →
@@ -22,10 +22,10 @@ import (
 // reflects the new version on BOTH the worker baseline (kubernetes_version)
 // and the control-plane tracker (cp_kubernetes_version) exposed read-only by
 // this resource. The mock's cluster.state never leaves "running" (mirroring
-// the Master's real behavior — CP/worker rolling upgrades never touch
+// the Master's real behavior - CP/worker rolling upgrades never touch
 // `state`), and each rolling-upgrade stage's KubernetesClusterTask is reported
-// "completed" starting from the FIRST poll after its POST fires, so — combined
-// with the tiny IAAS_INSTANCE_POLL_INTERVAL seam — the test does not sleep.
+// "completed" starting from the FIRST poll after its POST fires, so - combined
+// with the tiny IAAS_INSTANCE_POLL_INTERVAL seam - the test does not sleep.
 // ---------------------------------------------------------------------------
 func TestUnitKubernetesCluster_versionUpgrade(t *testing.T) {
 	ensureTFBinary(t)
@@ -41,8 +41,8 @@ func TestUnitKubernetesCluster_versionUpgrade(t *testing.T) {
 		vpcID     = "a3333333-3333-3333-3333-333333333333"
 		cpSubID   = "a4444444-4444-4444-4444-444444444444"
 		wkSubID   = "a5555555-5555-5555-5555-555555555555"
-		verID1    = "a6666666-6666-6666-6666-666666666666" // 1.30.2 — create version
-		verID2    = "a6666666-6666-6666-6666-666666666667" // 1.31.0 — upgrade target
+		verID1    = "a6666666-6666-6666-6666-666666666666" // 1.30.2 - create version
+		verID2    = "a6666666-6666-6666-6666-666666666667" // 1.31.0 - upgrade target
 		cpPlanID  = "a7777777-7777-7777-7777-777777777777"
 		lbPlanID  = "a8888888-8888-8888-8888-888888888888"
 		wkPlanID  = "a9999999-9999-9999-9999-999999999999"
@@ -53,7 +53,7 @@ func TestUnitKubernetesCluster_versionUpgrade(t *testing.T) {
 	semver := map[string]string{verID1: "1.30.2", verID2: "1.31.0"}
 
 	var mu sync.Mutex
-	// Mutable mock cluster state — mirrors the Master's two independent
+	// Mutable mock cluster state - mirrors the Master's two independent
 	// version columns, both starting equal at create.
 	workerVersionID := verID1
 	cpVersionID := verID1
@@ -113,7 +113,7 @@ func TestUnitKubernetesCluster_versionUpgrade(t *testing.T) {
 		})
 	})
 
-	// SHOW — 404 once delete has been enqueued (mirrors
+	// SHOW - 404 once delete has been enqueued (mirrors
 	// TestUnitKubernetesCluster_lifecycle's pattern).
 	srv.Handle("GET", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
@@ -126,13 +126,13 @@ func TestUnitKubernetesCluster_versionUpgrade(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "cluster": showCluster()})
 	})
 
-	// UPDATE (metadata PATCH) — registered defensively; this test never
+	// UPDATE (metadata PATCH) - registered defensively; this test never
 	// changes name/description/project_id, so it should not be hit.
 	srv.Handle("PATCH", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "cluster": showCluster()})
 	})
 
-	// UPGRADE CP — flips cp_kubernetes_version_id to the target and marks its
+	// UPGRADE CP - flips cp_kubernetes_version_id to the target and marks its
 	// task "completed" immediately (ready on the first poll, no sleep).
 	srv.Handle("POST", itemPath+"/upgrade/cp", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
@@ -152,7 +152,7 @@ func TestUnitKubernetesCluster_versionUpgrade(t *testing.T) {
 		})
 	})
 
-	// UPGRADE WORKERS — flips kubernetes_version_id (worker baseline) to the
+	// UPGRADE WORKERS - flips kubernetes_version_id (worker baseline) to the
 	// target and marks its task "completed" immediately.
 	srv.Handle("POST", itemPath+"/upgrade/workers", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
@@ -172,12 +172,12 @@ func TestUnitKubernetesCluster_versionUpgrade(t *testing.T) {
 		})
 	})
 
-	// UPGRADE CCM — synchronous, no task.
+	// UPGRADE CCM - synchronous, no task.
 	srv.Handle("POST", itemPath+"/upgrade/ccm", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "CCM redeployed"})
 	})
 
-	// DELETE — the test harness destroys the resource at the end of the run.
+	// DELETE - the test harness destroys the resource at the end of the run.
 	srv.Handle("DELETE", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		deleted = true
@@ -222,7 +222,7 @@ resource "iaas_kubernetes_cluster" "test" {
 					resource.TestCheckResourceAttr("iaas_kubernetes_cluster.test", "state", "running"),
 				),
 			},
-			// Update: bump kubernetes_version_id to verID2 (1.31.0) — drives
+			// Update: bump kubernetes_version_id to verID2 (1.31.0) - drives
 			// the staged cp -> workers -> ccm upgrade instead of a replace.
 			{
 				Config: cfg(verID2),
@@ -413,7 +413,7 @@ func TestUnitKubernetesCluster_versionUpgrade_ccmDisabled(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"task_id": "wk-task-2", "target_version_id": target, "current_version_id": verID1})
 	})
 	srv.Handle("POST", itemPath+"/upgrade/ccm", func(w http.ResponseWriter, r *http.Request) {
-		// Should never be hit in this test — fail loudly if it is.
+		// Should never be hit in this test - fail loudly if it is.
 		t.Error("unexpected call to POST .../upgrade/ccm with upgrade_ccm=false")
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "CCM redeployed"})
 	})

@@ -3,12 +3,12 @@
 page_title: "iaas_load_balancer Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a load balancer (HAProxy) backed by a dedicated instance. Creation is ASYNCHRONOUS: the LB record and its backing instance are created, then this resource waits for the LB status to become "active" (the lifecycle is deploying → configuring → active). Deploy in PUBLIC mode by setting hypervisor_group_id (the location), or in VPC mode by setting vpc_id + vpc_subnet_id. There is NO update endpoint for the load balancer itself, so every input is immutable — changing any forces a new resource. The load balancer's frontends, backends, targets, certificates, and routing rules are managed by separate resources. The feature must be enabled for the chosen location; if it is not (or the per-account load balancer quota is reached, or no public IP is available), the create fails with a clear message.
+  Manages a load balancer (HAProxy) backed by a dedicated instance. Creation is ASYNCHRONOUS: the LB record and its backing instance are created, then this resource waits for the LB status to become "active" (the lifecycle is deploying → configuring → active). Deploy in PUBLIC mode by setting hypervisor_group_id (the location), or in VPC mode by setting vpc_id + vpc_subnet_id. There is NO update endpoint for the load balancer itself, so every input is immutable - changing any forces a new resource. The load balancer's frontends, backends, targets, certificates, and routing rules are managed by separate resources. The feature must be enabled for the chosen location; if it is not (or the per-account load balancer quota is reached, or no public IP is available), the create fails with a clear message.
 ---
 
 # iaas_load_balancer (Resource)
 
-Manages a load balancer (HAProxy) backed by a dedicated instance. Creation is ASYNCHRONOUS: the LB record and its backing instance are created, then this resource waits for the LB status to become "active" (the lifecycle is deploying → configuring → active). Deploy in PUBLIC mode by setting hypervisor_group_id (the location), or in VPC mode by setting vpc_id + vpc_subnet_id. There is NO update endpoint for the load balancer itself, so every input is immutable — changing any forces a new resource. The load balancer's frontends, backends, targets, certificates, and routing rules are managed by separate resources. The feature must be enabled for the chosen location; if it is not (or the per-account load balancer quota is reached, or no public IP is available), the create fails with a clear message.
+Manages a load balancer (HAProxy) backed by a dedicated instance. Creation is ASYNCHRONOUS: the LB record and its backing instance are created, then this resource waits for the LB status to become "active" (the lifecycle is deploying → configuring → active). Deploy in PUBLIC mode by setting hypervisor_group_id (the location), or in VPC mode by setting vpc_id + vpc_subnet_id. There is NO update endpoint for the load balancer itself, so every input is immutable - changing any forces a new resource. The load balancer's frontends, backends, targets, certificates, and routing rules are managed by separate resources. The feature must be enabled for the chosen location; if it is not (or the per-account load balancer quota is reached, or no public IP is available), the create fails with a clear message.
 
 ## Example Usage
 
@@ -57,7 +57,7 @@ resource "iaas_load_balancer" "vpc" {
   vpc_subnet_id = iaas_vpc_subnet.public.id
 }
 
-# Every input is IMMUTABLE — there is no update endpoint for the load balancer
+# Every input is IMMUTABLE - there is no update endpoint for the load balancer
 # itself, so changing name, plan, vpc, or location forces a new resource. Tune
 # the async wait via a timeouts block if needed:
 #

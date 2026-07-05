@@ -177,7 +177,7 @@ func TestStatePollerFailState(t *testing.T) {
 	}
 }
 
-// TestStatePollerUnknownState: an unrecognised state must keep polling —
+// TestStatePollerUnknownState: an unrecognised state must keep polling -
 // done=false, err=nil.
 func TestStatePollerUnknownState(t *testing.T) {
 	get := func() (map[string]any, error) {

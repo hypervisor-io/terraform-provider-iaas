@@ -18,7 +18,7 @@ import (
 //
 // resource.UnitTest needs a terraform/opentofu binary. The plugin-testing
 // library only auto-discovers a binary at TF_ACC_TERRAFORM_PATH or a
-// "terraform" executable on PATH — it does NOT look for "tofu". This helper:
+// "terraform" executable on PATH - it does NOT look for "tofu". This helper:
 //
 //   - leaves an explicit TF_ACC_TERRAFORM_PATH untouched;
 //   - otherwise falls back to a "tofu" (then "terraform") binary on PATH and
@@ -74,7 +74,7 @@ func isOpenTofu(t *testing.T, path string) bool {
 // is permitted to depend on the package it tests.
 
 // ---------------------------------------------------------------------------
-// TestAccSSHKey_basic — LIVE acceptance test (manual staging gate).
+// TestAccSSHKey_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set (resource.Test enforces this), so it never
 // runs or blocks CI. Requires a reachable panel + IP-locked token via
@@ -109,14 +109,14 @@ resource "iaas_ssh_key" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitSSHKey_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitSSHKey_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the full resource lifecycle against canned API responses, with no
 // live panel. The Steps execute in this order:
 //
-//  1. Create + read-back — applies createCfg; checks id, fingerprint, comments, name.
-//  2. Import — imports the resource by UUID and verifies state matches the prior step.
-//  3. Update — applies updateCfg (renamed name); checks id and new name.
+//  1. Create + read-back - applies createCfg; checks id, fingerprint, comments, name.
+//  2. Import - imports the resource by UUID and verifies state matches the prior step.
+//  3. Update - applies updateCfg (renamed name); checks id and new name.
 //
 // Delete is implicit teardown after the final step, not an explicit Step.
 //
@@ -137,10 +137,10 @@ func TestUnitSSHKey_lifecycle(t *testing.T) {
 	)
 
 	// currentName tracks the server-side name so READ reflects the latest value
-	// set by create/update — exercising real drift-free read-back.
+	// set by create/update - exercising real drift-free read-back.
 	currentName := "lifecycle key"
 
-	// CREATE — POST /ssh-keys returns 200 + {success,ssh_key}.
+	// CREATE - POST /ssh-keys returns 200 + {success,ssh_key}.
 	srv.Handle("POST", "/ssh-keys", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -154,7 +154,7 @@ func TestUnitSSHKey_lifecycle(t *testing.T) {
 		})
 	})
 
-	// UPDATE — PATCH /ssh-key/{id} (singular) applies the new name.
+	// UPDATE - PATCH /ssh-key/{id} (singular) applies the new name.
 	srv.Handle("PATCH", "/ssh-key/"+keyID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -168,14 +168,14 @@ func TestUnitSSHKey_lifecycle(t *testing.T) {
 		})
 	})
 
-	// READ — GET /ssh-key/{id} (singular) reflects the latest name.
+	// READ - GET /ssh-key/{id} (singular) reflects the latest name.
 	srv.Handle("GET", "/ssh-key/"+keyID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"ssh_key": sshKeyObject(keyID, currentName, pubKey, fpr, comment),
 		})
 	})
 
-	// DELETE — DELETE /ssh-keys/{id} succeeds at 200.
+	// DELETE - DELETE /ssh-keys/{id} succeeds at 200.
 	srv.Handle("DELETE", "/ssh-keys/"+keyID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,

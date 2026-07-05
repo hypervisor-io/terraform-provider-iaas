@@ -3,12 +3,12 @@
 page_title: "iaas_instance_vpc_attachment Resource - iaas"
 subcategory: ""
 description: |-
-  Attaches an instance to a VPC subnet (the instance's single VPC network interface). An instance may have AT MOST ONE VPC interface at a time — enabling a second one fails server-side — so this is a STANDALONE resource keyed on instance_id, not a nested block on iaas_instance. Enabling ALWAYS auto-assigns the lowest free ip in vpc_subnet_id as the instance's first (primary) ip; that address is exposed read-only as auto_assigned_ip. Any further secondary addresses are managed via additional_ips (an order-independent set of free addresses from the subnet's pool), and primary_ip selects which attached address is primary. Destroying this resource disables the VPC entirely (releases every attached ip).
+  Attaches an instance to a VPC subnet (the instance's single VPC network interface). An instance may have AT MOST ONE VPC interface at a time - enabling a second one fails server-side - so this is a STANDALONE resource keyed on instance_id, not a nested block on iaas_instance. Enabling ALWAYS auto-assigns the lowest free ip in vpc_subnet_id as the instance's first (primary) ip; that address is exposed read-only as auto_assigned_ip. Any further secondary addresses are managed via additional_ips (an order-independent set of free addresses from the subnet's pool), and primary_ip selects which attached address is primary. Destroying this resource disables the VPC entirely (releases every attached ip).
 ---
 
 # iaas_instance_vpc_attachment (Resource)
 
-Attaches an instance to a VPC subnet (the instance's single VPC network interface). An instance may have AT MOST ONE VPC interface at a time — enabling a second one fails server-side — so this is a STANDALONE resource keyed on instance_id, not a nested block on iaas_instance. Enabling ALWAYS auto-assigns the lowest free ip in vpc_subnet_id as the instance's first (primary) ip; that address is exposed read-only as auto_assigned_ip. Any further secondary addresses are managed via additional_ips (an order-independent set of free addresses from the subnet's pool), and primary_ip selects which attached address is primary. Destroying this resource disables the VPC entirely (releases every attached ip).
+Attaches an instance to a VPC subnet (the instance's single VPC network interface). An instance may have AT MOST ONE VPC interface at a time - enabling a second one fails server-side - so this is a STANDALONE resource keyed on instance_id, not a nested block on iaas_instance. Enabling ALWAYS auto-assigns the lowest free ip in vpc_subnet_id as the instance's first (primary) ip; that address is exposed read-only as auto_assigned_ip. Any further secondary addresses are managed via additional_ips (an order-independent set of free addresses from the subnet's pool), and primary_ip selects which attached address is primary. Destroying this resource disables the VPC entirely (releases every attached ip).
 
 ## Example Usage
 
@@ -18,7 +18,7 @@ Attaches an instance to a VPC subnet (the instance's single VPC network interfac
 # keyed on instance_id rather than a nested block on iaas_instance.
 #
 # Enabling a VPC ALWAYS auto-assigns the LOWEST FREE address in vpc_subnet_id
-# as the instance's first (primary) ip — there is no way to choose or omit
+# as the instance's first (primary) ip - there is no way to choose or omit
 # it. That address is exposed read-only as auto_assigned_ip. Any further
 # secondary addresses are managed via additional_ips (an order-independent
 # set of free addresses drawn from the subnet's pool); primary_ip selects
@@ -50,7 +50,7 @@ resource "iaas_instance_vpc_attachment" "example" {
   instance_id = iaas_instance.example.id
 
   # Required. Changing either vpc_id or vpc_subnet_id forces a new resource
-  # (disable, then re-enable) — there is no in-place "move to a different
+  # (disable, then re-enable) - there is no in-place "move to a different
   # VPC" operation.
   vpc_id        = iaas_vpc.example.id
   vpc_subnet_id = iaas_vpc_subnet.example.id
@@ -58,7 +58,7 @@ resource "iaas_instance_vpc_attachment" "example" {
   # Optional. Extra addresses beyond the server auto-assigned
   # auto_assigned_ip, drawn from the subnet's FREE pool. Adding/removing an
   # address here attaches/detaches it in place. Do NOT list auto_assigned_ip
-  # here — it is tracked separately, and the API itself refuses to remove an
+  # here - it is tracked separately, and the API itself refuses to remove an
   # instance's LAST vpc ip (destroy this resource instead to release
   # everything).
   additional_ips = ["10.0.0.10", "10.0.0.11"]
@@ -95,11 +95,11 @@ output "instance_vpc_ips" {
 
 ### Optional
 
-- `additional_ips` (Set of String) Extra dotted-quad addresses — beyond the server auto-assigned auto_assigned_ip — to attach from vpc_subnet_id's free pool, as an order-independent set. Adding or removing an address here attaches or detaches it in place (the API's ip/add and DELETE ip/{id} endpoints). Each address must currently be FREE in the subnet's pool; one already in use, or outside the subnet, fails at apply time with a clear error. Never list auto_assigned_ip here: it is tracked separately and the API itself refuses to remove an instance's LAST vpc ip (destroy this resource instead to release everything). Modelled Optional+Computed (like iaas_instance's hostname) so an omitted value — meaning "just the auto-assigned ip, no extras" — round-trips cleanly instead of tripping a plan-time consistency error.
-- `primary_ip` (String) Which attached address (auto_assigned_ip, or one of additional_ips) should be marked primary. Defaults to the server auto-assigned ip when omitted. Must reference an address that is already attached — add it via additional_ips in the same apply (or an earlier one) before naming it here.
+- `additional_ips` (Set of String) Extra dotted-quad addresses - beyond the server auto-assigned auto_assigned_ip - to attach from vpc_subnet_id's free pool, as an order-independent set. Adding or removing an address here attaches or detaches it in place (the API's ip/add and DELETE ip/{id} endpoints). Each address must currently be FREE in the subnet's pool; one already in use, or outside the subnet, fails at apply time with a clear error. Never list auto_assigned_ip here: it is tracked separately and the API itself refuses to remove an instance's LAST vpc ip (destroy this resource instead to release everything). Modelled Optional+Computed (like iaas_instance's hostname) so an omitted value - meaning "just the auto-assigned ip, no extras" - round-trips cleanly instead of tripping a plan-time consistency error.
+- `primary_ip` (String) Which attached address (auto_assigned_ip, or one of additional_ips) should be marked primary. Defaults to the server auto-assigned ip when omitted. Must reference an address that is already attached - add it via additional_ips in the same apply (or an earlier one) before naming it here.
 
 ### Read-Only
 
-- `auto_assigned_ip` (String) The dotted-quad address the API auto-assigned (the lowest free ip in vpc_subnet_id at the time) when the VPC was enabled. Not user-controlled, and not independently removable — destroy this resource to release it.
-- `id` (String) Same value as instance_id. The attachment has no id of its own — it is identified entirely by which instance it belongs to.
+- `auto_assigned_ip` (String) The dotted-quad address the API auto-assigned (the lowest free ip in vpc_subnet_id at the time) when the VPC was enabled. Not user-controlled, and not independently removable - destroy this resource to release it.
+- `id` (String) Same value as instance_id. The attachment has no id of its own - it is identified entirely by which instance it belongs to.
 - `ips` (Set of String) Every address currently attached to the instance's vpc interface (auto_assigned_ip plus additional_ips), as observed from the API. Read-only convenience output.

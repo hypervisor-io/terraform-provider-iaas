@@ -3,12 +3,12 @@
 page_title: "iaas_dns_record_set Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a DNS record set inside a zone — a named group of records of one type that share a routing policy and TTL. The (name, type) pair is unique within a zone. The parent zone_id is part of the API path, so changing it forces a new resource; name/type/routing_policy/ttl are all updatable in place. Add the actual records with iaas_dns_record resources that reference this record set.
+  Manages a DNS record set inside a zone - a named group of records of one type that share a routing policy and TTL. The (name, type) pair is unique within a zone. The parent zone_id is part of the API path, so changing it forces a new resource; name/type/routing_policy/ttl are all updatable in place. Add the actual records with iaas_dns_record resources that reference this record set.
 ---
 
 # iaas_dns_record_set (Resource)
 
-Manages a DNS record set inside a zone — a named group of records of one type that share a routing policy and TTL. The (name, type) pair is unique within a zone. The parent zone_id is part of the API path, so changing it forces a new resource; name/type/routing_policy/ttl are all updatable in place. Add the actual records with iaas_dns_record resources that reference this record set.
+Manages a DNS record set inside a zone - a named group of records of one type that share a routing policy and TTL. The (name, type) pair is unique within a zone. The parent zone_id is part of the API path, so changing it forces a new resource; name/type/routing_policy/ttl are all updatable in place. Add the actual records with iaas_dns_record resources that reference this record set.
 
 ## Example Usage
 
@@ -22,7 +22,7 @@ resource "iaas_dns_zone" "example" {
 }
 
 resource "iaas_dns_record_set" "www" {
-  # Parent zone id — part of the API path. Changing it forces a new resource.
+  # Parent zone id - part of the API path. Changing it forces a new resource.
   zone_id = iaas_dns_zone.example.id
 
   # Record name (the label left of the zone name). Updatable in place.
@@ -35,7 +35,7 @@ resource "iaas_dns_record_set" "www" {
   # weighted or multivalue. Updatable in place.
   routing_policy = "weighted"
 
-  # Time-to-live in seconds (30–86400). Updatable in place.
+  # Time-to-live in seconds (30-86400). Updatable in place.
   ttl = 300
 }
 ```
@@ -47,7 +47,7 @@ resource "iaas_dns_record_set" "www" {
 
 - `name` (String) Record name within the zone (the label left of the zone name), e.g. "www" or "_sip._tcp". Lowercase alphanumeric with dots, hyphens, and underscores, max 63 chars. Updatable in place.
 - `routing_policy` (String) How the resolver selects among the set's records: "simple" (one record), "weighted" (weighted round-robin over A/AAAA), "multivalue" (all healthy), or "failover" (primary/secondary). Updatable in place.
-- `ttl` (Number) Time-to-live in seconds (30–86400). Updatable in place.
+- `ttl` (Number) Time-to-live in seconds (30-86400). Updatable in place.
 - `type` (String) Record type: "A", "AAAA", "CNAME", "TXT", or "SRV". CNAME cannot use weighted or multivalue routing and cannot coexist with other types for the same name. Updatable in place.
 - `zone_id` (String) UUID of the parent DNS zone. Part of the API request path, so changing it forces a new resource.
 

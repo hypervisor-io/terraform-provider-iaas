@@ -16,7 +16,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/waiter"
 )
 
-// Interface assertions — iaas_load_balancer is an ASYNC resource backed by a
+// Interface assertions - iaas_load_balancer is an ASYNC resource backed by a
 // REAL instance. It combines two established patterns:
 //
 //   - ASYNC (from instance/volume): CREATE records the LB row (status="deploying")
@@ -25,7 +25,7 @@ import (
 //     waiter; the id is persisted to state BEFORE the wait so a failed wait still
 //     leaves a destroyable resource; a timeouts block is exposed.
 //   - NO-UPDATE (from vpc): there is NO update/PATCH route for the load balancer
-//     ITSELF (only its children — frontends/backends/etc. — have PATCH routes), so
+//     ITSELF (only its children - frontends/backends/etc. - have PATCH routes), so
 //     every create input is immutable and changing any of them forces a new
 //     resource (RequiresReplace). The Update method is therefore a no-op read-back.
 //
@@ -43,7 +43,7 @@ func NewLoadBalancerResource() resource.Resource {
 	return &loadBalancerResource{}
 }
 
-// loadBalancerResource manages an iaas_load_balancer — an HAProxy load balancer
+// loadBalancerResource manages an iaas_load_balancer - an HAProxy load balancer
 // backed by a dedicated Cloud Service instance.
 type loadBalancerResource struct {
 	client *client.Client
@@ -86,7 +86,7 @@ func (r *loadBalancerResource) Schema(ctx context.Context, _ resource.SchemaRequ
 			"waits for the LB status to become \"active\" (the lifecycle is deploying → configuring " +
 			"→ active). Deploy in PUBLIC mode by setting hypervisor_group_id (the location), or in " +
 			"VPC mode by setting vpc_id + vpc_subnet_id. There is NO update endpoint for the load " +
-			"balancer itself, so every input is immutable — changing any forces a new resource. The " +
+			"balancer itself, so every input is immutable - changing any forces a new resource. The " +
 			"load balancer's frontends, backends, targets, certificates, and routing rules are " +
 			"managed by separate resources. The feature must be enabled for the chosen location; if " +
 			"it is not (or the per-account load balancer quota is reached, or no public IP is " +
@@ -152,7 +152,7 @@ func (r *loadBalancerResource) Schema(ctx context.Context, _ resource.SchemaRequ
 			// status is a SERVER-MUTABLE computed field: it changes over the LB's
 			// life (deploying → configuring → active, suspended, error, deleting).
 			// Per the golden guardrail, do NOT attach UseStateForUnknown to a
-			// server-mutable computed field — that would copy the stale prior value
+			// server-mutable computed field - that would copy the stale prior value
 			// into the plan and MASK real drift.
 			"status": schema.StringAttribute{
 				Computed: true,
@@ -212,7 +212,7 @@ func (r *loadBalancerResource) Configure(_ context.Context, req resource.Configu
 // Create deploys the load balancer and waits for it to become active:
 //
 //  1. CreateLoadBalancer records the LB row + backing instance and returns the
-//     object WITH its id (status="deploying"). There is NO task_id — the async
+//     object WITH its id (status="deploying"). There is NO task_id - the async
 //     signal is the LB's own status, polled via SHOW.
 //  2. The id is saved into state BEFORE the wait, so a provisioning failure or
 //     timeout still tracks the LB for a subsequent destroy.
@@ -301,7 +301,7 @@ func (r *loadBalancerResource) Create(ctx context.Context, req resource.CreateRe
 	resp.Diagnostics.Append(resp.State.Set(ctx, loadBalancerStateFromAPI(obj, plan))...)
 }
 
-// Read refreshes state from the API. A 404 means the LB was deleted out of band —
+// Read refreshes state from the API. A 404 means the LB was deleted out of band -
 // remove it from state so Terraform plans a recreate. The write-only
 // vpc_subnet_id is not in the SHOW payload, so it is preserved from prior state.
 func (r *loadBalancerResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -414,7 +414,7 @@ func loadBalancerStateFromAPI(obj map[string]any, prior loadBalancerModel) loadB
 		LbPlanID: stringOrPrior(obj, "lb_plan_id", prior.LbPlanID),
 		VPCID:    optionalStringFromAPI(obj, "vpc_id", prior.VPCID),
 
-		// WRITE-ONLY create input — never in SHOW; preserve prior verbatim.
+		// WRITE-ONLY create input - never in SHOW; preserve prior verbatim.
 		VPCSubnetID: prior.VPCSubnetID,
 
 		HypervisorGroupID: stringFromAPI(obj, "hypervisor_group_id", prior.HypervisorGroupID),

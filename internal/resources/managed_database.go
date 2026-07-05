@@ -18,19 +18,19 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/waiter"
 )
 
-// Interface assertions — iaas_managed_database is an ASYNC resource backed by a
+// Interface assertions - iaas_managed_database is an ASYNC resource backed by a
 // REAL instance. It copies the established async-status-poll pattern from
 // load_balancer / instance:
 //
 //   - ASYNC create: POST /databases records the row (status="deploying") and spins
-//     up a backing instance + slave deploy task. There is NO task_id — the async
+//     up a backing instance + slave deploy task. There is NO task_id - the async
 //     signal is the DB's own status, polled via SHOW until "active"
 //     (StatePollerWithErrorTolerance). The id is persisted to state BEFORE the wait
 //     so a failed wait still leaves a destroyable resource. A timeouts block is
 //     exposed.
 //   - PARTLY-MUTABLE: db_plan_id is resized IN PLACE (PATCH /database/{id}/resize).
 //     engine_version is ALSO mutable in place (T9): changing it invokes the
-//     upgrade action (POST /database/{id}/upgrade) — see Update and
+//     upgrade action (POST /database/{id}/upgrade) - see Update and
 //     upgradeEngineVersion. Everything else (name, engine, vpc_id, vpc_subnet_id,
 //     hypervisor_group_id) remains immutable → RequiresReplace.
 //   - ACTIONS: restart and reset-password are stateless actions (no in-place
@@ -41,7 +41,7 @@ import (
 //     POST /database/{id}/resync-replicas.
 //   - T9 also adds read-only `last_error` / `error_acknowledged` computed
 //     attributes (surfacing the alert state the acknowledge-error action
-//     clears) and implements — but deliberately does NOT auto-invoke —
+//     clears) and implements - but deliberately does NOT auto-invoke -
 //     RetryManagedDatabase / AcknowledgeManagedDatabaseError; see the doc
 //     comments on those client methods and on Update for the rationale
 //     (mirrors T7's kubernetes_cluster upgrade/retry precedent).
@@ -59,7 +59,7 @@ func NewManagedDatabaseResource() resource.Resource {
 	return &managedDatabaseResource{}
 }
 
-// managedDatabaseResource manages an iaas_managed_database — a managed DB engine
+// managedDatabaseResource manages an iaas_managed_database - a managed DB engine
 // (MySQL/MariaDB/PostgreSQL) backed by a dedicated Cloud Service instance.
 type managedDatabaseResource struct {
 	client *client.Client
@@ -117,7 +117,7 @@ func (r *managedDatabaseResource) Schema(ctx context.Context, _ resource.SchemaR
 			"\"active\" (the lifecycle is deploying → active). The engine, name, and network placement " +
 			"are immutable (changing any forces a new resource); the plan can be changed in place (a " +
 			"resize), and the engine_version can be changed in place (an in-place major-version upgrade, " +
-			"POST .../upgrade — see the engine_version attribute for the async-timing caveat). The " +
+			"POST .../upgrade - see the engine_version attribute for the async-timing caveat). The " +
 			"connection password is never returned by the API on create or read (it is encrypted and " +
 			"hidden server-side); set/rotate it by changing reset_password, which invokes the " +
 			"reset-password action and exposes the new cleartext password in the (sensitive) password " +
@@ -158,15 +158,15 @@ func (r *managedDatabaseResource) Schema(ctx context.Context, _ resource.SchemaR
 					"version offered for the engine AND strictly higher than the current one (no downgrade, " +
 					"no re-apply), takes a pre-upgrade backup first, then upgrades the engine on the " +
 					"backing instance. CAVEAT: the API updates this field's value SYNCHRONOUSLY once the " +
-					"hypervisor accepts the upgrade command — not once the upgrade actually finishes running " +
-					"on the box — and exposes no independent completion signal, so a slave-side failure only " +
+					"hypervisor accepts the upgrade command - not once the upgrade actually finishes running " +
+					"on the box - and exposes no independent completion signal, so a slave-side failure only " +
 					"surfaces later via last_error/error_acknowledged on a subsequent read/plan, not as a " +
 					"blocking apply-time error.",
 			},
 			"db_plan_id": schema.StringAttribute{
 				Required: true,
 				Description: "UUID of the database plan (CPU/RAM/storage sizing). Changeable IN PLACE via " +
-					"a resize — the new plan's storage must be >= the current plan's, and it must still " +
+					"a resize - the new plan's storage must be >= the current plan's, and it must still " +
 					"support the engine.",
 			},
 			"vpc_id": schema.StringAttribute{
@@ -204,7 +204,7 @@ func (r *managedDatabaseResource) Schema(ctx context.Context, _ resource.SchemaR
 				Description: "Write-only trigger token for rotating the admin password. On create it is " +
 					"echoed into state and (if set) the password is reset once after deploy; on update, " +
 					"changing this value re-runs the reset-password action and refreshes the (sensitive) " +
-					"password attribute. Its actual value is arbitrary — use a timestamp or version string " +
+					"password attribute. Its actual value is arbitrary - use a timestamp or version string " +
 					"to force a rotation. Not returned by the API.",
 			},
 			"resync_replicas": schema.StringAttribute{
@@ -213,12 +213,12 @@ func (r *managedDatabaseResource) Schema(ctx context.Context, _ resource.SchemaR
 					"resync-replicas action (POST /database/{id}/resync-replicas), which resyncs every " +
 					"eligible replica of this PRIMARY database from the current primary snapshot. Only " +
 					"meaningful on a primary that already has one or more iaas_db_replica children and is " +
-					"\"active\" — a rejection (not a primary, not active, no eligible replicas) surfaces as " +
-					"an error. Its actual value is arbitrary — use a timestamp or version string to force a " +
+					"\"active\" - a rejection (not a primary, not active, no eligible replicas) surfaces as " +
+					"an error. Its actual value is arbitrary - use a timestamp or version string to force a " +
 					"resync. Not returned by the API.",
 			},
 			// status is SERVER-MUTABLE (deploying → active → suspended/error/destroying):
-			// per the golden guardrail, do NOT attach UseStateForUnknown — that would copy
+			// per the golden guardrail, do NOT attach UseStateForUnknown - that would copy
 			// the stale prior value into the plan and MASK real drift.
 			"status": schema.StringAttribute{
 				Computed: true,
@@ -227,7 +227,7 @@ func (r *managedDatabaseResource) Schema(ctx context.Context, _ resource.SchemaR
 			},
 			"host": schema.StringAttribute{
 				Computed: true,
-				Description: "Connection host — the database's public IPv4 address (for public-subnet " +
+				Description: "Connection host - the database's public IPv4 address (for public-subnet " +
 					"databases), extracted from the nested public_ip object. Empty for private-subnet " +
 					"databases (reachable only inside the VPC). Stable after create.",
 				PlanModifiers: []planmodifier.String{
@@ -262,7 +262,7 @@ func (r *managedDatabaseResource) Schema(ctx context.Context, _ resource.SchemaR
 				Description: "The most recent action failure recorded for this database (deploy, backup, " +
 					"upgrade, resync, health check, ...), or empty when none is outstanding. Cleared by a " +
 					"successful subsequent action, or explicitly via the acknowledge-error action " +
-					"(AcknowledgeManagedDatabaseError in the client — implemented but not invoked by this " +
+					"(AcknowledgeManagedDatabaseError in the client - implemented but not invoked by this " +
 					"resource; see error_acknowledged). Server-mutable.",
 			},
 			"error_acknowledged": schema.BoolAttribute{
@@ -275,9 +275,9 @@ func (r *managedDatabaseResource) Schema(ctx context.Context, _ resource.SchemaR
 				Sensitive: true,
 				Description: "Cleartext admin password. The API NEVER returns the password on create or " +
 					"read (it is encrypted and hidden server-side), so this is empty until you rotate it " +
-					"by changing reset_password — the reset-password action returns the new password, which " +
+					"by changing reset_password - the reset-password action returns the new password, which " +
 					"is captured here. Marked sensitive so it is never shown in plan/CLI output.",
-				// Server-only secret captured from the reset-password action — keep the
+				// Server-only secret captured from the reset-password action - keep the
 				// prior value stable when no rotation occurs (it is otherwise unreadable).
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -313,7 +313,7 @@ func (r *managedDatabaseResource) Configure(_ context.Context, req resource.Conf
 // Create deploys the managed database and waits for it to become active:
 //
 //  1. CreateManagedDatabase records the row + backing instance and returns the
-//     object WITH its id (status="deploying"). There is NO task_id — the async
+//     object WITH its id (status="deploying"). There is NO task_id - the async
 //     signal is the DB's own status, polled via SHOW.
 //  2. The id is saved into state BEFORE the wait, so a provisioning failure or
 //     timeout still tracks the database for a subsequent destroy.
@@ -409,7 +409,7 @@ func (r *managedDatabaseResource) Create(ctx context.Context, req resource.Creat
 }
 
 // Read refreshes state from the API. A 404 means the database was deleted out of
-// band — remove it from state so Terraform plans a recreate. The reset_password
+// band - remove it from state so Terraform plans a recreate. The reset_password
 // trigger and the captured password are write-only/server-only and are preserved
 // from prior state (SHOW never returns them).
 func (r *managedDatabaseResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -509,7 +509,7 @@ func (r *managedDatabaseResource) Update(ctx context.Context, req resource.Updat
 // IMPORTANT (documented concern, mirrors T7's k8s-upgrade caveat): unlike
 // iaas_kubernetes_cluster, the managed-database UserApi SHOW does not
 // eager-load a tasks[] relation, and ManagedDatabaseService::upgradeVersion
-// returns no task_id — so there is no per-operation completion signal to poll
+// returns no task_id - so there is no per-operation completion signal to poll
 // for. The controller writes the target engine_version onto the row
 // SYNCHRONOUSLY, the moment the hypervisor ACCEPTS the upgrade command, so by
 // the time UpgradeManagedDatabase returns, GetManagedDatabase already reports
@@ -519,8 +519,8 @@ func (r *managedDatabaseResource) Update(ctx context.Context, req resource.Updat
 // skipped outright) so that (a) the resource still behaves correctly if a
 // future Master release DOES flip status during the upgrade, and (b) a fast
 // synchronous failure (hypervisor rejects the command, pre-upgrade backup
-// fails) — which UpgradeManagedDatabase already surfaces as an error before
-// this wait even starts — is not the only failure path. True completion of
+// fails) - which UpgradeManagedDatabase already surfaces as an error before
+// this wait even starts - is not the only failure path. True completion of
 // the upgrade running on the box is NOT independently observable through this
 // API; a slave-side failure surfaces later as last_error/error_acknowledged on
 // a subsequent read, not as a blocking error here.
@@ -609,7 +609,7 @@ func (r *managedDatabaseResource) rotatePassword(ctx context.Context, id string)
 	if pw, ok := res["password"].(string); ok && pw != "" {
 		return types.StringValue(pw), nil
 	}
-	// Action succeeded but no password echoed — leave it empty rather than fail.
+	// Action succeeded but no password echoed - leave it empty rather than fail.
 	return types.StringValue(""), nil
 }
 
@@ -632,7 +632,7 @@ func managedDatabaseStateFromAPI(obj map[string]any, prior managedDatabaseModel)
 		VPCSubnetID:       optionalStringFromAPI(obj, "vpc_subnet_id", prior.VPCSubnetID),
 		HypervisorGroupID: optionalStringFromAPI(obj, "hypervisor_group_id", prior.HypervisorGroupID),
 
-		// Write-only triggers — never in SHOW; preserve prior verbatim.
+		// Write-only triggers - never in SHOW; preserve prior verbatim.
 		ResetPassword:  prior.ResetPassword,
 		ResyncReplicas: prior.ResyncReplicas,
 
@@ -644,11 +644,11 @@ func managedDatabaseStateFromAPI(obj map[string]any, prior managedDatabaseModel)
 		Role:     dbRoleFromAPI(obj, prior.Role),
 
 		// last_error/error_acknowledged (T9) are plain server-mutable columns
-		// returned by SHOW like status — no write-only preservation needed.
+		// returned by SHOW like status - no write-only preservation needed.
 		LastError:         optionalStringFromAPI(obj, "last_error", prior.LastError),
 		ErrorAcknowledged: boolFromIntAPI(obj, "error_acknowledged", prior.ErrorAcknowledged),
 
-		// password is captured from the reset-password action, never from SHOW —
+		// password is captured from the reset-password action, never from SHOW -
 		// preserve prior (the caller overrides it after a rotation).
 		Password: prior.Password,
 

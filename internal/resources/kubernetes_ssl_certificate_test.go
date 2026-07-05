@@ -17,10 +17,10 @@ func TestAccKubernetesSslCertificate_basic(t *testing.T) {
 	t.Skip("TestAccKubernetesSslCertificate_basic: acceptance test runs only with TF_ACC + a real cluster id (manual staging gate)")
 }
 
-// TestUnitKubernetesSslCertificate_rejectCustomWithoutCertFields — NEGATIVE
+// TestUnitKubernetesSslCertificate_rejectCustomWithoutCertFields - NEGATIVE
 // ConfigValidators test. source = "custom" without certificate/private_key
 // must be rejected at PLAN time (mirroring the Master's
-// required_if:source,custom validation) — no API call is ever made.
+// required_if:source,custom validation) - no API call is ever made.
 func TestUnitKubernetesSslCertificate_rejectCustomWithoutCertFields(t *testing.T) {
 	ensureTFBinary(t)
 
@@ -46,7 +46,7 @@ resource "iaas_kubernetes_ssl_certificate" "bad" {
 	})
 }
 
-// TestUnitKubernetesSslCertificate_rejectLetsencryptWithForbiddenFields —
+// TestUnitKubernetesSslCertificate_rejectLetsencryptWithForbiddenFields -
 // NEGATIVE ConfigValidators test. source = "letsencrypt" with name set must be
 // rejected at PLAN time: the server force-overrides name to "LE: <domain>"
 // for an ACME issuance, so echoing a practitioner-supplied name into state
@@ -78,21 +78,21 @@ resource "iaas_kubernetes_ssl_certificate" "bad" {
 }
 
 // TestUnitKubernetesSslCertificate_lifecycle drives the CHILD lifecycle (no
-// update — every field is RequiresReplace):
+// update - every field is RequiresReplace):
 //
-//  1. Create — POST .../ssl-certificates with source/domain/certificate/
+//  1. Create - POST .../ssl-certificates with source/domain/certificate/
 //     private_key; asserts the create body carried them AND the
 //     Idempotency-Key header (idempotency.user). The cert then appears in the
-//     cluster-scoped LIST but WITHOUT certificate/private_key/chain — the
+//     cluster-scoped LIST but WITHOUT certificate/private_key/chain - the
 //     cluster ssl-certificates index() query never selects them (unlike the
 //     plain iaas_lb_certificate's LB-SHOW embed, which does return
 //     certificate/chain). source is asserted to round-trip via the persisted
 //     `type` ("manual" -> "custom").
-//  2. Read — lists the cluster's ssl-certificates and matches by id;
+//  2. Read - lists the cluster's ssl-certificates and matches by id;
 //     certificate/private_key/chain are echoed from state (write-only).
-//  3. Import — composite "<cluster_id>/<cert_id>"; certificate/private_key/
+//  3. Import - composite "<cluster_id>/<cert_id>"; certificate/private_key/
 //     chain are in ImportStateVerifyIgnore because the LIST cannot return them.
-//  4. Delete — DELETEs the SINGULAR ".../ssl-certificate/{certId}" path,
+//  4. Delete - DELETEs the SINGULAR ".../ssl-certificate/{certId}" path,
 //     carrying the Idempotency-Key header too.
 func TestUnitKubernetesSslCertificate_lifecycle(t *testing.T) {
 	ensureTFBinary(t)
@@ -116,7 +116,7 @@ func TestUnitKubernetesSslCertificate_lifecycle(t *testing.T) {
 		if !exists {
 			return []any{}
 		}
-		// NOTE: no certificate/private_key/chain — the cluster-scoped index()
+		// NOTE: no certificate/private_key/chain - the cluster-scoped index()
 		// query never selects them (metadata + LE status only).
 		return []any{
 			map[string]any{
@@ -140,7 +140,7 @@ func TestUnitKubernetesSslCertificate_lifecycle(t *testing.T) {
 		exists = true
 		mu.Unlock()
 		// certificate IS present here (only private_key is $hidden model-wide),
-		// but the resource must NOT rely on it — it always echoes from the plan.
+		// but the resource must NOT rely on it - it always echoes from the plan.
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success":     true,
 			"message":     "Certificate added.",
@@ -229,7 +229,7 @@ resource "iaas_kubernetes_ssl_certificate" "test" {
 	}
 
 	// Belt-and-braces: every recorded create/delete request hit the
-	// CLUSTER-scoped route — never a bare "/load-balancer/..." path (this
+	// CLUSTER-scoped route - never a bare "/load-balancer/..." path (this
 	// resource must not fall back to the plain LB certificate routes).
 	for _, req := range append(append([]acctest.RecordedRequest{}, creates...), deletes...) {
 		if !strings.Contains(req.Path, "/kubernetes/cluster/"+clusterID) {

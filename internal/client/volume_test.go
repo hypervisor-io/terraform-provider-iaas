@@ -551,7 +551,7 @@ func TestFindVolumeSnapshotByName_NotFound(t *testing.T) {
 
 // TestFindVolumeSnapshotByName_MultipleMatches verifies that FindVolumeSnapshotByName
 // returns an error (not a silent first-match) when more than one snapshot shares
-// the given name — the ambiguity guard that prevents stranded duplicate snapshots.
+// the given name - the ambiguity guard that prevents stranded duplicate snapshots.
 func TestFindVolumeSnapshotByName_MultipleMatches(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

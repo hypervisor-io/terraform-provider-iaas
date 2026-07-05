@@ -23,7 +23,7 @@ import (
 //     reaching "available" via a StatePollerWithErrorTolerance waiter,
 //   - the id is persisted to state BEFORE the wait so a failed wait still leaves
 //     a destroyable resource,
-//   - a timeouts nested block (create only — attach/detach/resize/delete are
+//   - a timeouts nested block (create only - attach/detach/resize/delete are
 //     synchronous from the API's perspective),
 //   - instance_id is managed by attach/detach calls on diff (NOT RequiresReplace),
 //   - volume_plan_id is grown in place via the resize endpoint (NOT RequiresReplace).
@@ -38,7 +38,7 @@ func NewVolumeResource() resource.Resource {
 	return &volumeResource{}
 }
 
-// volumeResource manages an iaas_volume — a Cloud Service block storage volume.
+// volumeResource manages an iaas_volume - a Cloud Service block storage volume.
 type volumeResource struct {
 	client *client.Client
 }
@@ -107,7 +107,7 @@ func (r *volumeResource) Schema(ctx context.Context, _ resource.SchemaRequest, r
 					"Sizing is PLAN-BASED (not a free-form size_gb): to resize, select a plan " +
 					"with the desired capacity. Resizing in place is supported by the API's " +
 					"resize endpoint (same storage class and datastore type required), so " +
-					"changing this is NOT a replace — the resource issues a resize. A " +
+					"changing this is NOT a replace - the resource issues a resize. A " +
 					"cross-class/cross-type change is rejected by the API.",
 				// Intentionally no RequiresReplace: a plan change is applied in place
 				// via the resize endpoint (Update → ResizeVolume).
@@ -140,7 +140,7 @@ func (r *volumeResource) Schema(ctx context.Context, _ resource.SchemaRequest, r
 			// size / status / deployed / dev are SERVER-MUTABLE computed fields:
 			// resize changes size, attach/detach changes status+dev, the slave deploy
 			// flips deployed. Per the golden guardrail, do NOT attach
-			// UseStateForUnknown to server-mutable computed fields — it would copy the
+			// UseStateForUnknown to server-mutable computed fields - it would copy the
 			// stale prior value into the plan and MASK real drift.
 			"size": schema.Int64Attribute{
 				Computed: true,
@@ -175,7 +175,7 @@ func (r *volumeResource) Schema(ctx context.Context, _ resource.SchemaRequest, r
 		Blocks: map[string]schema.Block{
 			// Only create is async (waits for status="available"); attach/detach/
 			// resize/delete are synchronous from the API's perspective, so only the
-			// create timeout is meaningful — the block still exposes all three for
+			// create timeout is meaningful - the block still exposes all three for
 			// consistency with the async-resource pattern.
 			"timeouts": timeouts.Block(ctx, timeouts.Opts{
 				Create: true,
@@ -292,7 +292,7 @@ func (r *volumeResource) Create(ctx context.Context, req resource.CreateRequest,
 }
 
 // Read refreshes state from the API. A 404 means the volume was deleted out of
-// band — remove it from state so Terraform plans a recreate.
+// band - remove it from state so Terraform plans a recreate.
 func (r *volumeResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state volumeModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -332,7 +332,7 @@ func (r *volumeResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	id := state.ID.ValueString()
 
-	// RESIZE — plan change.
+	// RESIZE - plan change.
 	if !plan.VolumePlanID.Equal(state.VolumePlanID) {
 		resizeResp, err := r.client.ResizeVolume(ctx, id, map[string]any{
 			"volume_plan_id": plan.VolumePlanID.ValueString(),
@@ -354,7 +354,7 @@ func (r *volumeResource) Update(ctx context.Context, req resource.UpdateRequest,
 		}
 	}
 
-	// ATTACH/DETACH — instance_id change. Detach the old target first, then
+	// ATTACH/DETACH - instance_id change. Detach the old target first, then
 	// attach the new one (a change of target = detach + attach).
 	if !plan.InstanceID.Equal(state.InstanceID) {
 		oldAttached := !state.InstanceID.IsNull() && state.InstanceID.ValueString() != ""
@@ -388,7 +388,7 @@ func (r *volumeResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 // Delete removes the volume. DELETE soft-deletes the row immediately (and the
 // service detaches first if attached, then dispatches a slave delete task), so a
-// subsequent SHOW 404s right away — no delete waiter is required. A precondition
+// subsequent SHOW 404s right away - no delete waiter is required. A precondition
 // failure (e.g. detach-before-delete failed) surfaces as success:false at 422.
 func (r *volumeResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state volumeModel
@@ -437,7 +437,7 @@ func volumeStateFromAPI(obj map[string]any, prior volumeModel) volumeModel {
 // computedStringFromAPI reads a string field for a COMPUTED attribute that may be
 // absent/null (e.g. "dev" is null while detached). Unlike optionalStringFromAPI
 // (which is for Optional attrs and yields null), this settles an absent/null
-// value to "" so the Computed attribute is always known after apply — mirroring
+// value to "" so the Computed attribute is always known after apply - mirroring
 // nestedStringFromAPI's settle behaviour. A present non-empty string is used
 // verbatim; otherwise the prior value is preserved (also settled to "").
 func computedStringFromAPI(obj map[string]any, key string, fallback types.String) types.String {

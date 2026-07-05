@@ -7,7 +7,7 @@
 #      available pool (use the /static-ips/available endpoint or the panel UI).
 #
 # Changing ip_id or hypervisor_group_id forces a new resource (deallocate + re-allocate).
-# Deallocating an IP that is currently attached to an instance will fail — detach it first.
+# Deallocating an IP that is currently attached to an instance will fail - detach it first.
 
 resource "iaas_static_ip" "example" {
   # UUID of the specific IP address to reserve from the location's available pool.

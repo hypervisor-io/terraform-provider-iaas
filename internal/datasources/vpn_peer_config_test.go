@@ -10,7 +10,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/acctest"
 )
 
-// TestUnitVpnPeerConfig_download — mock-backed data-source proof.
+// TestUnitVpnPeerConfig_download - mock-backed data-source proof.
 //
 // data "iaas_vpn_peer_config" "t" { gateway_id = ...; peer_id = ... } reads
 // GET /vpn-gateway/{id}/peer/{peerId}/config, which returns a RAW text/plain
@@ -26,7 +26,7 @@ func TestUnitVpnPeerConfig_download(t *testing.T) {
 
 	srv := acctest.NewMockServer(t)
 	srv.Handle("GET", "/vpn-gateway/"+gwID+"/peer/"+peerID+"/config", func(w http.ResponseWriter, _ *http.Request) {
-		// RAW text/plain body — the config endpoint is an attachment download,
+		// RAW text/plain body - the config endpoint is an attachment download,
 		// NOT a JSON envelope.
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
@@ -55,7 +55,7 @@ data "iaas_vpn_peer_config" "t" {
 	})
 }
 
-// TestUnitVpnPeerConfig_notRoadWarrior — a 422 (config download is
+// TestUnitVpnPeerConfig_notRoadWarrior - a 422 (config download is
 // road-warrior-only) surfaces as a clear error.
 func TestUnitVpnPeerConfig_notRoadWarrior(t *testing.T) {
 	ensureTFBinary(t)

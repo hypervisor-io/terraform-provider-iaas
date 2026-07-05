@@ -10,8 +10,8 @@ import (
 // LoadBalancerController / LoadBalancerService + routes/user_api.php.
 //
 // This file covers ONLY the load balancer ITSELF (create/show/list/destroy +
-// async deploy convergence). The LB's CHILDREN — frontends, backends, targets,
-// certificates, routing rules — are a SEPARATE task (id21) and are NOT here. The
+// async deploy convergence). The LB's CHILDREN - frontends, backends, targets,
+// certificates, routing rules - are a SEPARATE task (id21) and are NOT here. The
 // child routes (for the next agent) are:
 //
 //	FRONTENDS     POST   /load-balancer/{lbId}/frontends
@@ -51,7 +51,7 @@ import (
 // Async behaviour (controller-verified):
 //   - Create is ASYNC and backed by a REAL instance: the LB row is recorded
 //     synchronously with status="deploying" and a backing Instance + slave deploy
-//     task are created. There is NO task_id in the create response — the create
+//     task are created. There is NO task_id in the create response - the create
 //     returns {success,message,load_balancer:{id,status:"deploying"}} (the
 //     controller's Scribe {success,message}-only annotation is stale, like VPC).
 //     The async signal is the LB's own "status" field, polled via the SHOW
@@ -72,7 +72,7 @@ import (
 //     is not enabled", "A NAT gateway is required for private subnet deployments",
 //     etc. doItem/doVoid surface all of these (C3).
 //
-// There is NO update/PATCH route for the LB itself — only the children have
+// There is NO update/PATCH route for the LB itself - only the children have
 // PATCH endpoints. So every CORE create input (name, lb_plan_id, vpc_id,
 // vpc_subnet_id, hypervisor_group_id) is immutable from the resource's view and
 // there is no UpdateLoadBalancer client method.
@@ -103,13 +103,13 @@ func (c *Client) GetLoadBalancer(ctx context.Context, id string) (map[string]any
 
 // ListLoadBalancers returns all load balancers belonging to the authenticated
 // account. The index wraps the Laravel paginator under the named "load_balancers"
-// key ({success,load_balancers:{data:[...]}}) — NOT a top-level "data" array — so
+// key ({success,load_balancers:{data:[...]}}) - NOT a top-level "data" array - so
 // the shared doList paginator decoder cannot be used directly. Instead doItem
 // unwraps the named key (surfacing C3 success:false), then the inner paginator's
 // "data" array is flattened to []map[string]any.
 //
 // CAVEAT: this fetches only page 1 (the named-key paginator can't use the
-// auto-paginating doList) — a future list data source must add page iteration.
+// auto-paginating doList) - a future list data source must add page iteration.
 func (c *Client) ListLoadBalancers(ctx context.Context) ([]map[string]any, error) {
 	paginator, err := c.doItem(ctx, "GET", "/load-balancers", nil, "load_balancers")
 	if err != nil {

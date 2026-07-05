@@ -126,7 +126,7 @@ func imageText(img map[string]any) string {
 // match, a unique case-insensitive substring match is accepted; zero or multiple
 // substring matches are an error.
 func resolveImage(images []map[string]any, name string) (map[string]any, error) {
-	// Prefer exact match — short-circuits ambiguity (e.g. "Ubuntu 24.04" vs
+	// Prefer exact match - short-circuits ambiguity (e.g. "Ubuntu 24.04" vs
 	// "Ubuntu 24.04 Minimal").
 	exact, exactErr := findUnique(images, "image", name, func(img map[string]any) bool {
 		return imageText(img) == name

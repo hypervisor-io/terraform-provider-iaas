@@ -1,6 +1,6 @@
 # A TLS certificate on a Kubernetes cluster's CP load balancer. A cert is a
 # CHILD of a cluster (its cluster_id is part of the API path, so changing it
-# forces a new resource). There is NO update endpoint — every field is
+# forces a new resource). There is NO update endpoint - every field is
 # IMMUTABLE, so changing any of them rotates (replaces) the certificate.
 #
 # Once an active certificate exists, the cluster's Kubeconfig download
@@ -9,7 +9,7 @@
 
 # ── source = "custom": manual PEM upload ──────────────────────────────────
 resource "iaas_kubernetes_ssl_certificate" "custom" {
-  # Parent cluster id — part of the API path. Changing it forces a new resource.
+  # Parent cluster id - part of the API path. Changing it forces a new resource.
   cluster_id = iaas_kubernetes_cluster.prod.id
 
   source = "custom"
@@ -41,7 +41,7 @@ resource "iaas_kubernetes_ssl_certificate" "le" {
 
   # certificate/private_key/chain are ignored for source = "letsencrypt" (the
   # server issues via ACME instead). Progress surfaces on letsencrypt_status
-  # ("pending_dns" -> "active"/"error") — this resource does NOT poll/wait for
+  # ("pending_dns" -> "active"/"error") - this resource does NOT poll/wait for
   # issuance to complete; re-run `terraform plan`/`refresh` to observe it.
 }
 

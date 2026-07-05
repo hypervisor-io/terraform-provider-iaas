@@ -14,7 +14,7 @@ import (
 // versions endpoint returns (text == semantic_version, no children optgroups).
 const k8sVersionsBody = `{"results":[{"id":"ver-1","text":"1.31.4","semantic_version":"1.31.4"},{"id":"ver-2","text":"1.30.8","semantic_version":"1.30.8"}],"pagination":{"more":false}}`
 
-// TestUnitKubernetesVersion_lookup — mock-backed data-source proof.
+// TestUnitKubernetesVersion_lookup - mock-backed data-source proof.
 //
 // data "iaas_kubernetes_version" "t" { name = "1.31.4" } reads GET
 // /kubernetes/search/versions (flat Select2), matches on the semantic version,
@@ -47,7 +47,7 @@ data "iaas_kubernetes_version" "t" {
 	})
 }
 
-// TestUnitKubernetesVersion_noMatch — a version matching nothing errors clearly.
+// TestUnitKubernetesVersion_noMatch - a version matching nothing errors clearly.
 func TestUnitKubernetesVersion_noMatch(t *testing.T) {
 	ensureTFBinary(t)
 

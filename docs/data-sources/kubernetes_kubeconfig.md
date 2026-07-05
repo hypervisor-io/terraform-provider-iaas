@@ -3,12 +3,12 @@
 page_title: "iaas_kubernetes_kubeconfig Data Source - iaas"
 subcategory: ""
 description: |-
-  Downloads the admin kubeconfig for a managed Kubernetes cluster. The server mints a FRESH cluster-admin client certificate on every read and embeds it inline — nothing is persisted, and each read issues an independent credential — so the kubeconfig output is marked sensitive. The cluster must have finished bootstrapping (reached the running state) before a kubeconfig is available; reading too early errors. Write the result to a file with local_sensitive_file or feed it to the Kubernetes/Helm providers.
+  Downloads the admin kubeconfig for a managed Kubernetes cluster. The server mints a FRESH cluster-admin client certificate on every read and embeds it inline - nothing is persisted, and each read issues an independent credential - so the kubeconfig output is marked sensitive. The cluster must have finished bootstrapping (reached the running state) before a kubeconfig is available; reading too early errors. Write the result to a file with local_sensitive_file or feed it to the Kubernetes/Helm providers.
 ---
 
 # iaas_kubernetes_kubeconfig (Data Source)
 
-Downloads the admin kubeconfig for a managed Kubernetes cluster. The server mints a FRESH cluster-admin client certificate on every read and embeds it inline — nothing is persisted, and each read issues an independent credential — so the `kubeconfig` output is marked sensitive. The cluster must have finished bootstrapping (reached the `running` state) before a kubeconfig is available; reading too early errors. Write the result to a file with `local_sensitive_file` or feed it to the Kubernetes/Helm providers.
+Downloads the admin kubeconfig for a managed Kubernetes cluster. The server mints a FRESH cluster-admin client certificate on every read and embeds it inline - nothing is persisted, and each read issues an independent credential - so the `kubeconfig` output is marked sensitive. The cluster must have finished bootstrapping (reached the `running` state) before a kubeconfig is available; reading too early errors. Write the result to a file with `local_sensitive_file` or feed it to the Kubernetes/Helm providers.
 
 ## Example Usage
 

@@ -17,7 +17,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — iaas_alert_rule is a simple sync resource.
+// Interface assertions - iaas_alert_rule is a simple sync resource.
 var (
 	_ resource.Resource                = &alertRuleResource{}
 	_ resource.ResourceWithConfigure   = &alertRuleResource{}
@@ -29,7 +29,7 @@ func NewAlertRuleResource() resource.Resource {
 	return &alertRuleResource{}
 }
 
-// alertRuleResource manages an iaas_alert_rule — a metric-threshold alert rule
+// alertRuleResource manages an iaas_alert_rule - a metric-threshold alert rule
 // that fires through attached notification channels when a breach persists for
 // the configured duration.
 //
@@ -64,14 +64,14 @@ func NewAlertRuleResource() resource.Resource {
 //     a full desired set and syncs (replaces) the attachment server-side, so the
 //     resource always sends the full set without needing separate attach/detach
 //     calls (unlike security_group which has dedicated attach/detach endpoints).
-//   - resource_id is Optional (nullable UUID) — when omitted the rule applies to
+//   - resource_id is Optional (nullable UUID) - when omitted the rule applies to
 //     all resources of resource_type owned by the account.
 //   - All scalar fields (name, resource_type, resource_id, metric, operator,
 //     threshold, duration, reminder_interval, enabled) are updatable in place;
 //     none require replacement.
 //   - enabled is Optional+Computed: the server defaults to 1 (true) on create.
 //   - status ("ok"/"firing") is server-mutable Computed WITHOUT UseStateForUnknown
-//     — it changes whenever the rule fires or resolves and must always reflect the
+//   - it changes whenever the rule fires or resolves and must always reflect the
 //     refreshed server value.
 //   - acknowledge (POST /alert-rule/{id}/acknowledge) is an operational action,
 //     NOT modelled as IaC state.
@@ -238,7 +238,7 @@ func (r *alertRuleResource) Create(ctx context.Context, req resource.CreateReque
 }
 
 // Read refreshes state from the API. A 404 means the rule was deleted out of
-// band — remove it from state so Terraform plans a recreate.
+// band - remove it from state so Terraform plans a recreate.
 func (r *alertRuleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state alertRuleModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -333,7 +333,7 @@ func alertRuleToBody(ctx context.Context, plan alertRuleModel) map[string]any {
 	}
 
 	// channel_ids: always send when the attribute is set (even to empty, so the
-	// controller syncs to zero channels). Null/unknown means "don't touch" — omit
+	// controller syncs to zero channels). Null/unknown means "don't touch" - omit
 	// so the controller leaves the current channel set unchanged.
 	if !plan.ChannelIDs.IsNull() && !plan.ChannelIDs.IsUnknown() {
 		ids := make([]string, 0, len(plan.ChannelIDs.Elements()))
@@ -359,14 +359,14 @@ func alertRuleFromAPI(ctx context.Context, obj map[string]any, prior alertRuleMo
 		Operator:     stringFromAPI(obj, "operator", prior.Operator),
 	}
 
-	// resource_id: optional — may be null in the response.
+	// resource_id: optional - may be null in the response.
 	if v, ok := obj["resource_id"].(string); ok && v != "" {
 		m.ResourceID = types.StringValue(v)
 	} else {
 		m.ResourceID = types.StringNull()
 	}
 
-	// threshold: required numeric — API returns float64 from JSON.
+	// threshold: required numeric - API returns float64 from JSON.
 	switch v := obj["threshold"].(type) {
 	case float64:
 		m.Threshold = types.Float64Value(v)

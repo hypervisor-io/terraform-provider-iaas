@@ -17,7 +17,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/waiter"
 )
 
-// Interface assertions. iaas_volume_snapshot is an ASYNC CHILD resource — it
+// Interface assertions. iaas_volume_snapshot is an ASYNC CHILD resource - it
 // combines vpc_subnet's child pattern (parent id in path + composite import)
 // with instance.go's async pattern (waiter + timeouts). Snapshots have no
 // individual SHOW route, so the parent volume's embedded snapshots[] array is
@@ -33,7 +33,7 @@ func NewVolumeSnapshotResource() resource.Resource {
 	return &volumeSnapshotResource{}
 }
 
-// volumeSnapshotResource manages an iaas_volume_snapshot — a point-in-time
+// volumeSnapshotResource manages an iaas_volume_snapshot - a point-in-time
 // snapshot of a parent volume.
 type volumeSnapshotResource struct {
 	client *client.Client
@@ -65,7 +65,7 @@ func (r *volumeSnapshotResource) Schema(ctx context.Context, _ resource.SchemaRe
 	resp.Schema = schema.Schema{
 		Description: "Manages a point-in-time snapshot of a volume. A snapshot is a child of a " +
 			"volume: its parent volume_id is part of the API path, so changing it forces a " +
-			"new resource. Creation is asynchronous — the snapshot is enqueued and this " +
+			"new resource. Creation is asynchronous - the snapshot is enqueued and this " +
 			"resource waits for it to become \"available\". Snapshots are immutable (there " +
 			"is no update endpoint); changing the name forces a new snapshot. Import with a " +
 			"composite id: \"<volume_id>/<snapshot_id>\".",
@@ -194,7 +194,7 @@ func (r *volumeSnapshotResource) Create(ctx context.Context, req resource.Create
 	}
 
 	// Persist both the snapshot id AND the parent volume_id immediately so that
-	// a failed readiness wait still tracks the resource for cleanup — a destroy
+	// a failed readiness wait still tracks the resource for cleanup - a destroy
 	// needs both ids to build the DELETE path; without volume_id, the
 	// DeleteVolumeSnapshot call would receive an empty volume id and the
 	// snapshot would be stranded.

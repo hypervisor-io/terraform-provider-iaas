@@ -11,7 +11,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/tfdiag"
 )
 
-// Interface assertions — kubernetes_version is a lookup-by-name catalog data
+// Interface assertions - kubernetes_version is a lookup-by-name catalog data
 // source (the location/image findUnique pattern) backed by the FLAT Select2
 // /kubernetes/search/versions endpoint.
 var (

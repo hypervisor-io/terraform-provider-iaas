@@ -70,7 +70,7 @@ resource "iaas_vpn_peering" "b_to_a" {
 ### Read-Only
 
 - `allowed_ips` (Set of String) CIDRs routed through this peering (WireGuard AllowedIPs): the remote VPC's CIDR plus the remote gateway's tunnel subnet.
-- `dns` (String) DNS server advertised for this peering. Always empty — createPeering never sets it (DNS only applies to road_warrior client peers).
+- `dns` (String) DNS server advertised for this peering. Always empty - createPeering never sets it (DNS only applies to road_warrior client peers).
 - `enabled` (Boolean) Whether the peering is enabled (included in the gateway's WireGuard config). Always true when freshly created.
 - `endpoint` (String) The remote gateway's dial-out endpoint ("<public_ip>:<listen_port>"). Empty if the remote gateway has no public IP yet.
 - `id` (String) UUID of the peering (the underlying vpn_gateway_peers row id on this side), assigned by the API.
@@ -78,4 +78,4 @@ resource "iaas_vpn_peering" "b_to_a" {
 - `name` (String) Server-generated display name, e.g. "vpc-peering-<remote-vpc-id-prefix>".
 - `public_key` (String) The REMOTE gateway's WireGuard public key (not a secret), used by this gateway to authenticate the peer.
 - `tunnel_ip` (String) This side's IP inside the LOCAL gateway's tunnel subnet, auto-allocated by the server.
-- `type` (String) Always "vpc_peering" — distinguishes this peer row from a road_warrior/site_to_site iaas_vpn_peer.
+- `type` (String) Always "vpc_peering" - distinguishes this peer row from a road_warrior/site_to_site iaas_vpn_peer.

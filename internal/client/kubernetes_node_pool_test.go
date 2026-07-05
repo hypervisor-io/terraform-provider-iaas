@@ -125,7 +125,7 @@ func TestCreateKubernetesNodePool_EmptyClusterID(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 // TestListKubernetesNodePools_Success verifies the index unwraps the named
-// "pools" key, which is a BARE ARRAY (not a Laravel paginator) — controller
+// "pools" key, which is a BARE ARRAY (not a Laravel paginator) - controller
 // `index` returns `{"pools":[...]}`.
 func TestListKubernetesNodePools_Success(t *testing.T) {
 	var gotMethod, gotPath string
@@ -184,7 +184,7 @@ func TestListKubernetesNodePools_EmptyClusterID(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// GetKubernetesNodePool (list-and-match — no SHOW endpoint exists)
+// GetKubernetesNodePool (list-and-match - no SHOW endpoint exists)
 // ---------------------------------------------------------------------------
 
 // TestGetKubernetesNodePool_Found verifies the read-by-scan over the pool list
@@ -227,7 +227,7 @@ func TestGetKubernetesNodePool_NotFound(t *testing.T) {
 }
 
 // TestGetKubernetesNodePool_ClusterGone verifies that a 404 on the parent
-// cluster (the LIST 404s) also surfaces as IsNotFound — the child is gone too.
+// cluster (the LIST 404s) also surfaces as IsNotFound - the child is gone too.
 func TestGetKubernetesNodePool_ClusterGone(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)

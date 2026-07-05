@@ -14,13 +14,13 @@ import (
 //	INDEX    GET    /instance/{instanceID}/docker
 //	                 → {success, docker_enabled (0/1), deployments:[...]}. The
 //	                 deployments array is a BARE array under "deployments"
-//	                 (NOT a Laravel paginator) — the same shape family as the
+//	                 (NOT a Laravel paginator) - the same shape family as the
 //	                 Kubernetes ssl-certificates "certs" list.
 //	INSTALL  POST   /instance/{instanceID}/docker/install
 //	                 → 200 {success,message} (no id/object). NOT idempotent:
 //	                 422 "Docker is already installed on this instance." when
 //	                 instance.docker_enabled is already 1. The install itself
-//	                 is asynchronous — a script is dispatched over the
+//	                 is asynchronous - a script is dispatched over the
 //	                 hypervisor/QGA channel and calls back LATER
 //	                 (installCallback) to flip instance.docker_enabled to 1;
 //	                 this endpoint only reports that the install was kicked
@@ -29,16 +29,16 @@ import (
 //	                 body {app_slug (req), env_variables? (map string->string),
 //	                 port_mappings? ([]{container_port,host_port,protocol?})}
 //	                 → 200 {success,message,deployment:{...}} (row created,
-//	                 status "deploying") — or 422/500 {success:false,message}
+//	                 status "deploying") - or 422/500 {success:false,message}
 //	                 with NO deployment object (guard rejection, e.g. Docker
 //	                 not enabled / instance not running / another deployment
-//	                 already in-flight — or, on 500, the hypervisor dispatch
+//	                 already in-flight - or, on 500, the hypervisor dispatch
 //	                 itself threw: the row is still inserted server-side in
 //	                 status "error" but ITS ID IS NEVER RETURNED to the caller
 //	                 on this specific failure path, so an orphaned "error" row
 //	                 is a known, unavoidable possibility of the real API).
 //	DEPLOY   POST   /instance/{instanceID}/docker/custom
-//	  CUSTOM         body {compose_url (req — an HTTPS URL; the compose YAML
+//	  CUSTOM         body {compose_url (req - an HTTPS URL; the compose YAML
 //	                 is FETCHED SERVER-SIDE via an SSRF-guarded request, this
 //	                 is NOT literal compose file content), app_name (req),
 //	                 env_variables?, port_mappings?}
@@ -47,19 +47,19 @@ import (
 //	                 action ∈ start|stop|restart|remove → {success,message}
 //	                 (no deployment object). "remove" deletes the row
 //	                 synchronously (same as DESTROY below). NOT wired into
-//	                 this client — v1 of iaas_docker_deployment has no
+//	                 this client - v1 of iaas_docker_deployment has no
 //	                 in-place update/action support (see docker_deployment.go).
 //	RETRY    POST   /instance/{instanceID}/docker/{depID}/retry
 //	                 → {success,message,deployment:{...}}. NOT wired (v1).
 //	CHECK    POST   /instance/{instanceID}/docker/{depID}/check-status
 //	                 → {success,message}; queues an async slave/QGA probe whose
 //	                 result reaches the row via the SAME callback path as a
-//	                 normal deploy — no direct return value to decode. NOT
+//	                 normal deploy - no direct return value to decode. NOT
 //	                 wired (v1); GetDockerDeployment's own poll is sufficient
 //	                 because the in-VM deploy script calls back on its own.
 //	DESTROY  DELETE /instance/{instanceID}/docker/{depID}
 //	                 → {success,message}. Under the hood DockerController's
-//	                 destroy() calls control($dep,'remove') directly — the row
+//	                 destroy() calls control($dep,'remove') directly - the row
 //	                 is hard-deleted synchronously right after the (fire-and-
 //	                 forget) hypervisor command is enqueued, so no delete-side
 //	                 waiter is needed (same reasoning as iaas_image's Delete).
@@ -78,17 +78,17 @@ import (
 // waiter fail-set defensively, since handleCallback persists whatever status
 // string a callback sends verbatim.
 //
-// env_variables and compose_yaml are $hidden (encrypted at rest) — never
+// env_variables and compose_yaml are $hidden (encrypted at rest) - never
 // present in the INDEX/create response bodies. port_mappings is a plain
 // `array` cast column and IS technically present in the response, but
 // internal/resources treats it (like env_variables) as WRITE-ONLY, always
-// echoing the plan/prior value rather than round-tripping it — there is no
+// echoing the plan/prior value rather than round-tripping it - there is no
 // update path anyway (every input is RequiresReplace), so this avoids
 // brittle float64-vs-int64 JSON-number nested-list comparisons for no
 // behavioural benefit.
 
 // dockerIndex fetches the bare INDEX envelope ({docker_enabled,
-// deployments:[...]}) for an instance — the shared building block for
+// deployments:[...]}) for an instance - the shared building block for
 // ListDockerDeployments and DockerEnabled.
 func (c *Client) dockerIndex(ctx context.Context, instanceID string) (map[string]any, error) {
 	if instanceID == "" {
@@ -153,7 +153,7 @@ func (c *Client) DockerEnabled(ctx context.Context, instanceID string) (bool, er
 
 // InstallDockerEngine kicks off the Docker Engine install on the instance.
 // Returns the bare {success,message} envelope (there is nothing else to
-// extract). NOT idempotent — the caller must check DockerEnabled first
+// extract). NOT idempotent - the caller must check DockerEnabled first
 // (calling this while already enabled 422s "Docker is already installed").
 func (c *Client) InstallDockerEngine(ctx context.Context, instanceID string) (map[string]any, error) {
 	if instanceID == "" {
@@ -186,7 +186,7 @@ func (c *Client) DeployDockerCompose(ctx context.Context, instanceID string, fie
 
 // DeleteDockerDeployment removes a deployment (DELETE .../docker/{depID},
 // DockerController::destroy -> control(remove)). Synchronous: the row is
-// gone by the time this returns successfully — no delete-side waiter needed.
+// gone by the time this returns successfully - no delete-side waiter needed.
 func (c *Client) DeleteDockerDeployment(ctx context.Context, instanceID, depID string) error {
 	if instanceID == "" {
 		return fmt.Errorf("DeleteDockerDeployment: empty instance id")

@@ -17,7 +17,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — security_group copies the NESTED-ENTRIES pattern
+// Interface assertions - security_group copies the NESTED-ENTRIES pattern
 // established by ip_set (a set of child rule rows managed inside the parent via
 // per-child add/remove endpoints, embedded in the parent SHOW) and ADDS a second
 // managed set: the attached instance ids, diffed via bulk attach/detach.
@@ -33,7 +33,7 @@ func NewSecurityGroupResource() resource.Resource {
 	return &securityGroupResource{}
 }
 
-// securityGroupResource manages an iaas_security_group — a named collection of
+// securityGroupResource manages an iaas_security_group - a named collection of
 // firewall rules, with a set of attached instances.
 //
 // TWO child sets are owned inline:
@@ -131,7 +131,7 @@ func (r *securityGroupResource) Metadata(_ context.Context, req resource.Metadat
 // Schema describes the iaas_security_group resource.
 func (r *securityGroupResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a security group — a named collection of stateful firewall rules " +
+		Description: "Manages a security group - a named collection of stateful firewall rules " +
 			"that can be attached to instances. The rules are managed inline as an " +
 			"order-independent set: adding or removing a rule from the config adds or removes it " +
 			"on the server in place, without replacing the security group. Because the API has no " +
@@ -334,7 +334,7 @@ func (r *securityGroupResource) Create(ctx context.Context, req resource.CreateR
 }
 
 // Read refreshes state from the API. A 404 means the group was deleted out of
-// band — remove it from state so Terraform plans a recreate.
+// band - remove it from state so Terraform plans a recreate.
 func (r *securityGroupResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state securityGroupModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

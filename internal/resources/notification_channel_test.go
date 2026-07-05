@@ -12,7 +12,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccNotificationChannel_basic — LIVE acceptance test (manual staging gate).
+// TestAccNotificationChannel_basic - LIVE acceptance test (manual staging gate).
 // Auto-skips unless TF_ACC is set.
 // ---------------------------------------------------------------------------
 
@@ -49,7 +49,7 @@ resource "iaas_notification_channel" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// ncMockServer — stateful mock of the notification channel API.
+// ncMockServer - stateful mock of the notification channel API.
 // ---------------------------------------------------------------------------
 
 type ncMockServer struct {
@@ -76,7 +76,7 @@ func (s *ncMockServer) channelObject(id string) map[string]any {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitNotificationChannel_lifecycle — MOCK-backed lifecycle test.
+// TestUnitNotificationChannel_lifecycle - MOCK-backed lifecycle test.
 //
 // Steps:
 //  1. Create a Slack channel → assert id, name, type, enabled, auto_disabled,
@@ -100,7 +100,7 @@ func TestUnitNotificationChannel_lifecycle(t *testing.T) {
 		failureCount: 0,
 	}
 
-	// CREATE — POST /notification-channels
+	// CREATE - POST /notification-channels
 	srv.Handle("POST", "/notification-channels", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -128,7 +128,7 @@ func TestUnitNotificationChannel_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — GET /notification-channel/{id}
+	// SHOW - GET /notification-channel/{id}
 	srv.Handle("GET", "/notification-channel/"+channelID, func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -138,7 +138,7 @@ func TestUnitNotificationChannel_lifecycle(t *testing.T) {
 		})
 	})
 
-	// UPDATE — PATCH /notification-channel/{id}
+	// UPDATE - PATCH /notification-channel/{id}
 	srv.Handle("PATCH", "/notification-channel/"+channelID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -162,7 +162,7 @@ func TestUnitNotificationChannel_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — DELETE /notification-channel/{id}
+	// DELETE - DELETE /notification-channel/{id}
 	srv.Handle("DELETE", "/notification-channel/"+channelID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
@@ -208,11 +208,11 @@ resource "iaas_notification_channel" "test" {
 					resource.TestCheckResourceAttr("iaas_notification_channel.test", "enabled", "true"),
 					resource.TestCheckResourceAttr("iaas_notification_channel.test", "auto_disabled", "false"),
 					resource.TestCheckResourceAttr("iaas_notification_channel.test", "failure_count", "0"),
-					// config is Sensitive — we can still check it in tests but not in output.
+					// config is Sensitive - we can still check it in tests but not in output.
 					resource.TestCheckResourceAttr("iaas_notification_channel.test", "config.webhook_url", "https://hooks.slack.com/services/T000/B000/XYZ"),
 				),
 			},
-			// 2. Import by id — state rehydrated from SHOW.
+			// 2. Import by id - state rehydrated from SHOW.
 			{
 				ResourceName:      "iaas_notification_channel.test",
 				ImportState:       true,

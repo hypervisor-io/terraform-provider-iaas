@@ -1,4 +1,4 @@
-# Acceptance testing (live staging — manual gate)
+# Acceptance testing (live staging - manual gate)
 
 > The full, canonical runbook is the tfplugindocs guide
 > **[`docs/guides/acceptance-testing.md`](docs/guides/acceptance-testing.md)**
@@ -45,7 +45,7 @@ Always required: `TF_ACC=1`, `IAAS_API_ENDPOINT` (e.g.
 `https://panel.staging.example.com/api`), `IAAS_API_TOKEN` (the IP-locked token).
 Optionally `TF_ACC_TERRAFORM_PATH`, `IAAS_INSTANCE_POLL_INTERVAL`.
 
-Per-resource / per-data-source extra IDs (tests skip cleanly when unset) — see the
+Per-resource / per-data-source extra IDs (tests skip cleanly when unset) - see the
 [full table in the guide](docs/guides/acceptance-testing.md#extra-per-resource--per-data-source-ids).
 In brief: `IAAS_TEST_HG_ID`, `IAAS_TEST_VOLUME_PLAN_ID`, `IAAS_TEST_VOLUME_ID`,
 `IAAS_TEST_STATIC_IP_ID`, `IAAS_TEST_LB_LOCATION_ID`, `IAAS_TEST_LB_PLAN_ID`,
@@ -65,7 +65,7 @@ Obtain catalog IDs via the catalog data sources (`iaas_location`, `iaas_plan`,
 
 ### Placeholder skeletons that need a hand-edited config
 
-These always `t.Skip` even with `TF_ACC` — edit the inline HCL `config` (and remove
+These always `t.Skip` even with `TF_ACC` - edit the inline HCL `config` (and remove
 the `t.Skip` line) to point at a real parent before running:
 `TestAccInstance_basic` (REPLACE-WITH-…-UUID placeholders), the LB children
 (`TestAccLB{Backend,Target,Frontend,RoutingRule,Certificate}_basic`), DNS
@@ -98,12 +98,12 @@ Confirm each (detail in the
 3. `iaas_managed_database` / `iaas_db_backup_policy` write-only credential
    preservation across no-op apply + import.
 4. `iaas_s3_access_key` secret shown-once → persisted, no-op-stable, import-clean.
-5. Named-key paginators (LB / managed DB / k8s clusters) are page-1-only — fine
+5. Named-key paginators (LB / managed DB / k8s clusters) are page-1-only - fine
    for the small staging set; revisit if a future list spans >1 page.
 6. Async convergence within timeouts; a failed create still leaves a destroyable
    resource (id persisted before the wait).
 7. Sensitive non-leakage: `vnc_password`, S3 secret, kubeconfig, autoscaler
-   manifest, vpn_peer_config, LB/notification secrets — Sensitive and absent from
+   manifest, vpn_peer_config, LB/notification secrets - Sensitive and absent from
    plan/apply output.
 
 ## Status

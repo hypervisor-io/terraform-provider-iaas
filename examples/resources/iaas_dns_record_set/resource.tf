@@ -7,7 +7,7 @@ resource "iaas_dns_zone" "example" {
 }
 
 resource "iaas_dns_record_set" "www" {
-  # Parent zone id — part of the API path. Changing it forces a new resource.
+  # Parent zone id - part of the API path. Changing it forces a new resource.
   zone_id = iaas_dns_zone.example.id
 
   # Record name (the label left of the zone name). Updatable in place.
@@ -20,6 +20,6 @@ resource "iaas_dns_record_set" "www" {
   # weighted or multivalue. Updatable in place.
   routing_policy = "weighted"
 
-  # Time-to-live in seconds (30–86400). Updatable in place.
+  # Time-to-live in seconds (30-86400). Updatable in place.
   ttl = 300
 }

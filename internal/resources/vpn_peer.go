@@ -38,7 +38,7 @@ func NewVPNPeerResource() resource.Resource {
 	return &vpnPeerResource{}
 }
 
-// vpnPeerResource manages an iaas_vpn_peer — a WireGuard peer of a VPN gateway.
+// vpnPeerResource manages an iaas_vpn_peer - a WireGuard peer of a VPN gateway.
 type vpnPeerResource struct {
 	client *client.Client
 }
@@ -49,7 +49,7 @@ type vpnPeerResource struct {
 // endpoint/allowed_ips/preshared_key/keepalive/enabled):
 //   - In-place updatable: name, public_key, endpoint, allowed_ips, preshared_key,
 //     keepalive, enabled.
-//   - Create-only (RequiresReplace — NOT accepted by updatePeer): type, tunnel_ip,
+//   - Create-only (RequiresReplace - NOT accepted by updatePeer): type, tunnel_ip,
 //     dns.
 //   - Path id (RequiresReplace): vpn_gateway_id.
 type vpnPeerModel struct {
@@ -102,7 +102,7 @@ func (r *vpnPeerResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			},
 			"type": schema.StringAttribute{
 				Required: true,
-				Description: "Peer type: \"road_warrior\" (a remote client device — its client config " +
+				Description: "Peer type: \"road_warrior\" (a remote client device - its client config " +
 					"can be downloaded via iaas_vpn_peer_config) or \"site_to_site\" (a remote network). " +
 					"Fixed at creation; changing it forces a new resource.",
 				PlanModifiers: []planmodifier.String{
@@ -266,7 +266,7 @@ func (r *vpnPeerResource) Create(ctx context.Context, req resource.CreateRequest
 
 	// Read-back by scanning the gateway SHOW so server-applied values (tunnel_ip,
 	// default allowed_ips, defaults) are reflected. Fall back to the create
-	// response if the scan can't find it yet (defensive — the write is synchronous).
+	// response if the scan can't find it yet (defensive - the write is synchronous).
 	obj, err := r.client.GetVpnPeer(ctx, gwID, id)
 	if err != nil {
 		obj = created

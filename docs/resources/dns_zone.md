@@ -3,12 +3,12 @@
 page_title: "iaas_dns_zone Resource - iaas"
 subcategory: ""
 description: |-
-  Manages an internal DNS zone (per-VPC CoreDNS). A zone is owned by the account and can be attached to one or more VPCs, where its records become resolvable. The set of attached VPCs is managed via the vpc_ids attribute (attach/detach in place). The zone name is immutable; only the description can be changed in place. Deletion is asynchronous — the zone is queued for removal and the provider waits for it to disappear.
+  Manages an internal DNS zone (per-VPC CoreDNS). A zone is owned by the account and can be attached to one or more VPCs, where its records become resolvable. The set of attached VPCs is managed via the vpc_ids attribute (attach/detach in place). The zone name is immutable; only the description can be changed in place. Deletion is asynchronous - the zone is queued for removal and the provider waits for it to disappear.
 ---
 
 # iaas_dns_zone (Resource)
 
-Manages an internal DNS zone (per-VPC CoreDNS). A zone is owned by the account and can be attached to one or more VPCs, where its records become resolvable. The set of attached VPCs is managed via the `vpc_ids` attribute (attach/detach in place). The zone name is immutable; only the description can be changed in place. Deletion is asynchronous — the zone is queued for removal and the provider waits for it to disappear.
+Manages an internal DNS zone (per-VPC CoreDNS). A zone is owned by the account and can be attached to one or more VPCs, where its records become resolvable. The set of attached VPCs is managed via the `vpc_ids` attribute (attach/detach in place). The zone name is immutable; only the description can be changed in place. Deletion is asynchronous - the zone is queued for removal and the provider waits for it to disappear.
 
 ## Example Usage
 
@@ -27,7 +27,7 @@ resource "iaas_vpc" "example" {
 resource "iaas_dns_zone" "example" {
   # Required, immutable. Lowercase alphanumeric with dots/hyphens, max 63 chars.
   # A bare public TLD ("com", "local", ...) is rejected to avoid shadowing real
-  # DNS — use a compound internal name.
+  # DNS - use a compound internal name.
   name = "corp.internal"
 
   # Optional. The only scalar that can be changed in place.
@@ -44,7 +44,7 @@ resource "iaas_dns_zone" "example" {
 
 ### Required
 
-- `name` (String) The zone name (e.g. "corp.internal"). Must be lowercase alphanumeric with dots and hyphens, max 63 chars. A bare public TLD ("com", "local", ...) is rejected to avoid shadowing real DNS — use a compound name like "corp.internal". Immutable: changing it forces a new resource (the API has no rename).
+- `name` (String) The zone name (e.g. "corp.internal"). Must be lowercase alphanumeric with dots and hyphens, max 63 chars. A bare public TLD ("com", "local", ...) is rejected to avoid shadowing real DNS - use a compound name like "corp.internal". Immutable: changing it forces a new resource (the API has no rename).
 
 ### Optional
 

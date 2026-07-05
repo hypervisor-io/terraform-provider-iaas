@@ -3,12 +3,12 @@
 page_title: "iaas_vpn_peer_config Data Source - iaas"
 subcategory: ""
 description: |-
-  Downloads the WireGuard CLIENT configuration for a road_warrior VPN peer. Returns the rendered .conf text (the [Interface]/[Peer] block a client uses to connect to the gateway). The rendered config uses a [YOUR_PRIVATE_KEY] placeholder for the client's own private key — the server never generates or stores it — but the config still contains the gateway's public key and endpoint, so the output is marked sensitive. Only works for peers of type road_warrior; a site_to_site peer yields an error.
+  Downloads the WireGuard CLIENT configuration for a road_warrior VPN peer. Returns the rendered .conf text (the [Interface]/[Peer] block a client uses to connect to the gateway). The rendered config uses a [YOUR_PRIVATE_KEY] placeholder for the client's own private key - the server never generates or stores it - but the config still contains the gateway's public key and endpoint, so the output is marked sensitive. Only works for peers of type road_warrior; a site_to_site peer yields an error.
 ---
 
 # iaas_vpn_peer_config (Data Source)
 
-Downloads the WireGuard CLIENT configuration for a road_warrior VPN peer. Returns the rendered `.conf` text (the [Interface]/[Peer] block a client uses to connect to the gateway). The rendered config uses a `[YOUR_PRIVATE_KEY]` placeholder for the client's own private key — the server never generates or stores it — but the config still contains the gateway's public key and endpoint, so the output is marked sensitive. Only works for peers of type `road_warrior`; a site_to_site peer yields an error.
+Downloads the WireGuard CLIENT configuration for a road_warrior VPN peer. Returns the rendered `.conf` text (the [Interface]/[Peer] block a client uses to connect to the gateway). The rendered config uses a `[YOUR_PRIVATE_KEY]` placeholder for the client's own private key - the server never generates or stores it - but the config still contains the gateway's public key and endpoint, so the output is marked sensitive. Only works for peers of type `road_warrior`; a site_to_site peer yields an error.
 
 ## Example Usage
 

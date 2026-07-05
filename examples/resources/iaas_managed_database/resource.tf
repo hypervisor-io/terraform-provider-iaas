@@ -3,10 +3,10 @@
 # Creation is asynchronous: the provider waits for the database to become
 # "active". The engine, name, and network placement are immutable (changing any
 # forces a new resource); the plan can be resized in place, and engine_version
-# can be raised in place (an in-place major-version upgrade — see the
+# can be raised in place (an in-place major-version upgrade - see the
 # engine_version attribute description for the async-timing caveat).
 #
-# Managed databases are a billed add-on — billing must be enabled on the account.
+# Managed databases are a billed add-on - billing must be enabled on the account.
 resource "iaas_managed_database" "primary" {
   name           = "app-prod-db"
   engine         = "mysql" # mysql | mariadb | postgresql

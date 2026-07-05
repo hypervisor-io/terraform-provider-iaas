@@ -18,7 +18,7 @@ import (
 //   - There is NO individual SHOW route (GET /static-ip/{id}) for static IPs.
 //     GetStaticIP must therefore use ListStaticIPs + filter-by-id. A 404-shaped
 //     *APIError is returned when the id is absent from the list.
-//   - Create is SYNCHRONOUS: the allocate response carries the id directly — no task, no waiter.
+//   - Create is SYNCHRONOUS: the allocate response carries the id directly - no task, no waiter.
 //   - All routes are gated behind the billing.enabled middleware. When billing is disabled
 //     the API returns HTTP 403 with {success:false,message:"This feature is unavailable because
 //     billing is disabled."}; responseError maps 403 to a *APIError surfaced via diagFromErr.

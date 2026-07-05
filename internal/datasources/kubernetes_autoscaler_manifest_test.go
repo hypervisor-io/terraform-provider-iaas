@@ -14,7 +14,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/datasources"
 )
 
-// TestUnitKubernetesAutoscalerManifest_render — mock-backed data-source proof.
+// TestUnitKubernetesAutoscalerManifest_render - mock-backed data-source proof.
 //
 // data "iaas_kubernetes_autoscaler_manifest" "t" { cluster_id = ... } reads GET
 // /kubernetes/cluster/{id}/autoscaler-manifest, which returns a RAW text/yaml
@@ -54,7 +54,7 @@ data "iaas_kubernetes_autoscaler_manifest" "t" {
 	})
 }
 
-// TestUnitKubernetesAutoscalerManifest_notEnabled — a 422 (autoscaling not
+// TestUnitKubernetesAutoscalerManifest_notEnabled - a 422 (autoscaling not
 // enabled on the cluster) surfaces as a clear error.
 func TestUnitKubernetesAutoscalerManifest_notEnabled(t *testing.T) {
 	ensureTFBinary(t)
@@ -86,7 +86,7 @@ data "iaas_kubernetes_autoscaler_manifest" "t" {
 }
 
 // TestUnitKubernetesAutoscalerManifest_schemaSensitive asserts the `manifest`
-// attribute is declared Sensitive — it embeds a freshly-minted controller JWT
+// attribute is declared Sensitive - it embeds a freshly-minted controller JWT
 // (a live bearer credential) inline as a Secret.
 func TestUnitKubernetesAutoscalerManifest_schemaSensitive(t *testing.T) {
 	ds := datasources.NewKubernetesAutoscalerManifestDataSource()

@@ -18,13 +18,13 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/waiter"
 )
 
-// Interface assertions — iaas_db_replica is the CHILD of iaas_managed_database: a
+// Interface assertions - iaas_db_replica is the CHILD of iaas_managed_database: a
 // read replica created via POST /database/{primaryID}/replica. A replica is its
 // OWN managed_databases row (with primary_database_id set + role="replica"), so it
 // reuses GetManagedDatabase / DeleteManagedDatabase / ResizeManagedDatabase by the
 // replica's own id. It is an ASYNC resource (status deploying → active), copying
 // the managed_database async-status-poll pattern, with:
-//   - the PRIMARY id in the CREATE path (RequiresReplace — a replica cannot move
+//   - the PRIMARY id in the CREATE path (RequiresReplace - a replica cannot move
 //     primaries),
 //   - a composite import id "primary_id/replica_id" (vpc_subnet pattern),
 //   - db_plan_id resizable IN PLACE (the replica is its own DB row), everything
@@ -40,7 +40,7 @@ func NewDBReplicaResource() resource.Resource {
 	return &dbReplicaResource{}
 }
 
-// dbReplicaResource manages an iaas_db_replica — a read replica of a managed
+// dbReplicaResource manages an iaas_db_replica - a read replica of a managed
 // database.
 type dbReplicaResource struct {
 	client *client.Client
@@ -139,7 +139,7 @@ func (r *dbReplicaResource) Schema(ctx context.Context, _ resource.SchemaRequest
 			},
 			"host": schema.StringAttribute{
 				Computed: true,
-				Description: "Connection host — the replica's public IPv4 address (for public-subnet " +
+				Description: "Connection host - the replica's public IPv4 address (for public-subnet " +
 					"replicas), extracted from the nested public_ip object. Empty for private-subnet " +
 					"replicas. Stable after create.",
 				PlanModifiers: []planmodifier.String{
@@ -205,7 +205,7 @@ func (r *dbReplicaResource) Configure(_ context.Context, req resource.ConfigureR
 //
 //  1. CreateDatabaseReplica records the replica row (its own managed_databases
 //     row) + backing instance and returns the object WITH its id (status=
-//     "deploying"). There is NO task_id — the async signal is the replica's own
+//     "deploying"). There is NO task_id - the async signal is the replica's own
 //     status, polled via SHOW (GetManagedDatabase by the replica id).
 //  2. The id is saved into state BEFORE the wait.
 //  3. WaitFor polls until status=="active" (fail on "error").
@@ -296,7 +296,7 @@ func (r *dbReplicaResource) Read(ctx context.Context, req resource.ReadRequest, 
 	resp.Diagnostics.Append(resp.State.Set(ctx, dbReplicaStateFromAPI(obj, state))...)
 }
 
-// Update applies the only in-place mutation — a resize (db_plan_id change) via the
+// Update applies the only in-place mutation - a resize (db_plan_id change) via the
 // resize PATCH on the replica's own id. Every other input is RequiresReplace.
 func (r *dbReplicaResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state dbReplicaModel

@@ -15,7 +15,7 @@ import (
 // import cycle.
 
 // ---------------------------------------------------------------------------
-// Instance Backup Policy — CreateInstanceBackupPolicy
+// Instance Backup Policy - CreateInstanceBackupPolicy
 // ---------------------------------------------------------------------------
 
 func TestCreateInstanceBackupPolicy_Success(t *testing.T) {
@@ -79,7 +79,7 @@ func TestCreateInstanceBackupPolicy_Failure(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Instance Backup Policy — GetInstanceBackupPolicy
+// Instance Backup Policy - GetInstanceBackupPolicy
 // ---------------------------------------------------------------------------
 
 func TestGetInstanceBackupPolicy_Success(t *testing.T) {
@@ -141,7 +141,7 @@ func TestGetInstanceBackupPolicy_EmptyID(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Instance Backup Policy — UpdateInstanceBackupPolicy
+// Instance Backup Policy - UpdateInstanceBackupPolicy
 // ---------------------------------------------------------------------------
 
 func TestUpdateInstanceBackupPolicy_Success(t *testing.T) {
@@ -193,7 +193,7 @@ func TestUpdateInstanceBackupPolicy_EmptyID(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Instance Backup Policy — DeleteInstanceBackupPolicy
+// Instance Backup Policy - DeleteInstanceBackupPolicy
 // ---------------------------------------------------------------------------
 
 func TestDeleteInstanceBackupPolicy_Success(t *testing.T) {
@@ -243,7 +243,7 @@ func TestDeleteInstanceBackupPolicy_EmptyID(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Instance Backup Policy — Attach / Detach
+// Instance Backup Policy - Attach / Detach
 // ---------------------------------------------------------------------------
 
 func TestAttachInstanceToBackupPolicy_Success(t *testing.T) {
@@ -323,7 +323,7 @@ func TestDetachInstanceFromBackupPolicy_EmptyArgs(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Database Backup Policy — CreateDBBackupPolicy
+// Database Backup Policy - CreateDBBackupPolicy
 // ---------------------------------------------------------------------------
 
 func TestCreateDBBackupPolicy_Success(t *testing.T) {
@@ -395,7 +395,7 @@ func TestCreateDBBackupPolicy_Failure(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Database Backup Policy — GetDBBackupPolicy
+// Database Backup Policy - GetDBBackupPolicy
 // ---------------------------------------------------------------------------
 
 func TestGetDBBackupPolicy_Success(t *testing.T) {
@@ -403,7 +403,7 @@ func TestGetDBBackupPolicy_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		w.WriteHeader(http.StatusOK)
-		// Note: s3_access_key, s3_secret_key, encryption_key are $hidden — absent.
+		// Note: s3_access_key, s3_secret_key, encryption_key are $hidden - absent.
 		_, _ = w.Write([]byte(`{"policy":{"id":"dbp-uuid-1","name":"prod-db-backup","s3_endpoint":"s3.example.com","s3_bucket":"my-backups","s3_region":"us-east-1","s3_path_prefix":"backups","full_backup_frequency":"daily","full_backup_time":"01:00","full_backup_day":null,"incremental_frequency":"6h","pitr_enabled":false,"retention_full_count":7,"retention_incremental_days":14,"retention_pitr_hours":72,"encryption_enabled":false,"status":"active","consecutive_failures":0,"last_error":null,"managed_databases":[{"id":"db-1","name":"app-db"},{"id":"db-2","name":"analytics-db"}]},"available_databases":[]}`))
 	}))
 	defer srv.Close()
@@ -461,7 +461,7 @@ func TestGetDBBackupPolicy_EmptyID(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Database Backup Policy — UpdateDBBackupPolicy
+// Database Backup Policy - UpdateDBBackupPolicy
 // ---------------------------------------------------------------------------
 
 func TestUpdateDBBackupPolicy_Success(t *testing.T) {
@@ -507,7 +507,7 @@ func TestUpdateDBBackupPolicy_EmptyID(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Database Backup Policy — DeleteDBBackupPolicy
+// Database Backup Policy - DeleteDBBackupPolicy
 // ---------------------------------------------------------------------------
 
 func TestDeleteDBBackupPolicy_Success(t *testing.T) {
@@ -540,7 +540,7 @@ func TestDeleteDBBackupPolicy_EmptyID(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Database Backup Policy — AttachDatabaseToBackupPolicy / Detach
+// Database Backup Policy - AttachDatabaseToBackupPolicy / Detach
 // ---------------------------------------------------------------------------
 
 func TestAttachDatabaseToBackupPolicy_Success(t *testing.T) {

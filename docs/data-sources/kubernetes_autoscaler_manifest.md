@@ -3,12 +3,12 @@
 page_title: "iaas_kubernetes_autoscaler_manifest Data Source - iaas"
 subcategory: ""
 description: |-
-  Renders the self-contained cluster-autoscaler manifest for a managed Kubernetes cluster — apply it with kubectl apply -f -. The manifest embeds a freshly-minted controller JWT base64-encoded inline as a Kubernetes Secret, so the manifest output is marked sensitive; every read ROTATES the active token (the running autoscaler picks the new token up on its next reload). The cluster must be in the running state with worker autoscaling enabled, otherwise the read errors.
+  Renders the self-contained cluster-autoscaler manifest for a managed Kubernetes cluster - apply it with kubectl apply -f -. The manifest embeds a freshly-minted controller JWT base64-encoded inline as a Kubernetes Secret, so the manifest output is marked sensitive; every read ROTATES the active token (the running autoscaler picks the new token up on its next reload). The cluster must be in the running state with worker autoscaling enabled, otherwise the read errors.
 ---
 
 # iaas_kubernetes_autoscaler_manifest (Data Source)
 
-Renders the self-contained cluster-autoscaler manifest for a managed Kubernetes cluster — apply it with `kubectl apply -f -`. The manifest embeds a freshly-minted controller JWT base64-encoded inline as a Kubernetes Secret, so the `manifest` output is marked sensitive; every read ROTATES the active token (the running autoscaler picks the new token up on its next reload). The cluster must be in the `running` state with worker autoscaling enabled, otherwise the read errors.
+Renders the self-contained cluster-autoscaler manifest for a managed Kubernetes cluster - apply it with `kubectl apply -f -`. The manifest embeds a freshly-minted controller JWT base64-encoded inline as a Kubernetes Secret, so the `manifest` output is marked sensitive; every read ROTATES the active token (the running autoscaler picks the new token up on its next reload). The cluster must be in the `running` state with worker autoscaling enabled, otherwise the read errors.
 
 ## Example Usage
 

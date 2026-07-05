@@ -12,13 +12,13 @@ import (
 // PUBLIC subnet, giving remote clients (road-warrior) and remote sites
 // (site-to-site / VPC peering) encrypted access to the VPC. Each VPC can have AT
 // MOST ONE VPN gateway. The gateway holds a server-generated WireGuard keypair
-// (the PRIVATE key is encrypted at rest and $hidden — never returned by SHOW;
+// (the PRIVATE key is encrypted at rest and $hidden - never returned by SHOW;
 // the PUBLIC key IS returned). Peers are children of the gateway, each holding
 // the remote side's public key + allowed-ips + tunnel ip; a road-warrior peer's
 // client configuration is rendered on demand as a downloadable WireGuard .conf.
 //
 // ROUTE PATH ASYMMETRY (controller-verified, important): only CREATE is nested
-// under the parent VPC — every other operation uses the FLAT /vpn-gateway/{id}
+// under the parent VPC - every other operation uses the FLAT /vpn-gateway/{id}
 // path (the gateway id alone is sufficient and the controller resolves the VPC
 // from the gateway). This differs from the NAT gateway, where ALL operations are
 // nested under /vpc/{vpcId}. Consequently the resource needs the parent vpc_id
@@ -61,7 +61,7 @@ import (
 //     gateway can be retried via the /retry endpoint).
 //   - DELETE bills final hours, destroys the backing instance (releasing its public
 //     IP), deletes peers, and SOFT-DELETES the row, so a subsequent SHOW 404s right
-//     away — no delete waiter is required.
+//     away - no delete waiter is required.
 //   - Peer add/update/remove are SYNCHRONOUS: the service mutates the peer row and
 //     pushes the regenerated WireGuard config to the gateway VM in-line (best
 //     effort; a push failure is logged, not fatal). The peer create returns the
@@ -94,7 +94,7 @@ func (c *Client) CreateVpnGateway(ctx context.Context, vpcID string, body map[st
 }
 
 // GetVpnGateway fetches the VPN gateway by its id via the FLAT /vpn-gateway/{id}
-// path (the parent VPC is NOT in the path — see the route asymmetry note above).
+// path (the parent VPC is NOT in the path - see the route asymmetry note above).
 // It unwraps the "gateway" envelope. The returned object carries the embedded
 // "peers" array, the "vpc" object, and the backing "instance" (with its ips).
 // The encrypted WireGuard private key is $hidden and is NEVER present. A 404
@@ -110,7 +110,7 @@ func (c *Client) GetVpnGateway(ctx context.Context, id string) (map[string]any, 
 
 // DeleteVpnGateway deletes the VPN gateway: the service bills final hours,
 // destroys the backing instance (releasing its public IP), deletes the peers, and
-// soft-deletes the row immediately, so a subsequent SHOW 404s right away — no
+// soft-deletes the row immediately, so a subsequent SHOW 404s right away - no
 // delete waiter is required. A failure is signalled with success:false at HTTP
 // 200, so doVoid checks the flag.
 func (c *Client) DeleteVpnGateway(ctx context.Context, id string) error {
@@ -160,7 +160,7 @@ func (c *Client) RemoveVpnPeer(ctx context.Context, gatewayID, peerID string) er
 }
 
 // GetVpnPeer resolves a single peer by scanning the parent gateway's embedded
-// peers[] array (there is NO individual peer SHOW route — the gateway SHOW embeds
+// peers[] array (there is NO individual peer SHOW route - the gateway SHOW embeds
 // the peers). It returns the matching peer object or a 404-shaped *APIError
 // (IsNotFound = true) when the id is absent. This is the read-by-scan source for
 // the peer resource's Read. A 404 on the parent gateway propagates (the peer is
@@ -185,7 +185,7 @@ func (c *Client) GetVpnPeer(ctx context.Context, gatewayID, peerID string) (map[
 }
 
 // DownloadVpnPeerConfig fetches a road-warrior peer's WireGuard client
-// configuration. The endpoint returns the config as text/plain (NOT JSON — it is
+// configuration. The endpoint returns the config as text/plain (NOT JSON - it is
 // an attachment download), so this uses the raw transport (doRaw) rather than
 // doItem. The rendered config uses a "[YOUR_PRIVATE_KEY]" placeholder for the
 // client's own private key (the server does NOT generate or store it), but it

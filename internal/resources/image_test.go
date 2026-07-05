@@ -12,7 +12,7 @@ import (
 
 // imageObject builds a serialized image object matching the shape returned by
 // both POST /images (under the "image" key) and GET /images (paginator
-// "data" items) — both carry the same base columns per ImageService/Image
+// "data" items) - both carry the same base columns per ImageService/Image
 // model (id, name, instance_id, cloudinit, type, status, size).
 func imageObject(id, name, instanceID string, cloudinit int, imgType, status string, size any) map[string]any {
 	return map[string]any{
@@ -29,7 +29,7 @@ func imageObject(id, name, instanceID string, cloudinit int, imgType, status str
 
 // TestUnitImage_lifecycle drives create (async capture convergence) → import →
 // delete against a mock. There is no update endpoint for images (every input
-// is RequiresReplace), so — unlike the ssh_key/user_script lifecycle tests —
+// is RequiresReplace), so - unlike the ssh_key/user_script lifecycle tests -
 // there is no update step; delete is implicit teardown after the import step,
 // matching the ssh_key golden pattern.
 func TestUnitImage_lifecycle(t *testing.T) {
@@ -48,7 +48,7 @@ func TestUnitImage_lifecycle(t *testing.T) {
 		imageName  = "web-prod-2024-05"
 	)
 
-	// CREATE — POST /images. Image capture is async on the real API (status
+	// CREATE - POST /images. Image capture is async on the real API (status
 	// starts "creating"), but the mock reports "available" from the very first
 	// GET /images poll so the waiter converges on its first check (no sleep),
 	// exactly like TestUnitInstance_lifecycle's task poll.
@@ -62,7 +62,7 @@ func TestUnitImage_lifecycle(t *testing.T) {
 		})
 	})
 
-	// READ — no SHOW route; the resource lists and matches by id. Reports
+	// READ - no SHOW route; the resource lists and matches by id. Reports
 	// "available" immediately so the create-time waiter converges on the first
 	// poll.
 	srv.Handle("GET", "/images", func(w http.ResponseWriter, _ *http.Request) {
@@ -76,7 +76,7 @@ func TestUnitImage_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — DELETE /image/{id} (singular). Deletion is synchronous.
+	// DELETE - DELETE /image/{id} (singular). Deletion is synchronous.
 	srv.Handle("DELETE", "/image/"+imageID, func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "Image deleted successfully."})
 	})
@@ -107,7 +107,7 @@ resource "iaas_image" "test" {
 					resource.TestCheckResourceAttr("iaas_image.test", "size", "21474836480"),
 				),
 			},
-			// Import — verify state matches. timeouts is a provider-side-only
+			// Import - verify state matches. timeouts is a provider-side-only
 			// value with no API equivalent, so it's ignored like instance.go's
 			// import step.
 			{

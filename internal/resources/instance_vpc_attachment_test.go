@@ -37,7 +37,7 @@ type instanceVpcMockServer struct {
 	subnetID   string
 	enabled    bool
 
-	// pool is ordered ascending by address — index 0 is always the address
+	// pool is ordered ascending by address - index 0 is always the address
 	// `enable` auto-assigns first, mirroring the real allocator's
 	// lockForUpdate()-ordered-by-ip behaviour.
 	pool []*mockVpcIPRow
@@ -113,7 +113,7 @@ func (s *instanceVpcMockServer) findByIP(ip string) *mockVpcIPRow {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitInstanceVpcAttachment_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitInstanceVpcAttachment_lifecycle - MOCK-backed lifecycle proof.
 //
 // Steps:
 //  1. Create with additional_ips = ["10.0.0.3"] → enable auto-assigns the
@@ -142,7 +142,7 @@ func TestUnitInstanceVpcAttachment_lifecycle(t *testing.T) {
 
 	store := newInstanceVpcMockServer(instanceID, vpcID, subnetID)
 
-	// ENABLE — POST /instance/{id}/vpc/enable.
+	// ENABLE - POST /instance/{id}/vpc/enable.
 	srv.Handle("POST", "/instance/"+instanceID+"/vpc/enable", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -170,7 +170,7 @@ func TestUnitInstanceVpcAttachment_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DISABLE — POST /instance/{id}/vpc/disable.
+	// DISABLE - POST /instance/{id}/vpc/disable.
 	srv.Handle("POST", "/instance/"+instanceID+"/vpc/disable", func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -186,7 +186,7 @@ func TestUnitInstanceVpcAttachment_lifecycle(t *testing.T) {
 		})
 	})
 
-	// LIST IPS — GET /instance/{id}/vpc/ips → Laravel paginator envelope.
+	// LIST IPS - GET /instance/{id}/vpc/ips → Laravel paginator envelope.
 	srv.Handle("GET", "/instance/"+instanceID+"/vpc/ips", func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -204,7 +204,7 @@ func TestUnitInstanceVpcAttachment_lifecycle(t *testing.T) {
 		})
 	})
 
-	// AVAILABLE IPS — GET /instance/{id}/vpc/available-ips → bare array or
+	// AVAILABLE IPS - GET /instance/{id}/vpc/available-ips → bare array or
 	// {success:false} when no VPC is attached.
 	srv.Handle("GET", "/instance/"+instanceID+"/vpc/available-ips", func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
@@ -230,7 +230,7 @@ func TestUnitInstanceVpcAttachment_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, out)
 	})
 
-	// ADD IP — POST /instance/{id}/vpc/ip/add.
+	// ADD IP - POST /instance/{id}/vpc/ip/add.
 	srv.Handle("POST", "/instance/"+instanceID+"/vpc/ip/add", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -265,7 +265,7 @@ func TestUnitInstanceVpcAttachment_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SET PRIMARY + REMOVE — pre-registered per pool id (the mock server
+	// SET PRIMARY + REMOVE - pre-registered per pool id (the mock server
 	// dispatches by exact method+path, same approach as ip_set_test.go).
 	for _, row := range store.pool {
 		row := row
@@ -405,7 +405,7 @@ resource "iaas_instance_vpc_attachment" "test" {
 	}
 
 	// Assert the create's ip/add call actually carried an ip_id (never a bare
-	// address — the API has no free-form ip field).
+	// address - the API has no free-form ip field).
 	adds := srv.Requests("POST", "/instance/"+instanceID+"/vpc/ip/add")
 	if len(adds) < 1 {
 		t.Fatalf("expected at least 1 POST .../vpc/ip/add call; got %d", len(adds))
@@ -422,7 +422,7 @@ resource "iaas_instance_vpc_attachment" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitInstanceVpcAttachment_noAdditionalIPs — regression guard for the
+// TestUnitInstanceVpcAttachment_noAdditionalIPs - regression guard for the
 // Optional+Computed additional_ips schema.
 //
 // additional_ips must be Computed (not Optional-only): Create's response sets

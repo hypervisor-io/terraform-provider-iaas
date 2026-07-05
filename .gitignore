@@ -15,7 +15,7 @@ dist/
 .terraformrc
 terraform.rc
 
-# Vendor directory (optional — omit if you vendor dependencies)
+# Vendor directory (optional - omit if you vendor dependencies)
 # vendor/
 
 # Editor / OS cruft

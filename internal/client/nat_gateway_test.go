@@ -72,7 +72,7 @@ func TestCreateNatGateway_Success(t *testing.T) {
 }
 
 // TestCreateNatGateway_FeatureGated verifies a feature-gate failure (HTTP 200
-// success:false — natgw not enabled / quota reached / already exists) surfaces
+// success:false - natgw not enabled / quota reached / already exists) surfaces
 // the message as an error (C3). These routes are NOT billing-gated, so the
 // gating is in-controller and arrives as 200 success:false, not 403.
 func TestCreateNatGateway_FeatureGated(t *testing.T) {
@@ -157,7 +157,7 @@ func TestGetNatGateway_NotFound(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// GetVpcNatGateway (INDEX — single gateway or null)
+// GetVpcNatGateway (INDEX - single gateway or null)
 // ---------------------------------------------------------------------------
 
 // TestGetVpcNatGateway_Success verifies the INDEX endpoint returns the single

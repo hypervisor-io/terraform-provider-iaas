@@ -3,12 +3,12 @@
 page_title: "iaas_kubernetes_security_group_rule Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a single firewall rule on one of a Kubernetes cluster's auto-provisioned security groups: lb (internet-facing apiserver ingress, attached to the CP load balancer instance), cp (control-plane node ingress) or worker (worker node ingress). The security groups themselves are provisioned automatically when the cluster is created (they are not a Terraform-managed resource); this resource only adds/removes individual rules on them. There is NO update route — changing any field replaces the rule (delete old + add new). Import with a 3-part composite id: "<cluster_id>//<rule_id>".
+  Manages a single firewall rule on one of a Kubernetes cluster's auto-provisioned security groups: lb (internet-facing apiserver ingress, attached to the CP load balancer instance), cp (control-plane node ingress) or worker (worker node ingress). The security groups themselves are provisioned automatically when the cluster is created (they are not a Terraform-managed resource); this resource only adds/removes individual rules on them. There is NO update route - changing any field replaces the rule (delete old + add new). Import with a 3-part composite id: "<cluster_id>//<rule_id>".
 ---
 
 # iaas_kubernetes_security_group_rule (Resource)
 
-Manages a single firewall rule on one of a Kubernetes cluster's auto-provisioned security groups: `lb` (internet-facing apiserver ingress, attached to the CP load balancer instance), `cp` (control-plane node ingress) or `worker` (worker node ingress). The security groups themselves are provisioned automatically when the cluster is created (they are not a Terraform-managed resource); this resource only adds/removes individual rules on them. There is NO update route — changing any field replaces the rule (delete old + add new). Import with a 3-part composite id: "<cluster_id>/<scope>/<rule_id>".
+Manages a single firewall rule on one of a Kubernetes cluster's auto-provisioned security groups: `lb` (internet-facing apiserver ingress, attached to the CP load balancer instance), `cp` (control-plane node ingress) or `worker` (worker node ingress). The security groups themselves are provisioned automatically when the cluster is created (they are not a Terraform-managed resource); this resource only adds/removes individual rules on them. There is NO update route - changing any field replaces the rule (delete old + add new). Import with a 3-part composite id: "<cluster_id>/<scope>/<rule_id>".
 
 ## Example Usage
 
@@ -21,7 +21,7 @@ Manages a single firewall rule on one of a Kubernetes cluster's auto-provisioned
 #   - "cp"     control-plane node ingress
 #   - "worker" worker node ingress
 #
-# There is NO update endpoint — changing any field replaces the rule
+# There is NO update endpoint - changing any field replaces the rule
 # (delete old + add new).
 
 # Allow a specific office CIDR to reach the apiserver (scope = "lb").
@@ -53,7 +53,7 @@ resource "iaas_kubernetes_security_group_rule" "nodeport_range" {
 }
 
 # Rules can also reference another security group or an IP set instead of a
-# CIDR (cidr / remote_group_id / ip_set_id are mutually exclusive — exactly
+# CIDR (cidr / remote_group_id / ip_set_id are mutually exclusive - exactly
 # one must be set).
 resource "iaas_kubernetes_security_group_rule" "from_bastion_sg" {
   cluster_id = iaas_kubernetes_cluster.prod.id
@@ -101,12 +101,12 @@ output "nodeport_rule_security_group_id" {
 - `cluster_id` (String) UUID of the parent Kubernetes cluster this rule belongs to. Part of the API path; changing it forces a new resource.
 - `direction` (String) Traffic direction: "ingress" (inbound) or "egress" (outbound).
 - `ip_version` (String) Address family: "ipv4" or "ipv6".
-- `protocol` (String) Protocol the rule matches: "tcp", "udp", "icmp", "icmpv6", "all", or "any". Ports (port_range_min/port_range_max) are required for "tcp"/"udp". NOTE: the Master API's `security_group_rules.protocol` DB column has no "any" enum member, so submitting protocol = "any" is accepted by the request validator but currently fails at insert time with a 422 — this is a Master-side inconsistency, not a client-side restriction.
+- `protocol` (String) Protocol the rule matches: "tcp", "udp", "icmp", "icmpv6", "all", or "any". Ports (port_range_min/port_range_max) are required for "tcp"/"udp". NOTE: the Master API's `security_group_rules.protocol` DB column has no "any" enum member, so submitting protocol = "any" is accepted by the request validator but currently fails at insert time with a 422 - this is a Master-side inconsistency, not a client-side restriction.
 - `scope` (String) Which of the cluster's auto-provisioned security groups to target: `lb`, `cp`, or `worker`. Part of the API path; changing it forces a new resource.
 
 ### Optional
 
-- `cidr` (String) CIDR source (ingress) or destination (egress), e.g. "10.0.0.0/8". Mutually exclusive with remote_group_id and ip_set_id — exactly one of the three must be set.
+- `cidr` (String) CIDR source (ingress) or destination (egress), e.g. "10.0.0.0/8". Mutually exclusive with remote_group_id and ip_set_id - exactly one of the three must be set.
 - `description` (String) Optional free-form note (max 255 characters).
 - `ip_set_id` (String) UUID of an IP set whose entries are the rule's source/destination. Mutually exclusive with cidr and remote_group_id.
 - `port_range_max` (Number) Inclusive upper port (1-65535). Required for tcp/udp; ignored for icmp/icmpv6/all/any.

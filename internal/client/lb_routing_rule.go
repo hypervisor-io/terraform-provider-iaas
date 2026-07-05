@@ -30,7 +30,7 @@ import (
 // "lb_backend_id".
 //
 // Child writes are SYNCHRONOUS (syncConfig runs internally). There is NO
-// individual rule SHOW route — rules are EMBEDDED in the LB SHOW under
+// individual rule SHOW route - rules are EMBEDDED in the LB SHOW under
 // load_balancer.frontends[].routing_rules[]. GetLBRoutingRule reads-by-scan.
 
 // CreateLBRoutingRule creates a routing rule under the given frontend.

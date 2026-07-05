@@ -9,10 +9,10 @@ import (
 // Kubernetes cluster security-group rule (CHILD of a cluster+scope) endpoints,
 // verified against the real UserApi\Kubernetes\SecurityGroupController +
 // SecurityGroupService + routes/user_api.php (Gap G7). Every cluster
-// auto-provisions up to three security groups at create time — "lb" (internet-
+// auto-provisions up to three security groups at create time - "lb" (internet-
 // facing apiserver ingress, attached to the CP load balancer instance), "cp"
 // (control-plane node ingress, attached to CPs) and "worker" (worker node
-// ingress, attached to workers) — and this resource lets Terraform add/remove
+// ingress, attached to workers) - and this resource lets Terraform add/remove
 // individual firewall rules on one of them without touching the standalone SG
 // admin surface (iaas_security_group).
 //
@@ -20,7 +20,7 @@ import (
 //	                → {success, rules:[...], security_group:{id,name}|null}.
 //	                security_group is null (rules always []) when the scope was
 //	                never provisioned on the cluster (e.g. legacy clusters
-//	                predating the worker SG) — NOT a 404. `where(['scope' =>
+//	                predating the worker SG) - NOT a 404. `where(['scope' =>
 //	                'lb|cp|worker'])` backs the route; an out-of-set scope 404s
 //	                at the router level before the controller runs.
 //	CREATE  POST   /kubernetes/cluster/{clusterID}/security-group/{scope}
@@ -32,7 +32,7 @@ import (
 //	                → 200 {success,message,rule:{id,...}} [idempotency.user].
 //	                422 "invalid scope"; 404 "security group not provisioned
 //	                for this scope" (valid scope, but the cluster has no SG
-//	                for it yet — unlike LIST, create cannot synthesize a
+//	                for it yet - unlike LIST, create cannot synthesize a
 //	                target group). Either cidr, remote_group_id or ip_set_id
 //	                must be supplied (mutually exclusive; enforced by
 //	                SecurityGroupService::addRule, not the FormRequest).
@@ -42,7 +42,7 @@ import (
 //	                the resolved scope SG's id (cross-scope deletion guard).
 //
 // There is NO per-rule SHOW route and NO update route (add-only; any field
-// change is delete+add) — GetKubernetesClusterSgRule therefore lists rules for
+// change is delete+add) - GetKubernetesClusterSgRule therefore lists rules for
 // (cluster,scope) and matches by id, synthesising a 404 *APIError (IsNotFound)
 // when absent, mirroring GetKubernetesSslCert / user_script.go.
 //
@@ -53,7 +53,7 @@ import (
 // `security_group_rules.protocol` DB column is a MySQL ENUM('tcp','udp','icmp',
 // 'icmpv6','all') with no 'any' member (see migration
 // 2026_03_04_000001_create_security_groups_tables.php) and no later migration
-// widens it — so protocol="any" passes FormRequest validation but fails at the
+// widens it - so protocol="any" passes FormRequest validation but fails at the
 // SecurityGroupRule::create() INSERT, which storeRule's catch(\Throwable)
 // surfaces as a 422 with the raw DB error message. This resource still allows
 // "any" in its schema validator (mirroring the FormRequest contract per the
@@ -80,7 +80,7 @@ func (c *Client) CreateKubernetesClusterSgRule(ctx context.Context, clusterID, s
 	return c.doItemWithHeaders(ctx, "POST", path, body, "rule", map[string]string{"Idempotency-Key": idemKey})
 }
 
-// ListKubernetesClusterSgRulesEnvelope returns the full LIST envelope — both the
+// ListKubernetesClusterSgRulesEnvelope returns the full LIST envelope - both the
 // "rules" array and the "security_group" {id,name} object the rules belong to
 // (null when the scope has no SG provisioned on this cluster yet). Callers that
 // only need the rules should use ListKubernetesClusterSgRules.
@@ -98,7 +98,7 @@ func (c *Client) ListKubernetesClusterSgRulesEnvelope(ctx context.Context, clust
 }
 
 // ListKubernetesClusterSgRules returns just the "rules" array for
-// (cluster,scope) — an empty (not error) slice when the scope has no SG
+// (cluster,scope) - an empty (not error) slice when the scope has no SG
 // provisioned on this cluster yet.
 func (c *Client) ListKubernetesClusterSgRules(ctx context.Context, clusterID, scope string) ([]map[string]any, error) {
 	env, err := c.ListKubernetesClusterSgRulesEnvelope(ctx, clusterID, scope)
@@ -117,11 +117,11 @@ func (c *Client) ListKubernetesClusterSgRules(ctx context.Context, clusterID, sc
 
 // GetKubernetesClusterSgRule finds a single rule by id via read-by-scan over the
 // (cluster,scope) rule LIST (there is no per-rule SHOW route). A rule id absent
-// from the list — or a non-2xx on the parent LIST — surfaces as an *APIError
+// from the list - or a non-2xx on the parent LIST - surfaces as an *APIError
 // with Status 404 (recognised by IsNotFound), so the resource's Read removes
 // the row from state and Terraform plans a recreate. The rule object already
 // carries its own "security_group_id" column (SecurityGroupRule is $guarded=[]
-// so every column, including security_group_id, serialises verbatim) — no
+// so every column, including security_group_id, serialises verbatim) - no
 // synthetic augmentation from the envelope's "security_group" is needed.
 func (c *Client) GetKubernetesClusterSgRule(ctx context.Context, clusterID, scope, ruleID string) (map[string]any, error) {
 	if clusterID == "" {
@@ -146,8 +146,8 @@ func (c *Client) GetKubernetesClusterSgRule(ctx context.Context, clusterID, scop
 }
 
 // DeleteKubernetesClusterSgRule removes a rule from the cluster's scope security
-// group. The route carries idempotency.user, so — like DeleteKubernetesSslCert
-// — this inlines doWithHeaders + responseError + decodeItem("") rather than
+// group. The route carries idempotency.user, so - like DeleteKubernetesSslCert
+// - this inlines doWithHeaders + responseError + decodeItem("") rather than
 // doVoid (which has no header seam).
 func (c *Client) DeleteKubernetesClusterSgRule(ctx context.Context, clusterID, scope, ruleID, idemKey string) error {
 	if clusterID == "" {

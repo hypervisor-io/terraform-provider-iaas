@@ -16,7 +16,7 @@ import (
 //
 // Notes:
 //   - Create is SYNCHRONOUS and HTTP 200 (not 201). VpcService::store returns the
-//     refreshed object — with its id and the appended vni_number — under key
+//     refreshed object - with its id and the appended vni_number - under key
 //     "vpc". The id is read directly from the create response: there is NO task,
 //     no waiter, and NO list-and-match-by-name read-back. (An earlier plan called
 //     this the "create-without-ID readback" demo; the real controller does return
@@ -24,7 +24,7 @@ import (
 //   - Failure is signalled with success:false at HTTP 200 (invalid CIDR, location
 //     not VPC-enabled, quota exceeded). doItem/doVoid surface this as an error.
 //   - There is NO UPDATE route for VPC. VpcService::update exists but is unwired,
-//     so every configurable attribute is immutable over this API — hence no
+//     so every configurable attribute is immutable over this API - hence no
 //     UpdateVPC method here.
 //   - CreateVPC takes a prebuilt body so the resource controls which optional
 //     fields are sent (description is omitted from the map when unset rather than

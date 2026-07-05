@@ -42,7 +42,7 @@ resource "iaas_load_balancer" "vpc" {
   vpc_subnet_id = iaas_vpc_subnet.public.id
 }
 
-# Every input is IMMUTABLE — there is no update endpoint for the load balancer
+# Every input is IMMUTABLE - there is no update endpoint for the load balancer
 # itself, so changing name, plan, vpc, or location forces a new resource. Tune
 # the async wait via a timeouts block if needed:
 #

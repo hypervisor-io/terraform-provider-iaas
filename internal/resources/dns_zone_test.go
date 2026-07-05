@@ -11,7 +11,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/acctest"
 )
 
-// TestAccDNSZone_basic — LIVE acceptance test (manual staging gate). Auto-skips
+// TestAccDNSZone_basic - LIVE acceptance test (manual staging gate). Auto-skips
 // unless TF_ACC is set.
 func TestAccDNSZone_basic(t *testing.T) {
 	t.Skip("TestAccDNSZone_basic: acceptance test runs only with TF_ACC against real staging (manual gate)")
@@ -20,12 +20,12 @@ func TestAccDNSZone_basic(t *testing.T) {
 // TestUnitDNSZone_lifecycle drives the full PARENT lifecycle against a stateful
 // mock:
 //
-//  1. Create — POST /dns-zones (with vpc_ids), asserts the body; SHOW reflects the
+//  1. Create - POST /dns-zones (with vpc_ids), asserts the body; SHOW reflects the
 //     attached VPC + active status.
-//  2. Read — GET /dns-zone/{id}.
-//  3. Import — single id.
-//  4. Update — PATCH description + attach vpc-2 + detach vpc-1; asserts each fired.
-//  5. Delete — DELETE then poll SHOW to 404 (async delete convergence).
+//  2. Read - GET /dns-zone/{id}.
+//  3. Import - single id.
+//  4. Update - PATCH description + attach vpc-2 + detach vpc-1; asserts each fired.
+//  5. Delete - DELETE then poll SHOW to 404 (async delete convergence).
 func TestUnitDNSZone_lifecycle(t *testing.T) {
 	ensureTFBinary(t)
 	t.Setenv("IAAS_INSTANCE_POLL_INTERVAL", "1ms") // no sleep in the delete poll

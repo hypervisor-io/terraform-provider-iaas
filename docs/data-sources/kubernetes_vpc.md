@@ -3,12 +3,12 @@
 page_title: "iaas_kubernetes_vpc Data Source - iaas"
 subcategory: ""
 description: |-
-  Looks up a VPC that can host a Kubernetes cluster by name, resolving the id you pass as vpc_id on an iaas_kubernetes_cluster. Only VPCs owned by your account are searched. has_nat_gateway reports whether the VPC has NAT egress — a private control plane needs it for kubeadm image pulls. Exactly one VPC must match.
+  Looks up a VPC that can host a Kubernetes cluster by name, resolving the id you pass as vpc_id on an iaas_kubernetes_cluster. Only VPCs owned by your account are searched. has_nat_gateway reports whether the VPC has NAT egress - a private control plane needs it for kubeadm image pulls. Exactly one VPC must match.
 ---
 
 # iaas_kubernetes_vpc (Data Source)
 
-Looks up a VPC that can host a Kubernetes cluster by name, resolving the `id` you pass as `vpc_id` on an `iaas_kubernetes_cluster`. Only VPCs owned by your account are searched. `has_nat_gateway` reports whether the VPC has NAT egress — a private control plane needs it for kubeadm image pulls. Exactly one VPC must match.
+Looks up a VPC that can host a Kubernetes cluster by name, resolving the `id` you pass as `vpc_id` on an `iaas_kubernetes_cluster`. Only VPCs owned by your account are searched. `has_nat_gateway` reports whether the VPC has NAT egress - a private control plane needs it for kubeadm image pulls. Exactly one VPC must match.
 
 ## Example Usage
 
@@ -33,7 +33,7 @@ data "iaas_kubernetes_vpc" "prod" {
 
 ### Optional
 
-- `hypervisor_group_id` (String) Optional region (hypervisor group) UUID to constrain the search — use to disambiguate identically-named VPCs across regions.
+- `hypervisor_group_id` (String) Optional region (hypervisor group) UUID to constrain the search - use to disambiguate identically-named VPCs across regions.
 
 ### Read-Only
 

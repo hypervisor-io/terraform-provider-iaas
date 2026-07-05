@@ -57,7 +57,7 @@ func TestCreateDnsZone_Success(t *testing.T) {
 }
 
 // TestCreateDnsZone_SuccessFalse verifies a 200 success:false maps to an error
-// (C3) — e.g. quota exceeded or VPC not owned.
+// (C3) - e.g. quota exceeded or VPC not owned.
 func TestCreateDnsZone_SuccessFalse(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

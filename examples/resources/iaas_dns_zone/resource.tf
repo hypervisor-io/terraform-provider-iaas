@@ -12,7 +12,7 @@ resource "iaas_vpc" "example" {
 resource "iaas_dns_zone" "example" {
   # Required, immutable. Lowercase alphanumeric with dots/hyphens, max 63 chars.
   # A bare public TLD ("com", "local", ...) is rejected to avoid shadowing real
-  # DNS — use a compound internal name.
+  # DNS - use a compound internal name.
   name = "corp.internal"
 
   # Optional. The only scalar that can be changed in place.

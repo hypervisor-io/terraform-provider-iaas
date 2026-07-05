@@ -14,15 +14,15 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccVolume_basic — LIVE acceptance test (manual staging gate).
+// TestAccVolume_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set (resource.Test enforces this). Requires a
 // reachable panel + IP-locked token (IAAS_API_ENDPOINT / IAAS_API_TOKEN), with
 // billing enabled, plus real UUIDs supplied via the env vars below; the test
 // skips cleanly when either var is absent so a bare TF_ACC=1 run does not fail.
 //
-//	IAAS_TEST_VOLUME_PLAN_ID — UUID of an enabled volume plan
-//	IAAS_TEST_HG_ID          — UUID of a volume-enabled hypervisor group
+//	IAAS_TEST_VOLUME_PLAN_ID - UUID of an enabled volume plan
+//	IAAS_TEST_HG_ID          - UUID of a volume-enabled hypervisor group
 //
 // ---------------------------------------------------------------------------
 func TestAccVolume_basic(t *testing.T) {
@@ -62,18 +62,18 @@ resource "iaas_volume" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitVolume_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitVolume_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the full async resource lifecycle against canned API responses with no
 // live panel:
 //
-//  1. Create — POST /storage/volumes returns {volume:{id,status:"pending"}};
+//  1. Create - POST /storage/volumes returns {volume:{id,status:"pending"}};
 //     the SHOW then immediately returns status="available" (ready on the FIRST
 //     poll → the waiter converges instantly, no sleep). Asserts the create body.
-//  2. Import — by UUID, verifies state matches.
-//  3. Update — resize to a larger plan (PATCH /resize) AND attach to an instance
+//  2. Import - by UUID, verifies state matches.
+//  3. Update - resize to a larger plan (PATCH /resize) AND attach to an instance
 //     (POST /attach). Asserts BOTH the resize and attach bodies fired.
-//  4. Delete — implicit teardown; DELETE soft-deletes and the next SHOW 404s.
+//  4. Delete - implicit teardown; DELETE soft-deletes and the next SHOW 404s.
 //
 // The IAAS_INSTANCE_POLL_INTERVAL seam (shared with instance.go's pollInterval)
 // is set tiny so the waiter cannot hang; combined with available-on-first-poll
@@ -129,7 +129,7 @@ func TestUnitVolume_lifecycle(t *testing.T) {
 		return obj
 	}
 
-	// CREATE — record the row; first SHOW already reports "available" so the
+	// CREATE - record the row; first SHOW already reports "available" so the
 	// waiter converges on the first poll.
 	srv.Handle("POST", "/storage/volumes", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
@@ -146,7 +146,7 @@ func TestUnitVolume_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — 404 once delete has been enqueued.
+	// SHOW - 404 once delete has been enqueued.
 	srv.Handle("GET", "/storage/volume/"+volumeID, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		gone := deleted
@@ -158,7 +158,7 @@ func TestUnitVolume_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "volume": showObject()})
 	})
 
-	// RESIZE — PATCH /resize; mutates plan + size.
+	// RESIZE - PATCH /resize; mutates plan + size.
 	srv.Handle("PATCH", "/storage/volume/"+volumeID+"/resize", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -171,7 +171,7 @@ func TestUnitVolume_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "is_downgrade": false, "volume": showObject()})
 	})
 
-	// ATTACH — POST /attach; flips status→attached, sets instance + dev.
+	// ATTACH - POST /attach; flips status→attached, sets instance + dev.
 	srv.Handle("POST", "/storage/volume/"+volumeID+"/attach", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -185,7 +185,7 @@ func TestUnitVolume_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "volume": showObject()})
 	})
 
-	// DETACH — POST /detach; flips status→available, clears instance + dev.
+	// DETACH - POST /detach; flips status→available, clears instance + dev.
 	srv.Handle("POST", "/storage/volume/"+volumeID+"/detach", func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		currentInstance = ""
@@ -195,7 +195,7 @@ func TestUnitVolume_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "volume": showObject()})
 	})
 
-	// DELETE — soft-delete; the next SHOW 404s.
+	// DELETE - soft-delete; the next SHOW 404s.
 	srv.Handle("DELETE", "/storage/volume/"+volumeID, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		deleted = true

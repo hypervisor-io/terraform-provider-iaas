@@ -15,7 +15,7 @@ import (
 
 // TestGetUserScript_NotFound verifies that GetUserScript synthesises a 404
 // *APIError recognised by IsNotFound when the /user-scripts list (there is no
-// SHOW route) does not contain the requested id — the drift-detection path
+// SHOW route) does not contain the requested id - the drift-detection path
 // that lets Read() call resp.State.RemoveResource.
 func TestGetUserScript_NotFound(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

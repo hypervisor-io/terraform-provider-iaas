@@ -14,15 +14,15 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccLoadBalancer_basic — LIVE acceptance test (manual staging gate).
+// TestAccLoadBalancer_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set (resource.Test enforces this). Requires a
 // reachable panel + IP-locked token (IAAS_API_ENDPOINT / IAAS_API_TOKEN), a
 // load-balancer-enabled location, and the account's LB quota not exhausted.
 // Supplied via:
 //
-//	IAAS_TEST_LB_LOCATION_ID — UUID of a hypervisor group with lb_enabled=1
-//	IAAS_TEST_LB_PLAN_ID     — UUID of an enabled lb_plan
+//	IAAS_TEST_LB_LOCATION_ID - UUID of a hypervisor group with lb_enabled=1
+//	IAAS_TEST_LB_PLAN_ID     - UUID of an enabled lb_plan
 //
 // The test skips cleanly when the vars are absent so a bare TF_ACC=1 run does
 // not fail.
@@ -66,21 +66,21 @@ resource "iaas_load_balancer" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitLoadBalancer_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitLoadBalancer_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the full ASYNC core-LB lifecycle against canned API responses with no
 // live panel:
 //
-//  1. Create — POST /load-balancers returns {load_balancer:{id,status:"deploying"}};
+//  1. Create - POST /load-balancers returns {load_balancer:{id,status:"deploying"}};
 //     the SHOW then immediately returns status="active" (ready on the FIRST poll →
 //     the waiter converges instantly, no sleep). Asserts the create body
 //     (name + lb_plan_id + hypervisor_group_id) and that it omits computed fields.
-//  2. Import — by the LB id, verifies state matches (ignoring the write-only
+//  2. Import - by the LB id, verifies state matches (ignoring the write-only
 //     vpc_subnet_id and timeouts).
-//  3. Delete — implicit teardown; DELETE soft-deletes and the next SHOW 404s,
+//  3. Delete - implicit teardown; DELETE soft-deletes and the next SHOW 404s,
 //     which the delete waiter converges on the FIRST poll.
 //
-// There is NO update step — the LB has no update endpoint, so every input is
+// There is NO update step - the LB has no update endpoint, so every input is
 // RequiresReplace and Terraform would recreate rather than update.
 //
 // The IAAS_INSTANCE_POLL_INTERVAL seam is set tiny so the waiter cannot hang;
@@ -109,7 +109,7 @@ func TestUnitLoadBalancer_lifecycle(t *testing.T) {
 	var mu sync.Mutex
 	deleted := false
 
-	// SHOW payload — already "active" so the create waiter converges on the
+	// SHOW payload - already "active" so the create waiter converges on the
 	// first poll (no sleep).
 	showLB := func() map[string]any {
 		return map[string]any{
@@ -126,7 +126,7 @@ func TestUnitLoadBalancer_lifecycle(t *testing.T) {
 		}
 	}
 
-	// CREATE — record the row; the create response carries status "deploying"
+	// CREATE - record the row; the create response carries status "deploying"
 	// (the SHOW already reports "active" so the waiter converges immediately).
 	srv.Handle("POST", basePath, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
@@ -142,7 +142,7 @@ func TestUnitLoadBalancer_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — 404 once delete has been enqueued.
+	// SHOW - 404 once delete has been enqueued.
 	srv.Handle("GET", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		gone := deleted
@@ -154,7 +154,7 @@ func TestUnitLoadBalancer_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "load_balancer": showLB()})
 	})
 
-	// DELETE — soft-delete; the next SHOW 404s.
+	// DELETE - soft-delete; the next SHOW 404s.
 	srv.Handle("DELETE", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		deleted = true

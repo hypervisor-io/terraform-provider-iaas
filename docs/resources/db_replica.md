@@ -61,7 +61,7 @@ output "replica_replication_status" {
 
 - `engine` (String) Database engine, inherited from the primary. Stable after create.
 - `engine_version` (String) Engine version, inherited from the primary. Stable after create.
-- `host` (String) Connection host — the replica's public IPv4 address (for public-subnet replicas), extracted from the nested public_ip object. Empty for private-subnet replicas. Stable after create.
+- `host` (String) Connection host - the replica's public IPv4 address (for public-subnet replicas), extracted from the nested public_ip object. Empty for private-subnet replicas. Stable after create.
 - `id` (String) UUID of the replica database, assigned by the API.
 - `port` (Number) Connection port (inherited from the primary). Stable after create.
 - `replication_status` (String) Replication state: "syncing", "active", "stopped". Server-mutable (the slave reports replication health).

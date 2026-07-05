@@ -7,7 +7,7 @@ resource "iaas_load_balancer" "example" {
 }
 
 resource "iaas_lb_backend" "web" {
-  # Parent load balancer id — part of the API path. Changing it forces a new resource.
+  # Parent load balancer id - part of the API path. Changing it forces a new resource.
   load_balancer_id = iaas_load_balancer.example.id
 
   name = "web-servers"

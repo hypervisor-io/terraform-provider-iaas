@@ -3,12 +3,12 @@
 page_title: "iaas_security_group Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a security group — a named collection of stateful firewall rules that can be attached to instances. The rules are managed inline as an order-independent set: adding or removing a rule from the config adds or removes it on the server in place, without replacing the security group. Because the API has no rule-update endpoint, changing any field of a rule removes and re-adds it. The set of attached instances is managed via the instance_ids attribute (attach/detach in place).
+  Manages a security group - a named collection of stateful firewall rules that can be attached to instances. The rules are managed inline as an order-independent set: adding or removing a rule from the config adds or removes it on the server in place, without replacing the security group. Because the API has no rule-update endpoint, changing any field of a rule removes and re-adds it. The set of attached instances is managed via the instance_ids attribute (attach/detach in place).
 ---
 
 # iaas_security_group (Resource)
 
-Manages a security group — a named collection of stateful firewall rules that can be attached to instances. The rules are managed inline as an order-independent set: adding or removing a rule from the config adds or removes it on the server in place, without replacing the security group. Because the API has no rule-update endpoint, changing any field of a rule removes and re-adds it. The set of attached instances is managed via the `instance_ids` attribute (attach/detach in place).
+Manages a security group - a named collection of stateful firewall rules that can be attached to instances. The rules are managed inline as an order-independent set: adding or removing a rule from the config adds or removes it on the server in place, without replacing the security group. Because the API has no rule-update endpoint, changing any field of a rule removes and re-adds it. The set of attached instances is managed via the `instance_ids` attribute (attach/detach in place).
 
 ## Example Usage
 
@@ -56,7 +56,7 @@ resource "iaas_security_group" "web" {
       cidr           = "0.0.0.0/0"
       description    = "HTTPS"
     },
-    # Allow inbound ICMP (ping) from anywhere — no ports for icmp.
+    # Allow inbound ICMP (ping) from anywhere - no ports for icmp.
     {
       direction  = "ingress"
       protocol   = "icmp"

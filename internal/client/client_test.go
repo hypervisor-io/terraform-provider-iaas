@@ -102,7 +102,7 @@ func TestDo_BaseURLJoining(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	// Endpoint has trailing slash — the constructor must strip it.
+	// Endpoint has trailing slash - the constructor must strip it.
 	c := New(srv.URL+"/api/", "tok", 10*time.Second, false)
 
 	_, _, err := c.do(context.Background(), http.MethodGet, "/instances", nil)
@@ -138,13 +138,13 @@ func TestDo_InsecureSkipVerify(t *testing.T) {
 // TestDo_SecureDefaultTransport verifies that insecure=false does NOT set InsecureSkipVerify.
 func TestDo_SecureDefaultTransport(t *testing.T) {
 	c := New("https://example.com/api", "tok", 10*time.Second, false)
-	// Transport may be nil (default) or explicit — either way InsecureSkipVerify must be false.
+	// Transport may be nil (default) or explicit - either way InsecureSkipVerify must be false.
 	if tr, ok := c.httpClient.Transport.(*http.Transport); ok {
 		if tr.TLSClientConfig != nil && tr.TLSClientConfig.InsecureSkipVerify {
 			t.Error("InsecureSkipVerify must be false when insecure=false")
 		}
 	}
-	// if Transport is nil, that's the safe default — pass.
+	// if Transport is nil, that's the safe default - pass.
 }
 
 // TestDo_RequestIDHeader verifies that the request-id from the response is accessible.
@@ -196,14 +196,14 @@ func TestDo_ReadAllError(t *testing.T) {
 		defer conn.Close()
 
 		// Write a valid HTTP/1.1 response header claiming 100 body bytes,
-		// but only write 5 bytes then close — yielding io.ErrUnexpectedEOF.
+		// but only write 5 bytes then close - yielding io.ErrUnexpectedEOF.
 		_, _ = buf.WriteString("HTTP/1.1 200 OK\r\n")
 		_, _ = buf.WriteString("Content-Type: application/json\r\n")
 		_, _ = buf.WriteString("Content-Length: 100\r\n")
 		_, _ = buf.WriteString("\r\n")
 		_, _ = buf.WriteString("short") // only 5 of the promised 100 bytes
 		_ = buf.Flush()
-		// conn.Close() via defer — server abruptly ends the response
+		// conn.Close() via defer - server abruptly ends the response
 	}))
 	defer srv.Close()
 
@@ -262,7 +262,7 @@ func TestDo_ContextCancellation(t *testing.T) {
 			t.Fatal("expected error after context cancellation, got nil")
 		}
 		if !errors.Is(err, context.Canceled) {
-			// Check for net.Error wrapping a context error — on some Go versions
+			// Check for net.Error wrapping a context error - on some Go versions
 			// the context error is wrapped inside a *url.Error which is itself
 			// a net.Error. errors.Is walks the chain via %w so this handles it.
 			var netErr net.Error

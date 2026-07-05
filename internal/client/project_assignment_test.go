@@ -116,7 +116,7 @@ func TestAssignResourceToProject_EmptyIDs(t *testing.T) {
 
 // TestGetResourceProjectID_Dispatch verifies GetResourceProjectID routes each
 // resource_type to the correct SHOW endpoint and reads project_id back from
-// that type's actual envelope shape — including s3_bucket's nested "bucket".
+// that type's actual envelope shape - including s3_bucket's nested "bucket".
 func TestGetResourceProjectID_Dispatch(t *testing.T) {
 	tests := []struct {
 		name         string

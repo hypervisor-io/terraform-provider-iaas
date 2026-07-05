@@ -13,7 +13,7 @@ variable "vpn_gateway_id" {
 # client config (for the .conf file) is available via the iaas_vpn_peer_config
 # data source.
 resource "iaas_vpn_peer" "laptop" {
-  # Parent gateway id — part of the API path. Changing this forces a new resource.
+  # Parent gateway id - part of the API path. Changing this forces a new resource.
   vpn_gateway_id = var.vpn_gateway_id
 
   type = "road_warrior"
@@ -51,4 +51,4 @@ resource "iaas_vpn_peer" "branch_office" {
 
 # Import a VPN peer with the COMPOSITE id "<gateway_id>/<peer_id>", e.g.:
 #   terraform import iaas_vpn_peer.laptop 22222222-2222-2222-2222-222222222222/77777777-7777-7777-7777-777777777777
-# (preshared_key is write-only and cannot be recovered on import — set it in config.)
+# (preshared_key is write-only and cannot be recovered on import - set it in config.)

@@ -34,7 +34,7 @@ func TestUnitUserScript_lifecycle(t *testing.T) {
 	)
 	currentName := "bootstrap"
 
-	// CREATE — POST /user-scripts.
+	// CREATE - POST /user-scripts.
 	srv.Handle("POST", "/user-scripts", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -48,7 +48,7 @@ func TestUnitUserScript_lifecycle(t *testing.T) {
 		})
 	})
 
-	// UPDATE — PATCH /user-script/{id} (singular).
+	// UPDATE - PATCH /user-script/{id} (singular).
 	srv.Handle("PATCH", "/user-script/"+scriptID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -62,7 +62,7 @@ func TestUnitUserScript_lifecycle(t *testing.T) {
 		})
 	})
 
-	// READ — no SHOW route; the resource lists and matches by id.
+	// READ - no SHOW route; the resource lists and matches by id.
 	srv.Handle("GET", "/user-scripts", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"current_page": 1,
@@ -74,7 +74,7 @@ func TestUnitUserScript_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — DELETE /user-script/{id} (singular).
+	// DELETE - DELETE /user-script/{id} (singular).
 	srv.Handle("DELETE", "/user-script/"+scriptID, func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "Script deleted successfully."})
 	})

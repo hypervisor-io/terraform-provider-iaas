@@ -67,7 +67,7 @@ func WaitFor(ctx context.Context, opts Options) error {
 
 		switch {
 		case err != nil:
-			// Terminal failure — wrap with last state for diagnostics.
+			// Terminal failure - wrap with last state for diagnostics.
 			return fmt.Errorf("waiter: resource in state %q: %w", lastState, err)
 		case done:
 			return nil
@@ -152,7 +152,7 @@ func StatePoller(
 // maxConsecutiveErrors consecutive get() errors (treating them as "keep polling")
 // before surfacing the error as terminal. A successful get() resets the counter.
 // Use for long-running waits where a transient transport blip should not fail the
-// whole operation. (The waiter stays client-agnostic — it does not classify error
+// whole operation. (The waiter stays client-agnostic - it does not classify error
 // types; it simply bounds consecutive failures.)
 func StatePollerWithErrorTolerance(
 	get func() (map[string]any, error),
@@ -176,7 +176,7 @@ func StatePollerWithErrorTolerance(
 			// Exceeded tolerance: surface as terminal.
 			return "", false, err
 		}
-		// Successful get — reset the consecutive error counter.
+		// Successful get - reset the consecutive error counter.
 		consecutive = 0
 		return classifyState(m, field, readySet, failSet)
 	}

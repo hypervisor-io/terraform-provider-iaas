@@ -6,7 +6,7 @@
 #   - "cp"     control-plane node ingress
 #   - "worker" worker node ingress
 #
-# There is NO update endpoint — changing any field replaces the rule
+# There is NO update endpoint - changing any field replaces the rule
 # (delete old + add new).
 
 # Allow a specific office CIDR to reach the apiserver (scope = "lb").
@@ -38,7 +38,7 @@ resource "iaas_kubernetes_security_group_rule" "nodeport_range" {
 }
 
 # Rules can also reference another security group or an IP set instead of a
-# CIDR (cidr / remote_group_id / ip_set_id are mutually exclusive — exactly
+# CIDR (cidr / remote_group_id / ip_set_id are mutually exclusive - exactly
 # one must be set).
 resource "iaas_kubernetes_security_group_rule" "from_bastion_sg" {
   cluster_id = iaas_kubernetes_cluster.prod.id

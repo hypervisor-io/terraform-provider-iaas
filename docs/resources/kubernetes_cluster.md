@@ -3,19 +3,19 @@
 page_title: "iaas_kubernetes_cluster Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a managed Kubernetes cluster: a control plane (1 or 3 nodes) behind a dedicated CP load balancer, plus a default worker node pool. Creation is ASYNCHRONOUS and multi-stage — the cluster row is recorded, the default pool is created, and a provisioning job runs; this resource waits for the cluster state to become "running" (created → starting → running, or "error" on failure). The region must have Kubernetes + VPC + Load Balancer enabled, the VPC must have an active NAT gateway, and the control-plane subnet must be private. name, description, project_id, and kubernetes_version_id are mutable in place (a version_id change drives a staged in-place upgrade — see kubernetes_version_id's description); all other topology (plans, CIDRs, subnets, control-node count) is immutable — changing any of those forces a new cluster. Worker scaling, node pools, kubeconfig download, and per-cluster security/SSL config are managed by separate resources / data sources.
+  Manages a managed Kubernetes cluster: a control plane (1 or 3 nodes) behind a dedicated CP load balancer, plus a default worker node pool. Creation is ASYNCHRONOUS and multi-stage - the cluster row is recorded, the default pool is created, and a provisioning job runs; this resource waits for the cluster state to become "running" (created → starting → running, or "error" on failure). The region must have Kubernetes + VPC + Load Balancer enabled, the VPC must have an active NAT gateway, and the control-plane subnet must be private. name, description, project_id, and kubernetes_version_id are mutable in place (a version_id change drives a staged in-place upgrade - see kubernetes_version_id's description); all other topology (plans, CIDRs, subnets, control-node count) is immutable - changing any of those forces a new cluster. Worker scaling, node pools, kubeconfig download, and per-cluster security/SSL config are managed by separate resources / data sources.
 ---
 
 # iaas_kubernetes_cluster (Resource)
 
-Manages a managed Kubernetes cluster: a control plane (1 or 3 nodes) behind a dedicated CP load balancer, plus a default worker node pool. Creation is ASYNCHRONOUS and multi-stage — the cluster row is recorded, the default pool is created, and a provisioning job runs; this resource waits for the cluster state to become "running" (created → starting → running, or "error" on failure). The region must have Kubernetes + VPC + Load Balancer enabled, the VPC must have an active NAT gateway, and the control-plane subnet must be private. name, description, project_id, and kubernetes_version_id are mutable in place (a version_id change drives a staged in-place upgrade — see kubernetes_version_id's description); all other topology (plans, CIDRs, subnets, control-node count) is immutable — changing any of those forces a new cluster. Worker scaling, node pools, kubeconfig download, and per-cluster security/SSL config are managed by separate resources / data sources.
+Manages a managed Kubernetes cluster: a control plane (1 or 3 nodes) behind a dedicated CP load balancer, plus a default worker node pool. Creation is ASYNCHRONOUS and multi-stage - the cluster row is recorded, the default pool is created, and a provisioning job runs; this resource waits for the cluster state to become "running" (created → starting → running, or "error" on failure). The region must have Kubernetes + VPC + Load Balancer enabled, the VPC must have an active NAT gateway, and the control-plane subnet must be private. name, description, project_id, and kubernetes_version_id are mutable in place (a version_id change drives a staged in-place upgrade - see kubernetes_version_id's description); all other topology (plans, CIDRs, subnets, control-node count) is immutable - changing any of those forces a new cluster. Worker scaling, node pools, kubeconfig download, and per-cluster security/SSL config are managed by separate resources / data sources.
 
 ## Example Usage
 
 ```terraform
 # A managed Kubernetes cluster: a control plane (1 or 3 nodes) behind a dedicated
 # CP load balancer, plus a default worker node pool. Creation is ASYNCHRONOUS and
-# multi-stage — this resource waits for the cluster state to become "running"
+# multi-stage - this resource waits for the cluster state to become "running"
 # (created -> starting -> running, or "error" on failure).
 #
 # PRE-REQS (the API enforces these, returning a clear error otherwise):
@@ -32,7 +32,7 @@ resource "iaas_kubernetes_cluster" "prod" {
   name = "prod"
   slug = "prod" # url-safe, unique within the account, immutable
 
-  # Region + networking (all immutable — changing any forces a new cluster).
+  # Region + networking (all immutable - changing any forces a new cluster).
   hypervisor_group_id  = "22222222-2222-2222-2222-222222222222"
   vpc_id               = "33333333-3333-3333-3333-333333333333"
   cp_vpc_subnet_id     = "44444444-4444-4444-4444-444444444444" # MUST be private
@@ -118,7 +118,7 @@ output "k8s_api_endpoint" {
 - `cp_vpc_subnet_id` (String) UUID of the PRIVATE VPC subnet the control plane lives in. Must belong to the chosen VPC. Immutable; changing it forces a new resource.
 - `endpoint_mode` (String) API server exposure: "private" (VPC-internal only) or "public_and_private" (also reachable from the internet via the CP LB). Immutable; changing it forces a new resource.
 - `hypervisor_group_id` (String) UUID of the region (hypervisor group). Must have Kubernetes + VPC + Load Balancer features enabled. Immutable; changing it forces a new resource.
-- `kubernetes_version_id` (String) UUID of an active supported Kubernetes version — the WORKER baseline (the control plane's own current version is tracked separately, read-only, as cp_kubernetes_version_id/cp_kubernetes_version). Updatable in place (T7/id-G8): changing this drives a staged in-place upgrade — control plane first (if it isn't already at the target), then workers, then (if upgrade_ccm) a CCM redeploy — rather than replacing the cluster. The target must be an active version, forward-only, same major, and no more than 1 minor ahead of the current baseline (server-enforced).
+- `kubernetes_version_id` (String) UUID of an active supported Kubernetes version - the WORKER baseline (the control plane's own current version is tracked separately, read-only, as cp_kubernetes_version_id/cp_kubernetes_version). Updatable in place (T7/id-G8): changing this drives a staged in-place upgrade - control plane first (if it isn't already at the target), then workers, then (if upgrade_ccm) a CCM redeploy - rather than replacing the cluster. The target must be an active version, forward-only, same major, and no more than 1 minor ahead of the current baseline (server-enforced).
 - `name` (String) Display name (3-50 chars). Updatable in place (PATCH).
 - `slug` (String) URL-safe slug (lowercase letters, digits, hyphens; max 63), unique within the account. Immutable; changing it forces a new resource.
 - `vpc_id` (String) UUID of the VPC the cluster lives in. Must belong to the caller, be in the chosen region, and have an active NAT gateway with a public IP. Immutable; changing it forces a new resource.
@@ -134,10 +134,10 @@ output "k8s_api_endpoint" {
 - `project_id` (String) Optional project UUID to organize the cluster under. Updatable in place (PATCH).
 - `service_cidr` (String) Service network CIDR (defaults to 10.96.0.0/12). Immutable; changing it forces a new resource.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `upgrade_ccm` (Boolean) Whether to redeploy the cloud-controller-manager (POST .../upgrade/ccm) after a successful worker-stage upgrade, so the CCM image tracks the new worker baseline's bundled_components.ccm_image (there is no separately-versioned ccm_version — the API always redeploys whatever image the CURRENT worker baseline resolves to). Only consulted when kubernetes_version_id changes; set false to manage CCM redeploys out of band.
+- `upgrade_ccm` (Boolean) Whether to redeploy the cloud-controller-manager (POST .../upgrade/ccm) after a successful worker-stage upgrade, so the CCM image tracks the new worker baseline's bundled_components.ccm_image (there is no separately-versioned ccm_version - the API always redeploys whatever image the CURRENT worker baseline resolves to). Only consulted when kubernetes_version_id changes; set false to manage CCM redeploys out of band.
 - `upgrade_drain_grace_period` (Number) Seconds to wait before draining each old node during a version-bump upgrade (0-3600, default 120). Sent as drain_grace_period on BOTH the control-plane and worker upgrade calls. Only consulted when kubernetes_version_id changes.
 - `upgrade_max_surge` (Number) Extra workers to provision ahead of draining old ones during a version-bump worker upgrade (>=1, default 1). Sent as max_surge on the worker upgrade call only (the control-plane upgrade always surges 1 CP node at a time). Only consulted when kubernetes_version_id changes.
-- `worker_count` (Number) Initial worker count for the default pool (1-50). Set at create time only through this resource — ongoing scaling is a dedicated worker operation, so changing this forces a new resource. The live count is also exported here on read.
+- `worker_count` (Number) Initial worker count for the default pool (1-50). Set at create time only through this resource - ongoing scaling is a dedicated worker operation, so changing this forces a new resource. The live count is also exported here on read.
 
 ### Read-Only
 
@@ -147,7 +147,7 @@ output "k8s_api_endpoint" {
 - `endpoint_url_private` (String) Private (VPC) API server endpoint (https://<cp-lb-vpc-ip>). Empty when not yet allocated. Not a secret.
 - `endpoint_url_public` (String) Public API server endpoint (https://<cp-lb-public-ip>), present when endpoint_mode is public_and_private. Empty when not yet allocated. Not a secret.
 - `id` (String) UUID of the cluster, assigned by the API.
-- `kubernetes_version` (String) Human-readable Kubernetes semantic version (e.g. "1.30.2") of the WORKER baseline (kubernetes_version_id), derived from the selected version. Server-mutable: changes once a version-bump upgrade's worker stage completes — per the golden guardrail, no UseStateForUnknown, so the plan doesn't mask that transition.
+- `kubernetes_version` (String) Human-readable Kubernetes semantic version (e.g. "1.30.2") of the WORKER baseline (kubernetes_version_id), derived from the selected version. Server-mutable: changes once a version-bump upgrade's worker stage completes - per the golden guardrail, no UseStateForUnknown, so the plan doesn't mask that transition.
 - `state` (String) Lifecycle state of the cluster: "created", "starting", "running" (ready), "alert", "stopped", "error", "destroying", "destroyed". Server-mutable.
 
 <a id="nestedblock--timeouts"></a>

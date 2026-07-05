@@ -19,7 +19,7 @@ output "instance_public_ips" {
 }
 
 output "instance_private_ips" {
-  description = "Primary private (VPC subnet) IPs of the web instances — these are the load balancer target IPs."
+  description = "Primary private (VPC subnet) IPs of the web instances - these are the load balancer target IPs."
   value       = [for i in iaas_instance.web : i.primary_private_ip]
 }
 

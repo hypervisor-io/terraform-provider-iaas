@@ -18,7 +18,7 @@ import (
 )
 
 // Interface assertions. iaas_image captures a custom image FROM an instance
-// (Gap G4) — distinct from the existing iaas_image DATA SOURCE (catalog
+// (Gap G4) - distinct from the existing iaas_image DATA SOURCE (catalog
 // lookup by name). A resource and a data source may share the type name
 // "iaas_image": Resources() and DataSources() are two separate registries in
 // terraform-plugin-framework, keyed independently by Terraform Core, so
@@ -57,7 +57,7 @@ type imageResource struct {
 // default from the source instance when omitted, and that server-assigned
 // value is stable after create, so UseStateForUnknown is safe alongside
 // RequiresReplace. status/size are SERVER-MUTABLE computed (status converges
-// creating -> available/error; size is populated once capture completes) —
+// creating -> available/error; size is populated once capture completes) -
 // per the golden guardrail (see instance.go) they do NOT get
 // UseStateForUnknown, so a refreshed value is never masked.
 type imageModel struct {
@@ -241,7 +241,7 @@ func (r *imageResource) Create(ctx context.Context, req resource.CreateRequest, 
 }
 
 // Read refreshes state from the API. A 404 means the image was deleted out of
-// band — remove it from state so Terraform plans a recreate (drift handling).
+// band - remove it from state so Terraform plans a recreate (drift handling).
 func (r *imageResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state imageModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -274,8 +274,8 @@ func (r *imageResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
-// Delete removes the image. Deletion is synchronous — deleteUserImage hard
-// deletes the row inline before returning — so no delete waiter is needed.
+// Delete removes the image. Deletion is synchronous - deleteUserImage hard
+// deletes the row inline before returning - so no delete waiter is needed.
 func (r *imageResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state imageModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -313,7 +313,7 @@ func imageCreateFields(m imageModel) map[string]any {
 }
 
 // imageStateFromAPI builds the model from an API image object (either the
-// create response's bare Image object or a list-derived item — both carry the
+// create response's bare Image object or a list-derived item - both carry the
 // same base columns), falling back to the prior model's value for any field
 // the response omits.
 func imageStateFromAPI(obj map[string]any, prior imageModel) imageModel {

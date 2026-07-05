@@ -18,26 +18,26 @@ import (
 
 // Interface assertions. iaas_vpn_peering is a CHILD resource of a VPN gateway
 // (Wave C, gap-fill T8) that links it to ANOTHER iaas_vpn_gateway owned by the
-// SAME account, in a DIFFERENT VPC — VpnGatewayController::createPeering /
+// SAME account, in a DIFFERENT VPC - VpnGatewayController::createPeering /
 // VpnGatewayService::createVpcPeering. It is DISTINCT from iaas_vpn_peer
 // (vpn_peer.go): a peer's road_warrior/site_to_site flavours accept an
 // arbitrary third-party public_key/endpoint/allowed_ips, whereas a peering only
 // takes remote_gateway_id and the server derives everything else from the two
 // gateway rows (a shared preshared_key, each side's public_key/endpoint, tunnel
 // IPs, and allowed_ips = the remote VPC's CIDR + tunnel subnet). Both flavours
-// persist to the SAME vpn_gateway_peers table — a peering is simply a peer row
-// tagged type="vpc_peering" — so this resource reuses the parent gateway's
+// persist to the SAME vpn_gateway_peers table - a peering is simply a peer row
+// tagged type="vpc_peering" - so this resource reuses the parent gateway's
 // embedded peers[] for Read (client.GetVpnPeering) and the generic peer-removal
 // endpoint for Delete (client.DeleteVpnPeering), exactly like vpn_peer.go's
 // read-by-scan / delete-by-scan shape.
 //
 //   - the parent vpn_gateway_id lives in the URL path (Required + RequiresReplace);
-//   - the ONLY other input is remote_gateway_id (Required + RequiresReplace) —
+//   - the ONLY other input is remote_gateway_id (Required + RequiresReplace) -
 //     there is no update route for a peering, so every input is immutable;
-//   - there is NO individual peering SHOW/DELETE route — Read scans the
+//   - there is NO individual peering SHOW/DELETE route - Read scans the
 //     gateway SHOW's embedded peers[] (type == "vpc_peering") and Delete reuses
 //     the generic DELETE .../peer/{peerId};
-//   - the create is SYNCHRONOUS (no task/poll) — NO waiter;
+//   - the create is SYNCHRONOUS (no task/poll) - NO waiter;
 //   - the preshared_key the server generates for the pair is $hidden +
 //     encrypted, never returned by ANY response, and is not an accepted create
 //     input either, so it is NOT modelled as an attribute at all;
@@ -53,7 +53,7 @@ func NewVpnPeeringResource() resource.Resource {
 	return &vpnPeeringResource{}
 }
 
-// vpnPeeringResource manages an iaas_vpn_peering — a VPC-to-VPC WireGuard
+// vpnPeeringResource manages an iaas_vpn_peering - a VPC-to-VPC WireGuard
 // peering between two VPN gateways owned by the same account.
 type vpnPeeringResource struct {
 	client *client.Client
@@ -62,10 +62,10 @@ type vpnPeeringResource struct {
 // vpnPeeringModel maps the Terraform state/plan for iaas_vpn_peering.
 //
 //   - vpn_gateway_id (path, the LOCAL gateway) and remote_gateway_id (the ONLY
-//     create body field) are Required + RequiresReplace — there is no update
+//     create body field) are Required + RequiresReplace - there is no update
 //     route, so both are immutable.
 //   - every other attribute is plain Computed (never accepted as create input;
-//     100% server-derived) — name, type (always "vpc_peering"), public_key
+//     100% server-derived) - name, type (always "vpc_peering"), public_key
 //     (the REMOTE gateway's public key), endpoint (the remote gateway's
 //     public IP:port), tunnel_ip (allocated on the LOCAL gateway's tunnel
 //     subnet), allowed_ips (the remote VPC's CIDR + tunnel subnet), dns,
@@ -142,7 +142,7 @@ func (r *vpnPeeringResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			},
 			"type": schema.StringAttribute{
 				Computed:    true,
-				Description: "Always \"vpc_peering\" — distinguishes this peer row from a road_warrior/site_to_site iaas_vpn_peer.",
+				Description: "Always \"vpc_peering\" - distinguishes this peer row from a road_warrior/site_to_site iaas_vpn_peer.",
 			},
 			"public_key": schema.StringAttribute{
 				Computed:    true,
@@ -167,7 +167,7 @@ func (r *vpnPeeringResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			},
 			"dns": schema.StringAttribute{
 				Computed:    true,
-				Description: "DNS server advertised for this peering. Always empty — createPeering never sets it (DNS only applies to road_warrior client peers).",
+				Description: "DNS server advertised for this peering. Always empty - createPeering never sets it (DNS only applies to road_warrior client peers).",
 			},
 			"keepalive": schema.Int64Attribute{
 				Computed:    true,
@@ -232,7 +232,7 @@ func (r *vpnPeeringResource) Create(ctx context.Context, req resource.CreateRequ
 
 	// Read-back by scanning the gateway SHOW so state reflects the
 	// authoritative row. Fall back to the create response if the scan can't
-	// find it yet (defensive — the write is synchronous).
+	// find it yet (defensive - the write is synchronous).
 	obj, err := r.client.GetVpnPeering(ctx, gwID, id)
 	if err != nil {
 		obj = created
@@ -268,7 +268,7 @@ func (r *vpnPeeringResource) Read(ctx context.Context, req resource.ReadRequest,
 // Terraform recreates the resource instead of calling Update whenever either
 // changes. It still must satisfy resource.Resource; it simply persists the
 // plan (identical to the kubernetes_ssl_certificate all-RequiresReplace
-// pattern — there is no update route to call).
+// pattern - there is no update route to call).
 func (r *vpnPeeringResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan vpnPeeringModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -296,8 +296,8 @@ func (r *vpnPeeringResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 // ImportState implements COMPOSITE import: "<vpn_gateway_id>/<peering_id>".
 // remote_gateway_id (Required, non-Computed) is populated by the automatic
-// Read that follows import — the embedded peer object's remote_gateway_id
-// field — not by ImportState itself (mirrors kubernetes_ssl_certificate's
+// Read that follows import - the embedded peer object's remote_gateway_id
+// field - not by ImportState itself (mirrors kubernetes_ssl_certificate's
 // domain/source, which are populated the same way).
 func (r *vpnPeeringResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	gwID, peeringID, ok := strings.Cut(req.ID, "/")
@@ -321,7 +321,7 @@ func (r *vpnPeeringResource) ImportState(ctx context.Context, req resource.Impor
 // remote_gateway_id comes from the object's own remote_gateway_id field (set
 // server-side to the OTHER gateway's id). tunnel_ip and allowed_ips are fully
 // COMPUTED, non-Optional attributes with NO fallback to prior (see
-// vpnPeeringTunnelIPFromAPI / vpnPeeringAllowedIPsFromAPI below) — on Create,
+// vpnPeeringTunnelIPFromAPI / vpnPeeringAllowedIPsFromAPI below) - on Create,
 // prior is the PLAN, whose Computed fields are Unknown until read back, so
 // falling back to prior for those two would leak an Unknown value into state
 // the instant the API ever omitted/emptied them, tripping Terraform's
@@ -344,8 +344,8 @@ func vpnPeeringStateFromAPI(obj map[string]any, prior vpnPeeringModel) vpnPeerin
 	return m
 }
 
-// vpnPeeringTunnelIPFromAPI reads "tunnel_ip" — a fully COMPUTED, non-Optional
-// attribute — resolving purely from the API response (mirrors
+// vpnPeeringTunnelIPFromAPI reads "tunnel_ip" - a fully COMPUTED, non-Optional
+// attribute - resolving purely from the API response (mirrors
 // letsencryptDomainsFromAPI in kubernetes_ssl_certificate.go: no "prior"
 // fallback at all). An absent/null value settles to a KNOWN "" rather than a
 // stale/Unknown prior value.
@@ -362,7 +362,7 @@ func vpnPeeringTunnelIPFromAPI(obj map[string]any) types.String {
 
 // vpnPeeringAllowedIPsFromAPI converts the embedded "allowed_ips" JSON array of
 // CIDR strings into a types.Set. This is a fully COMPUTED, non-Optional
-// attribute, so — mirroring stringSetKnown in instance_vpc_attachment.go — an
+// attribute, so - mirroring stringSetKnown in instance_vpc_attachment.go - an
 // absent/malformed/empty array settles to a KNOWN EMPTY set rather than
 // falling back to "prior": on Create, prior is the PLAN, whose Computed
 // fields are Unknown until read back, so returning it here would leak an

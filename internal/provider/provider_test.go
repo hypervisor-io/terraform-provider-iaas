@@ -8,7 +8,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// resolveClient tests — pure unit tests, no network, no Terraform plumbing.
+// resolveClient tests - pure unit tests, no network, no Terraform plumbing.
 // ---------------------------------------------------------------------------
 
 // TestResolveClient_TokenFromEnv verifies that a missing config token is
@@ -91,7 +91,7 @@ func TestResolveClient_DefaultTimeout(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Schema sanity test — token attribute must be marked Sensitive.
+// Schema sanity test - token attribute must be marked Sensitive.
 // ---------------------------------------------------------------------------
 
 func TestSchema_TokenIsSensitive(t *testing.T) {

@@ -64,7 +64,7 @@ func TestDecodeList_MalformedJSON(t *testing.T) {
 }
 
 func TestDecodeList_DataNotArray(t *testing.T) {
-	// "data" field is a string, not an array — must error, not panic.
+	// "data" field is a string, not an array - must error, not panic.
 	body := []byte(`{"data":"nope"}`)
 
 	_, err := decodeList(body)
@@ -77,7 +77,7 @@ func TestDecodeList_DataNotArray(t *testing.T) {
 }
 
 func TestDecodeList_DataElementNotObject(t *testing.T) {
-	// data[1] is a scalar — must error mentioning the index.
+	// data[1] is a scalar - must error mentioning the index.
 	body := []byte(`{"data":[{"id":"a"},"scalar"]}`)
 
 	_, err := decodeList(body)
@@ -136,7 +136,7 @@ func TestDecodeItem_SuccessFalse(t *testing.T) {
 }
 
 func TestDecodeItem_VPCCreateNoObject(t *testing.T) {
-	// VPC create: {"success":true,"message":"queued"} — no sub-object for "vpc".
+	// VPC create: {"success":true,"message":"queued"} - no sub-object for "vpc".
 	// Must return the bare top-level map (not an error); caller detects missing id.
 	body := []byte(`{"success":true,"message":"queued"}`)
 

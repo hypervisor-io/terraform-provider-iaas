@@ -29,7 +29,7 @@ resource "iaas_ssh_key" "deploy" {
 }
 
 resource "iaas_instance" "web" {
-  # Immutable placement — changing any of these forces a new instance.
+  # Immutable placement - changing any of these forces a new instance.
   location_id = data.iaas_location.nyc.id
   plan_id     = data.iaas_plan.small.id
   image_id    = data.iaas_image.ubuntu.id
@@ -46,7 +46,7 @@ resource "iaas_instance" "web" {
   #     - nginx
   # EOT
 
-  # Updatable in place (PATCH) — NOT RequiresReplace.
+  # Updatable in place (PATCH) - NOT RequiresReplace.
   hostname     = "web-01"
   display_name = "Web 01"
 

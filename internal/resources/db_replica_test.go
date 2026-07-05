@@ -15,14 +15,14 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccDBReplica_basic — LIVE acceptance test (manual staging gate).
+// TestAccDBReplica_basic - LIVE acceptance test (manual staging gate).
 //
 // Requires an existing, ACTIVE primary managed database (in a VPC) plus a replica
 // plan and subnet:
 //
-//	IAAS_TEST_DB_PRIMARY_ID      — UUID of an active primary managed database
-//	IAAS_TEST_DB_REPLICA_PLAN_ID — UUID of a db_plan (storage >= primary's)
-//	IAAS_TEST_DB_VPC_SUBNET_ID   — UUID of a subnet in the primary's VPC
+//	IAAS_TEST_DB_PRIMARY_ID      - UUID of an active primary managed database
+//	IAAS_TEST_DB_REPLICA_PLAN_ID - UUID of a db_plan (storage >= primary's)
+//	IAAS_TEST_DB_VPC_SUBNET_ID   - UUID of a subnet in the primary's VPC
 //
 // ---------------------------------------------------------------------------
 func TestAccDBReplica_basic(t *testing.T) {
@@ -70,15 +70,15 @@ resource "iaas_db_replica" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitDBReplica_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitDBReplica_lifecycle - MOCK-backed lifecycle proof.
 //
-//  1. Create — POST /database/{primary}/replica returns {replica:{id,status:
+//  1. Create - POST /database/{primary}/replica returns {replica:{id,status:
 //     "deploying"}}; the replica SHOW (GET /database/{replicaID}) returns
 //     status="active" on the FIRST poll → instant convergence. Asserts the create
 //     body (db_plan_id + vpc_subnet_id [+ name]).
-//  2. Import — composite "primary_id/replica_id".
-//  3. Update — resize (db_plan_id change) asserts the PATCH body.
-//  4. Delete — DELETE /database/{replicaID}; next SHOW 404s.
+//  2. Import - composite "primary_id/replica_id".
+//  3. Update - resize (db_plan_id change) asserts the PATCH body.
+//  4. Delete - DELETE /database/{replicaID}; next SHOW 404s.
 //
 // ---------------------------------------------------------------------------
 func TestUnitDBReplica_lifecycle(t *testing.T) {

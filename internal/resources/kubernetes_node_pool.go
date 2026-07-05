@@ -22,7 +22,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — iaas_kubernetes_node_pool is a CHILD resource of
+// Interface assertions - iaas_kubernetes_node_pool is a CHILD resource of
 // iaas_kubernetes_cluster. It copies the golden child recipe (vpc_subnet):
 //   - the parent cluster UUID lives in the URL path (cluster_id, RequiresReplace),
 //   - import takes a COMPOSITE id "<cluster_id>/<pool_id>",
@@ -32,12 +32,12 @@ import (
 //
 // SYNC, no waiter: createPool inserts the pool row in a transaction and returns
 // it synchronously (HTTP 201 with id). Worker provisioning is dispatched
-// fire-and-forget and there is NO per-pool status/state column to poll — exactly
+// fire-and-forget and there is NO per-pool status/state column to poll - exactly
 // like vpc_subnet's async IP generation with no status field. So Create is
 // synchronous (no timeouts block, no waiter); the live worker count surfaces on
 // later reads via the LIST's vm_refs_count.
 //
-// Actions NOT modelled: reassign (promote to default — mutates the server-managed
+// Actions NOT modelled: reassign (promote to default - mutates the server-managed
 // is_default flag) and cancel-pending (clear a single node's deletion marker).
 // Both are operational, not declarative IaC state, so neither is exposed.
 var (
@@ -52,7 +52,7 @@ func NewKubernetesNodePoolResource() resource.Resource {
 	return &kubernetesNodePoolResource{}
 }
 
-// kubernetesNodePoolResource manages an iaas_kubernetes_node_pool — an additional
+// kubernetesNodePoolResource manages an iaas_kubernetes_node_pool - an additional
 // worker node pool on a managed Kubernetes cluster, each backed by its own
 // instance plan, sizing bounds, labels, taints and autoscaling config.
 type kubernetesNodePoolResource struct {
@@ -120,7 +120,7 @@ func (r *kubernetesNodePoolResource) Schema(_ context.Context, _ resource.Schema
 			"endpoints (workers/scale, workers/labels, workers/autoscaling) are deprecated backward-" +
 			"compat shims that resolve the default pool and delegate to the same per-pool service this " +
 			"resource drives, so they are not modelled separately. NOTE: for user-driven " +
-			"edits the server keeps min_size and target_count in lockstep — set them to the same value " +
+			"edits the server keeps min_size and target_count in lockstep - set them to the same value " +
 			"(supplying only one mirrors it to the other).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -149,7 +149,7 @@ func (r *kubernetesNodePoolResource) Schema(_ context.Context, _ resource.Schema
 			"instance_plan_id": schema.StringAttribute{
 				Required: true,
 				Description: "UUID of the instance plan backing the workers in this pool. Updatable in " +
-					"place, but ONLY while the pool has no live workers — the API rejects a plan change " +
+					"place, but ONLY while the pool has no live workers - the API rejects a plan change " +
 					"on a pool with running nodes (scale the pool to zero first).",
 			},
 			"min_size": schema.Int64Attribute{
@@ -169,7 +169,7 @@ func (r *kubernetesNodePoolResource) Schema(_ context.Context, _ resource.Schema
 				Computed: true,
 				Default:  int64default.StaticInt64(0),
 				Description: "Desired worker count for this pool (0-1000, default 0). Changing it scales " +
-					"the pool — workers are actually provisioned or drained. For user edits the server " +
+					"the pool - workers are actually provisioned or drained. For user edits the server " +
 					"keeps this equal to min_size. Updatable in place.",
 			},
 			"weight": schema.Int64Attribute{
@@ -251,7 +251,7 @@ func (r *kubernetesNodePoolResource) Configure(_ context.Context, req resource.C
 }
 
 // Create provisions a node pool under its parent cluster. The create is
-// synchronous — the response carries the pool with its id, which we read back so
+// synchronous - the response carries the pool with its id, which we read back so
 // state reflects the server-applied defaults (min/max/target, is_default) and the
 // (initially empty) live node count. A STABLE idempotency key derived from the
 // immutable create inputs makes a lost-response retry safe.
@@ -621,7 +621,7 @@ func apiToTaintsList(raw any) (types.List, diag.Diagnostics) {
 		}
 		key, _ := t["key"].(string)
 		effect, _ := t["effect"].(string)
-		// A PRESENT value key (even "") is a real taint value — e.g. a
+		// A PRESENT value key (even "") is a real taint value - e.g. a
 		// NoSchedule taint with no value is valid. Only an ABSENT key → null.
 		valueAttr := types.StringNull()
 		if v, ok := t["value"].(string); ok {

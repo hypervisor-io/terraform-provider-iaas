@@ -14,7 +14,7 @@ import (
 //
 //	LIST    GET    /kubernetes/cluster/{clusterID}/ssl-certificates
 //	                → {success,certs:[...]} (BARE array under "certs", NOT a
-//	                  Laravel paginator). ONLY metadata is returned — the
+//	                  Laravel paginator). ONLY metadata is returned - the
 //	                  index() query explicitly selects
 //	                  [id,name,type,domain,san_domains,expires_at,
 //	                  letsencrypt_status,letsencrypt_error,letsencrypt_domains,
@@ -37,7 +37,7 @@ import (
 //	                (note: SINGULAR "ssl-certificate") → 200 {success,message}
 //	                [idempotency.user]
 //
-// There is NO per-cert SHOW route and NO update route — every field is
+// There is NO per-cert SHOW route and NO update route - every field is
 // immutable (rotate by replacing). GetKubernetesSslCert therefore lists and
 // matches by id, synthesising a 404 *APIError (IsNotFound) when absent.
 //
@@ -45,7 +45,7 @@ import (
 // present in the LIST response (unlike the plain iaas_lb_certificate, whose
 // LB-SHOW-embedded certificates[] DOES include certificate/chain). The
 // resource must therefore echo ALL THREE from the plan and preserve them
-// verbatim across reads — never overwrite them from an API object.
+// verbatim across reads - never overwrite them from an API object.
 //
 // An empty-id guard is applied on every path-id argument (consistency).
 
@@ -68,8 +68,8 @@ func (c *Client) CreateKubernetesSslCert(ctx context.Context, clusterID string, 
 
 // ListKubernetesSslCerts returns every certificate on the cluster's CP load
 // balancer (empty list if the cluster has no CP LB yet). The index returns
-// {"certs":[...]} — a BARE array under the named "certs" key (NOT a
-// paginator) — so doItem(key="") fetches the bare envelope (surfacing C3
+// {"certs":[...]} - a BARE array under the named "certs" key (NOT a
+// paginator) - so doItem(key="") fetches the bare envelope (surfacing C3
 // success:false) and the "certs" array is flattened.
 func (c *Client) ListKubernetesSslCerts(ctx context.Context, clusterID string) ([]map[string]any, error) {
 	if clusterID == "" {
@@ -92,7 +92,7 @@ func (c *Client) ListKubernetesSslCerts(ctx context.Context, clusterID string) (
 
 // GetKubernetesSslCert finds a single certificate by id via read-by-scan over
 // the cluster's certificate LIST (there is NO per-cert SHOW route). A cert id
-// absent from the list — or a non-2xx on the parent cluster's LIST — surfaces
+// absent from the list - or a non-2xx on the parent cluster's LIST - surfaces
 // as an *APIError with Status 404 (recognised by IsNotFound), so the
 // resource's Read removes the row from state and Terraform plans a recreate.
 func (c *Client) GetKubernetesSslCert(ctx context.Context, clusterID, certID string) (map[string]any, error) {
@@ -116,7 +116,7 @@ func (c *Client) GetKubernetesSslCert(ctx context.Context, clusterID, certID str
 
 // DeleteKubernetesSslCert removes a certificate from the cluster's CP load
 // balancer. The route is a DELETE to the SINGULAR "ssl-certificate" path and
-// carries idempotency.user, so — like DeleteKubernetesNodePool — this inlines
+// carries idempotency.user, so - like DeleteKubernetesNodePool - this inlines
 // doWithHeaders + responseError + decodeItem("") rather than doVoid (which has
 // no header seam).
 func (c *Client) DeleteKubernetesSslCert(ctx context.Context, clusterID, certID, idemKey string) error {

@@ -17,7 +17,7 @@ resource "iaas_vpc_subnet" "private" {
 }
 
 resource "iaas_nat_gateway" "example" {
-  # Parent VPC id — part of the API path. Changing this forces a new resource.
+  # Parent VPC id - part of the API path. Changing this forces a new resource.
   vpc_id = iaas_vpc.example.id
 
   # Optional. Lowercase alphanumeric and dashes. Defaults to "natgw-<vpc name>".

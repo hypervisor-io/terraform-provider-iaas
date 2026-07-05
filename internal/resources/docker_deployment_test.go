@@ -14,7 +14,7 @@ import (
 
 // dockerDeploymentObject builds a serialized deployment object matching the
 // shape returned by both POST /instance/{id}/docker(/custom) (under the
-// "deployment" key) and GET /instance/{id}/docker ("deployments" array) —
+// "deployment" key) and GET /instance/{id}/docker ("deployments" array) -
 // both carry the same base columns per DockerService/DockerDeployment.
 func dockerDeploymentObject(id, instanceID, appSlug, appName, projectName, status string) map[string]any {
 	return map[string]any{
@@ -32,7 +32,7 @@ func dockerDeploymentObject(id, instanceID, appSlug, appName, projectName, statu
 
 // TestUnitDockerDeployment_rejectAppWithComposeURL is a NEGATIVE
 // ConfigValidators test: source = "app" with compose_url set must be rejected
-// at PLAN time — no API call is ever made.
+// at PLAN time - no API call is ever made.
 func TestUnitDockerDeployment_rejectAppWithComposeURL(t *testing.T) {
 	ensureTFBinary(t)
 
@@ -86,16 +86,16 @@ resource "iaas_docker_deployment" "bad" {
 // TestUnitDockerDeployment_lifecycleApp drives the full CHILD lifecycle for
 // source = "app" (catalog app):
 //
-//  1. Docker is NOT yet installed on the instance (docker_enabled starts 0) —
+//  1. Docker is NOT yet installed on the instance (docker_enabled starts 0) -
 //     Create must call POST .../docker/install first, then poll the INDEX
 //     endpoint until docker_enabled flips to 1, THEN deploy.
-//  2. Create — POST .../docker with app_slug/env_variables/port_mappings;
+//  2. Create - POST .../docker with app_slug/env_variables/port_mappings;
 //     asserts the create body. The deployment starts "deploying" and the
 //     mock reports "running" from the very first GET .../docker poll so the
 //     waiter converges on its first check (no sleep).
-//  3. Read — lists within the instance and matches by id.
-//  4. Import — composite "<instance_id>/<deployment_id>".
-//  5. Delete — DELETE .../docker/{depID}.
+//  3. Read - lists within the instance and matches by id.
+//  4. Import - composite "<instance_id>/<deployment_id>".
+//  5. Delete - DELETE .../docker/{depID}.
 func TestUnitDockerDeployment_lifecycleApp(t *testing.T) {
 	ensureTFBinary(t)
 
@@ -259,7 +259,7 @@ resource "iaas_docker_deployment" "test" {
 // TestUnitDockerDeployment_lifecycleCompose drives the CHILD lifecycle for
 // source = "compose" (custom compose fetched from a URL). Docker is ALREADY
 // installed (docker_enabled starts 1), so Create must NOT call
-// POST .../docker/install at all — asserted at the end.
+// POST .../docker/install at all - asserted at the end.
 func TestUnitDockerDeployment_lifecycleCompose(t *testing.T) {
 	ensureTFBinary(t)
 	t.Setenv("IAAS_INSTANCE_POLL_INTERVAL", "1ms")
@@ -278,8 +278,8 @@ func TestUnitDockerDeployment_lifecycleCompose(t *testing.T) {
 	exists := false
 
 	// composeDeployment mirrors dockerDeploymentObject but additionally sets
-	// metadata.compose_url — the only place deployCustom persists the source
-	// URL (app_slug is hardcoded to the "custom" sentinel, not the URL) — so
+	// metadata.compose_url - the only place deployCustom persists the source
+	// URL (app_slug is hardcoded to the "custom" sentinel, not the URL) - so
 	// dockerComposeURLFromAPI can recover it on read/import.
 	composeDeployment := func(status string) map[string]any {
 		obj := dockerDeploymentObject(depID, instanceID, "custom", appName, projectName, status)

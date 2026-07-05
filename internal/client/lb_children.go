@@ -3,7 +3,7 @@ package client
 // Shared read-by-scan helpers for the load balancer CHILD resources (frontends,
 // backends, targets, certificates, routing rules).
 //
-// None of the LB children have an individual SHOW route — they are all EMBEDDED
+// None of the LB children have an individual SHOW route - they are all EMBEDDED
 // in the parent load balancer SHOW payload:
 //
 //	load_balancer.frontends[]                  (each with routing_rules[])

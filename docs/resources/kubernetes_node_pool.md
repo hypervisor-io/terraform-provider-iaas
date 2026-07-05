@@ -3,12 +3,12 @@
 page_title: "iaas_kubernetes_node_pool Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a worker node pool on a managed Kubernetes cluster. A node pool is a child of a cluster: its parent cluster_id is part of the API path, so changing it forces a new resource. Each pool is backed by its own instance plan and carries its own sizing bounds (min_size/max_size), desired worker count (target_count), labels, taints and autoscaling toggle. Creation is synchronous (the pool row is recorded immediately); worker VMs are then provisioned asynchronously in the background, so the live worker count (current_node_count) populates on later reads. The first pool on a cluster is auto-promoted to the default (is_default); promoting a different pool to default and cancelling pending node deletions are operational actions handled outside Terraform. This resource ALSO manages the cluster's DEFAULT worker pool (is_default=true): import the default pool by its "<cluster_id>/<pool_id>" id and manage its scale (target_count), labels/taints and autoscaling (min_size/max_size/autoscaling_enabled) in place. The cluster-level worker endpoints (workers/scale, workers/labels, workers/autoscaling) are deprecated backward-compat shims that resolve the default pool and delegate to the same per-pool service this resource drives, so they are not modelled separately. NOTE: for user-driven edits the server keeps min_size and target_count in lockstep — set them to the same value (supplying only one mirrors it to the other).
+  Manages a worker node pool on a managed Kubernetes cluster. A node pool is a child of a cluster: its parent cluster_id is part of the API path, so changing it forces a new resource. Each pool is backed by its own instance plan and carries its own sizing bounds (min_size/max_size), desired worker count (target_count), labels, taints and autoscaling toggle. Creation is synchronous (the pool row is recorded immediately); worker VMs are then provisioned asynchronously in the background, so the live worker count (current_node_count) populates on later reads. The first pool on a cluster is auto-promoted to the default (is_default); promoting a different pool to default and cancelling pending node deletions are operational actions handled outside Terraform. This resource ALSO manages the cluster's DEFAULT worker pool (is_default=true): import the default pool by its "<cluster_id>/<pool_id>" id and manage its scale (target_count), labels/taints and autoscaling (min_size/max_size/autoscaling_enabled) in place. The cluster-level worker endpoints (workers/scale, workers/labels, workers/autoscaling) are deprecated backward-compat shims that resolve the default pool and delegate to the same per-pool service this resource drives, so they are not modelled separately. NOTE: for user-driven edits the server keeps min_size and target_count in lockstep - set them to the same value (supplying only one mirrors it to the other).
 ---
 
 # iaas_kubernetes_node_pool (Resource)
 
-Manages a worker node pool on a managed Kubernetes cluster. A node pool is a child of a cluster: its parent cluster_id is part of the API path, so changing it forces a new resource. Each pool is backed by its own instance plan and carries its own sizing bounds (min_size/max_size), desired worker count (target_count), labels, taints and autoscaling toggle. Creation is synchronous (the pool row is recorded immediately); worker VMs are then provisioned asynchronously in the background, so the live worker count (current_node_count) populates on later reads. The first pool on a cluster is auto-promoted to the default (is_default); promoting a different pool to default and cancelling pending node deletions are operational actions handled outside Terraform. This resource ALSO manages the cluster's DEFAULT worker pool (is_default=true): import the default pool by its "<cluster_id>/<pool_id>" id and manage its scale (target_count), labels/taints and autoscaling (min_size/max_size/autoscaling_enabled) in place. The cluster-level worker endpoints (workers/scale, workers/labels, workers/autoscaling) are deprecated backward-compat shims that resolve the default pool and delegate to the same per-pool service this resource drives, so they are not modelled separately. NOTE: for user-driven edits the server keeps min_size and target_count in lockstep — set them to the same value (supplying only one mirrors it to the other).
+Manages a worker node pool on a managed Kubernetes cluster. A node pool is a child of a cluster: its parent cluster_id is part of the API path, so changing it forces a new resource. Each pool is backed by its own instance plan and carries its own sizing bounds (min_size/max_size), desired worker count (target_count), labels, taints and autoscaling toggle. Creation is synchronous (the pool row is recorded immediately); worker VMs are then provisioned asynchronously in the background, so the live worker count (current_node_count) populates on later reads. The first pool on a cluster is auto-promoted to the default (is_default); promoting a different pool to default and cancelling pending node deletions are operational actions handled outside Terraform. This resource ALSO manages the cluster's DEFAULT worker pool (is_default=true): import the default pool by its "<cluster_id>/<pool_id>" id and manage its scale (target_count), labels/taints and autoscaling (min_size/max_size/autoscaling_enabled) in place. The cluster-level worker endpoints (workers/scale, workers/labels, workers/autoscaling) are deprecated backward-compat shims that resolve the default pool and delegate to the same per-pool service this resource drives, so they are not modelled separately. NOTE: for user-driven edits the server keeps min_size and target_count in lockstep - set them to the same value (supplying only one mirrors it to the other).
 
 ## Example Usage
 
@@ -23,14 +23,14 @@ Manages a worker node pool on a managed Kubernetes cluster. A node pool is a chi
 # (current_node_count) populates on subsequent reads.
 #
 # NOTE: for user-driven edits the API keeps min_size and target_count in lockstep
-# — set them to the same value (supplying only one mirrors it to the other).
+# - set them to the same value (supplying only one mirrors it to the other).
 
 resource "iaas_kubernetes_node_pool" "gpu" {
   cluster_id       = iaas_kubernetes_cluster.prod.id
   name             = "gpu-pool" # DNS-1123 style, unique within the cluster
   instance_plan_id = "99999999-9999-9999-9999-999999999999"
 
-  # Sizing — min_size and target_count are kept equal for user edits.
+  # Sizing - min_size and target_count are kept equal for user edits.
   min_size     = 2
   max_size     = 5
   target_count = 2
@@ -78,7 +78,7 @@ output "gpu_pool_nodes" {
 ### Required
 
 - `cluster_id` (String) UUID of the parent Kubernetes cluster this pool belongs to. This value is part of the API request path, so changing it forces a new resource.
-- `instance_plan_id` (String) UUID of the instance plan backing the workers in this pool. Updatable in place, but ONLY while the pool has no live workers — the API rejects a plan change on a pool with running nodes (scale the pool to zero first).
+- `instance_plan_id` (String) UUID of the instance plan backing the workers in this pool. Updatable in place, but ONLY while the pool has no live workers - the API rejects a plan change on a pool with running nodes (scale the pool to zero first).
 - `name` (String) DNS-1123-style pool name (lowercase letters, digits and hyphens; must start with a letter and end alphanumeric; max 64), unique within the cluster. Updatable in place.
 
 ### Optional
@@ -88,7 +88,7 @@ output "gpu_pool_nodes" {
 - `max_size` (Number) Autoscaling maximum (1-1000, default 3; must be >= min_size). Updatable in place.
 - `min_size` (Number) Autoscaling minimum (0-1000, default 0). For user edits the server keeps this equal to target_count. Updatable in place.
 - `taints` (Attributes List) Kubernetes node taints applied to every node in this pool. Updating sends the full replacement list. Each entry sets key, optional value, and effect. (see [below for nested schema](#nestedatt--taints))
-- `target_count` (Number) Desired worker count for this pool (0-1000, default 0). Changing it scales the pool — workers are actually provisioned or drained. For user edits the server keeps this equal to min_size. Updatable in place.
+- `target_count` (Number) Desired worker count for this pool (0-1000, default 0). Changing it scales the pool - workers are actually provisioned or drained. For user edits the server keeps this equal to min_size. Updatable in place.
 - `weight` (Number) Scaler weight when several pools are eligible to grow (1-100, default 50; higher = preferred). Updatable in place.
 
 ### Read-Only

@@ -16,7 +16,7 @@
 // [MockServer.Handle] (and [MockServer.HandleJSON]) accept the bare resource
 // path WITHOUT the "/api" prefix (e.g. "/ssh-keys"). Internally the server
 // prepends "/api" before storing the handler key so that the lookup against the
-// actual request path — which includes "/api" — succeeds.
+// actual request path - which includes "/api" - succeeds.
 //
 // Example:
 //
@@ -121,7 +121,7 @@ func (m *MockServer) dispatch(w http.ResponseWriter, r *http.Request) {
 
 // Handle registers a handler for the given method and bare resource path.
 //
-// path must begin with "/" and must NOT include the "/api" prefix — e.g.
+// path must begin with "/" and must NOT include the "/api" prefix - e.g.
 // "/ssh-keys", not "/api/ssh-keys". The MockServer prepends "/api" internally
 // so that lookup matches the actual request URL built by the provider client.
 //

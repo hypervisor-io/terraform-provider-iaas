@@ -33,7 +33,7 @@ func TestCreateKubernetesSslCert_Success(t *testing.T) {
 		gotIdemKey = r.Header.Get("Idempotency-Key")
 		_ = json.NewDecoder(r.Body).Decode(&gotBody)
 		w.WriteHeader(http.StatusOK)
-		// private_key is $hidden — NOT echoed back. "type" is ALSO absent here on
+		// private_key is $hidden - NOT echoed back. "type" is ALSO absent here on
 		// purpose: create() only populates attributes explicitly passed, so a
 		// DB-defaulted column (type) is absent from the in-memory model until the
 		// row is re-queried by the LIST endpoint.
@@ -125,7 +125,7 @@ func TestCreateKubernetesSslCert_EmptyClusterID(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 // TestListKubernetesSslCerts_Success verifies the index unwraps the named
-// "certs" key, which is a BARE ARRAY (not a Laravel paginator) — controller
+// "certs" key, which is a BARE ARRAY (not a Laravel paginator) - controller
 // `index` returns `{"success":true,"certs":[...]}`.
 func TestListKubernetesSslCerts_Success(t *testing.T) {
 	var gotMethod, gotPath string
@@ -187,7 +187,7 @@ func TestListKubernetesSslCerts_EmptyClusterID(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// GetKubernetesSslCert (list-and-match — no SHOW endpoint exists)
+// GetKubernetesSslCert (list-and-match - no SHOW endpoint exists)
 // ---------------------------------------------------------------------------
 
 // TestGetKubernetesSslCert_Found verifies the read-by-scan over the cert list

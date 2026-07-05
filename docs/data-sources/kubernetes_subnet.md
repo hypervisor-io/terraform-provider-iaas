@@ -34,7 +34,7 @@ data "iaas_kubernetes_subnet" "cp" {
 
 ### Optional
 
-- `type` (String) Optional subnet type filter — `private` (control-plane subnets) or `public`. Omit to search all types.
+- `type` (String) Optional subnet type filter - `private` (control-plane subnets) or `public`. Omit to search all types.
 
 ### Read-Only
 

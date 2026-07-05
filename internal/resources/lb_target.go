@@ -32,7 +32,7 @@ func NewLBTargetResource() resource.Resource {
 	return &lbTargetResource{}
 }
 
-// lbTargetResource manages an iaas_lb_target — a backend member of a load balancer.
+// lbTargetResource manages an iaas_lb_target - a backend member of a load balancer.
 type lbTargetResource struct {
 	client *client.Client
 }
@@ -95,7 +95,7 @@ func (r *lbTargetResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			},
 			"instance_id": schema.StringAttribute{
 				Optional: true,
-				Description: "Optional UUID of the instance this target points at (link/tracking only — " +
+				Description: "Optional UUID of the instance this target points at (link/tracking only - " +
 					"the API does NOT derive target_ip from it). Changing it forces a new resource. " +
 					"(API field: target_instance_id.)",
 				PlanModifiers: []planmodifier.String{

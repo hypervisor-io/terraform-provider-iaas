@@ -3,14 +3,14 @@
 page_title: "iaas_db_parameter_group Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a database parameter group — a named, engine-scoped collection of key→value configuration parameters that can be applied to a managed database. The engine is immutable (changing it forces a new resource); the name and parameters map can be updated in place. Updating parameters sends the full replacement map to the API.
+  Manages a database parameter group - a named, engine-scoped collection of key→value configuration parameters that can be applied to a managed database. The engine is immutable (changing it forces a new resource); the name and parameters map can be updated in place. Updating parameters sends the full replacement map to the API.
   Supported parameters: Only suffix-free parameters may be managed here (e.g. max_connections, wait_timeout). Memory-size parameters whose values receive a unit suffix from the server (e.g. innodb_buffer_pool_size, shared_buffers) are not supported via Terraform and must be configured through the control panel. Attempting to use a suffix-bearing parameter produces a plan-time error.
   Parameter groups are a billed add-on: if billing is disabled, all operations fail with HTTP 403. To apply a parameter group to a database, use the dedicated PATCH /database/{id}/parameter-group API action (not yet modelled as a Terraform attribute; planned for a future iaas_managed_database update).
 ---
 
 # iaas_db_parameter_group (Resource)
 
-Manages a database parameter group — a named, engine-scoped collection of key→value configuration parameters that can be applied to a managed database. The engine is immutable (changing it forces a new resource); the name and parameters map can be updated in place. Updating parameters sends the full replacement map to the API.
+Manages a database parameter group - a named, engine-scoped collection of key→value configuration parameters that can be applied to a managed database. The engine is immutable (changing it forces a new resource); the name and parameters map can be updated in place. Updating parameters sends the full replacement map to the API.
 
 **Supported parameters:** Only suffix-free parameters may be managed here (e.g. `max_connections`, `wait_timeout`). Memory-size parameters whose values receive a unit suffix from the server (e.g. `innodb_buffer_pool_size`, `shared_buffers`) are not supported via Terraform and must be configured through the control panel. Attempting to use a suffix-bearing parameter produces a plan-time error.
 
@@ -24,15 +24,15 @@ Parameter groups are a billed add-on: if billing is disabled, all operations fai
 # The engine is immutable (changing it forces a new resource).
 # Parameters are replaced in full on each update.
 #
-# IMPORTANT — only suffix-free parameters are supported via Terraform.
+# IMPORTANT - only suffix-free parameters are supported via Terraform.
 # Memory-size parameters (innodb_buffer_pool_size, innodb_log_file_size,
 # innodb_redo_log_capacity, max_allowed_packet, tmp_table_size,
 # max_heap_table_size for MySQL/MariaDB; shared_buffers, effective_cache_size,
 # work_mem, maintenance_work_mem, wal_buffers, max_wal_size for PostgreSQL)
 # receive a non-idempotent unit suffix from the server on every write and
-# cannot be managed here — set them via the control panel instead.
+# cannot be managed here - set them via the control panel instead.
 #
-# Parameter groups are a billed add-on — billing must be enabled on the account.
+# Parameter groups are a billed add-on - billing must be enabled on the account.
 #
 # Applying a parameter group to a managed database:
 #   Use the PATCH /database/{id}/parameter-group API endpoint (not yet modelled
@@ -74,7 +74,7 @@ resource "iaas_db_parameter_group" "pg_custom" {
 
 - `engine` (String) Database engine this group targets: "mysql", "mariadb", or "postgresql". Parameter keys are validated against the engine's catalog. Immutable; changing it forces a new resource.
 - `name` (String) Display name for the parameter group. Maximum 255 characters. Updatable in place.
-- `parameters` (Map of String) Map of database configuration parameter names to their string values. Only suffix-free parameters are supported (e.g. `max_connections`, `wait_timeout`, `slow_query_log`). Memory-size parameters whose values receive a server-appended unit suffix (e.g. `innodb_buffer_pool_size`, `innodb_log_file_size`, `innodb_redo_log_capacity`, `max_allowed_packet`, `tmp_table_size`, `max_heap_table_size` for MySQL/MariaDB; `shared_buffers`, `effective_cache_size`, `work_mem`, `maintenance_work_mem`, `wal_buffers`, `max_wal_size` for PostgreSQL) cannot be managed via Terraform reliably — set them via the control panel. Updating this attribute sends the full replacement map; use an empty map (`{}`) to clear all custom parameters.
+- `parameters` (Map of String) Map of database configuration parameter names to their string values. Only suffix-free parameters are supported (e.g. `max_connections`, `wait_timeout`, `slow_query_log`). Memory-size parameters whose values receive a server-appended unit suffix (e.g. `innodb_buffer_pool_size`, `innodb_log_file_size`, `innodb_redo_log_capacity`, `max_allowed_packet`, `tmp_table_size`, `max_heap_table_size` for MySQL/MariaDB; `shared_buffers`, `effective_cache_size`, `work_mem`, `maintenance_work_mem`, `wal_buffers`, `max_wal_size` for PostgreSQL) cannot be managed via Terraform reliably - set them via the control panel. Updating this attribute sends the full replacement map; use an empty map (`{}`) to clear all custom parameters.
 
 ### Read-Only
 

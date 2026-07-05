@@ -19,7 +19,7 @@ import (
 //
 //	INDEX   GET    /vpc/{vpcId}/nat-gateway              → {success,vpc,gateway|null}
 //	                                                      (gateway is a SINGLE object
-//	                                                       or null — one per VPC)
+//	                                                       or null - one per VPC)
 //	CREATE  POST   /vpc/{vpcId}/nat-gateway              body {name?, nat_enabled?,
 //	                                                      subnet_ids?:[uuid]}
 //	                                                      → {success,message,gateway:{id,
@@ -53,7 +53,7 @@ import (
 //     the slave-side NAT reconfiguration is a slave-pulled sync, not waited on.
 //   - DELETE dispatches a slave teardown task, flips status→"deleting", releases
 //     the public IP, detaches all subnets, and SOFT-DELETES the row immediately,
-//     so a subsequent SHOW 404s right away — no delete waiter is required.
+//     so a subsequent SHOW 404s right away - no delete waiter is required.
 //
 // Feature gating & errors (controller-verified):
 //   - These routes are NOT wrapped in the billing.enabled middleware (unlike
@@ -135,7 +135,7 @@ func (c *Client) UpdateNatGateway(ctx context.Context, vpcID, id string, fields 
 
 // DeleteNatGateway deletes the NAT gateway: the controller dispatches a slave
 // teardown task, releases the public IP, detaches all subnets, and soft-deletes
-// the row immediately, so a subsequent SHOW 404s right away — no delete waiter
+// the row immediately, so a subsequent SHOW 404s right away - no delete waiter
 // is required. A failure is signalled with success:false at HTTP 200, so doVoid
 // checks the flag.
 func (c *Client) DeleteNatGateway(ctx context.Context, vpcID, id string) error {

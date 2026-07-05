@@ -38,7 +38,7 @@ import (
 //     size/plan) and returns the fresh volume immediately; the hot-(de)attach / resize
 //     slave task is fire-and-forget and not waited on by the API.
 //   - DELETE soft-deletes the row immediately (and dispatches a slave delete task), so a
-//     subsequent SHOW 404s right away — no delete waiter is required.
+//     subsequent SHOW 404s right away - no delete waiter is required.
 //   - SNAPSHOT CREATE/DELETE are ASYNC: they enqueue a backup-queue job and return the
 //     QUEUE object, not the snapshot. The snapshot row starts status="pending" and is
 //     embedded in the volume SHOW under snapshots[]; there is no individual snapshot
@@ -157,7 +157,7 @@ func (c *Client) DeleteVolumeSnapshot(ctx context.Context, volumeID, snapshotID 
 }
 
 // GetVolumeSnapshot resolves a single snapshot by scanning the parent volume's
-// embedded snapshots[] array (there is NO individual snapshot SHOW route — the
+// embedded snapshots[] array (there is NO individual snapshot SHOW route - the
 // SHOW endpoint embeds the snapshots). It returns the matching snapshot object
 // or a 404-shaped *APIError (IsNotFound = true) when the id is absent (e.g. the
 // snapshot was deleted, or its delete-queue finished). This doubles as the
@@ -187,7 +187,7 @@ func (c *Client) GetVolumeSnapshot(ctx context.Context, volumeID, snapshotID str
 // embedded snapshots[] array. The snapshot CREATE endpoint returns the backup
 // QUEUE (not the snapshot id), so the resource resolves the freshly-created
 // snapshot by the unique name it supplied. Returns an error when more than one
-// snapshot shares the given name (ambiguous — callers MUST use unique names per
+// snapshot shares the given name (ambiguous - callers MUST use unique names per
 // volume). Returns a 404-shaped *APIError when no snapshot with that name exists.
 func (c *Client) FindVolumeSnapshotByName(ctx context.Context, volumeID, name string) (map[string]any, error) {
 	if volumeID == "" {

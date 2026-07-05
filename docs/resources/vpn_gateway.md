@@ -3,12 +3,12 @@
 page_title: "iaas_vpn_gateway Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a VPC VPN gateway — a WireGuard endpoint backed by a dedicated VM instance, deployed into one of the VPC's PUBLIC subnets, giving remote clients (road-warrior) and remote sites (site-to-site / VPC peering) encrypted access to the VPC's private networks. A VPC can have AT MOST ONE VPN gateway. The parent vpc_id is part of the create API path, so changing it forces a new resource. Creation is ASYNCHRONOUS: the gateway record is created (status="deploying"), a public IP is allocated, a backing VM is deployed, and this resource waits for the slave to report status="active" (a failed deploy ends in status="error"). The gateway itself has no in-place updates — every input forces replacement; its peers are managed via separate iaas_vpn_peer resources. The feature must be enabled for the VPC's location; if it is not (or the per-account VPN gateway quota is reached, or no public IP is available) the create fails with a clear message.
+  Manages a VPC VPN gateway - a WireGuard endpoint backed by a dedicated VM instance, deployed into one of the VPC's PUBLIC subnets, giving remote clients (road-warrior) and remote sites (site-to-site / VPC peering) encrypted access to the VPC's private networks. A VPC can have AT MOST ONE VPN gateway. The parent vpc_id is part of the create API path, so changing it forces a new resource. Creation is ASYNCHRONOUS: the gateway record is created (status="deploying"), a public IP is allocated, a backing VM is deployed, and this resource waits for the slave to report status="active" (a failed deploy ends in status="error"). The gateway itself has no in-place updates - every input forces replacement; its peers are managed via separate iaas_vpn_peer resources. The feature must be enabled for the VPC's location; if it is not (or the per-account VPN gateway quota is reached, or no public IP is available) the create fails with a clear message.
 ---
 
 # iaas_vpn_gateway (Resource)
 
-Manages a VPC VPN gateway — a WireGuard endpoint backed by a dedicated VM instance, deployed into one of the VPC's PUBLIC subnets, giving remote clients (road-warrior) and remote sites (site-to-site / VPC peering) encrypted access to the VPC's private networks. A VPC can have AT MOST ONE VPN gateway. The parent vpc_id is part of the create API path, so changing it forces a new resource. Creation is ASYNCHRONOUS: the gateway record is created (status="deploying"), a public IP is allocated, a backing VM is deployed, and this resource waits for the slave to report status="active" (a failed deploy ends in status="error"). The gateway itself has no in-place updates — every input forces replacement; its peers are managed via separate iaas_vpn_peer resources. The feature must be enabled for the VPC's location; if it is not (or the per-account VPN gateway quota is reached, or no public IP is available) the create fails with a clear message.
+Manages a VPC VPN gateway - a WireGuard endpoint backed by a dedicated VM instance, deployed into one of the VPC's PUBLIC subnets, giving remote clients (road-warrior) and remote sites (site-to-site / VPC peering) encrypted access to the VPC's private networks. A VPC can have AT MOST ONE VPN gateway. The parent vpc_id is part of the create API path, so changing it forces a new resource. Creation is ASYNCHRONOUS: the gateway record is created (status="deploying"), a public IP is allocated, a backing VM is deployed, and this resource waits for the slave to report status="active" (a failed deploy ends in status="error"). The gateway itself has no in-place updates - every input forces replacement; its peers are managed via separate iaas_vpn_peer resources. The feature must be enabled for the VPC's location; if it is not (or the per-account VPN gateway quota is reached, or no public IP is available) the create fails with a clear message.
 
 ## Example Usage
 
@@ -34,14 +34,14 @@ resource "iaas_vpc_subnet" "public" {
 }
 
 resource "iaas_vpn_gateway" "example" {
-  # Parent VPC id — part of the create API path. Changing this forces a new resource.
+  # Parent VPC id - part of the create API path. Changing this forces a new resource.
   vpc_id = iaas_vpc.example.id
 
   # Required. The VPN gateway plan (sizing/pricing of the backing VM).
   vpngw_plan_id = "11111111-1111-1111-1111-111111111111"
 
   # Required. The PUBLIC subnet to deploy the gateway's backing VM into. This is a
-  # WRITE-ONLY input consumed at deploy time — it is NOT returned by the read
+  # WRITE-ONLY input consumed at deploy time - it is NOT returned by the read
   # endpoint, so it is ignored on import (supply it in config).
   vpc_subnet_id = iaas_vpc_subnet.public.id
 
@@ -80,7 +80,7 @@ output "vpn_gateway_endpoint" {
 
 # Import a VPN gateway with the COMPOSITE id "<vpc_id>/<gateway_id>", e.g.:
 #   terraform import iaas_vpn_gateway.example 00000000-0000-0000-0000-000000000000/22222222-2222-2222-2222-222222222222
-# (vpc_subnet_id is write-only and cannot be recovered on import — set it in config.)
+# (vpc_subnet_id is write-only and cannot be recovered on import - set it in config.)
 ```
 
 <!-- schema generated by tfplugindocs -->
@@ -89,7 +89,7 @@ output "vpn_gateway_endpoint" {
 ### Required
 
 - `vpc_id` (String) UUID of the parent VPC this VPN gateway belongs to. This value is part of the create API request path, so changing it forces a new resource.
-- `vpc_subnet_id` (String) UUID of the VPC PUBLIC subnet to deploy the gateway's backing VM into (it must be a public subnet with at least one free IP). This is a WRITE-ONLY input consumed at deploy time — it is NOT returned by the gateway read endpoint, so it is preserved from configuration and ignored on import. Changing it forces a new resource.
+- `vpc_subnet_id` (String) UUID of the VPC PUBLIC subnet to deploy the gateway's backing VM into (it must be a public subnet with at least one free IP). This is a WRITE-ONLY input consumed at deploy time - it is NOT returned by the gateway read endpoint, so it is preserved from configuration and ignored on import. Changing it forces a new resource.
 - `vpngw_plan_id` (String) UUID of the VPN gateway plan (sizing/pricing of the backing VM). Use the VPN gateway plans endpoint to discover available plan ids. The gateway has no update endpoint, so changing the plan forces a new resource.
 
 ### Optional
@@ -102,9 +102,9 @@ output "vpn_gateway_endpoint" {
 ### Read-Only
 
 - `id` (String) UUID of the VPN gateway, assigned by the API.
-- `public_ip` (String) The public IPv4 address of the gateway's backing VM — the WireGuard endpoint address remote peers connect to. Stable after creation.
+- `public_ip` (String) The public IPv4 address of the gateway's backing VM - the WireGuard endpoint address remote peers connect to. Stable after creation.
 - `public_key` (String) The gateway's WireGuard public key, generated server-side at create time. Peers use it to encrypt traffic to the gateway. Stable after creation. (The matching private key is held only on the server and is never exposed.)
-- `status` (String) Lifecycle status: "deploying" (provisioning), "active" (ready), "error" (deploy failed — recoverable via the gateway retry action). Server-mutable.
+- `status` (String) Lifecycle status: "deploying" (provisioning), "active" (ready), "error" (deploy failed - recoverable via the gateway retry action). Server-mutable.
 - `vpc_ip` (String) The gateway's IP address on the VPC network (its interface inside the VPC). Stable after creation.
 
 <a id="nestedblock--timeouts"></a>

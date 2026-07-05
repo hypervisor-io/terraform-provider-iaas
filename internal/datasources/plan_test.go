@@ -42,7 +42,7 @@ func registerPlanCatalog(srv *acctest.MockServer) {
 		})
 }
 
-// TestUnitPlan_lookup — resolves a plan by name across plan groups, exposing the
+// TestUnitPlan_lookup - resolves a plan by name across plan groups, exposing the
 // computed resource attributes plus plan_group_id.
 func TestUnitPlan_lookup(t *testing.T) {
 	ensureTFBinary(t)
@@ -75,7 +75,7 @@ data "iaas_plan" "t" {
 	})
 }
 
-// TestUnitPlan_noMatch — a plan name matching nothing errors clearly.
+// TestUnitPlan_noMatch - a plan name matching nothing errors clearly.
 func TestUnitPlan_noMatch(t *testing.T) {
 	ensureTFBinary(t)
 

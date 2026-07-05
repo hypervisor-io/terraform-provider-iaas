@@ -14,13 +14,13 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccKubernetesCluster_basic — LIVE acceptance test (manual staging gate).
+// TestAccKubernetesCluster_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set (resource.Test enforces this). Requires a
 // reachable panel + IP-locked token, plus a fully prepared K8s-eligible region:
 // a hypervisor group with kubernetes+vpc+lb enabled, a VPC with a NAT gateway,
 // a private CP subnet + a worker subnet, an active K8s version, CP + worker
-// instance plans, and a CP LB plan — all supplied via env vars. The test skips
+// instance plans, and a CP LB plan - all supplied via env vars. The test skips
 // cleanly when any var is absent so a bare TF_ACC=1 run does not fail.
 // ---------------------------------------------------------------------------
 func TestAccKubernetesCluster_basic(t *testing.T) {
@@ -80,19 +80,19 @@ resource "iaas_kubernetes_cluster" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitKubernetesCluster_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitKubernetesCluster_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the full ASYNC multi-stage cluster lifecycle against canned API
 // responses with no live panel:
 //
-//  1. Create — POST /kubernetes/clusters returns {cluster:{id,state:"created"},
+//  1. Create - POST /kubernetes/clusters returns {cluster:{id,state:"created"},
 //     task_id}; the SHOW then immediately returns state="running" (ready on the
 //     FIRST poll → the waiter converges instantly, no sleep). Asserts the create
 //     body (required topology inputs) and that the Idempotency-Key header is
 //     present.
-//  2. Import — by the cluster id, verifies state matches (ignoring timeouts).
-//  3. Update — rename (PATCH /kubernetes/cluster/{id}) → read-back.
-//  4. Delete — implicit teardown; DELETE soft-deletes and the next SHOW 404s,
+//  2. Import - by the cluster id, verifies state matches (ignoring timeouts).
+//  3. Update - rename (PATCH /kubernetes/cluster/{id}) → read-back.
+//  4. Delete - implicit teardown; DELETE soft-deletes and the next SHOW 404s,
 //     which the delete waiter converges on the FIRST poll.
 //
 // The IAAS_INSTANCE_POLL_INTERVAL seam is set tiny so the waiter cannot hang;
@@ -125,7 +125,7 @@ func TestUnitKubernetesCluster_lifecycle(t *testing.T) {
 	deleted := false
 	name := "prod"
 
-	// SHOW payload — already "running" so the create waiter converges on the
+	// SHOW payload - already "running" so the create waiter converges on the
 	// first poll (no sleep).
 	showCluster := func() map[string]any {
 		mu.Lock()
@@ -166,7 +166,7 @@ func TestUnitKubernetesCluster_lifecycle(t *testing.T) {
 		}
 	}
 
-	// CREATE — record the row; the create response carries state "created" + a
+	// CREATE - record the row; the create response carries state "created" + a
 	// tracking task_id (the SHOW already reports "running" so the waiter
 	// converges immediately).
 	srv.Handle("POST", basePath, func(w http.ResponseWriter, r *http.Request) {
@@ -182,7 +182,7 @@ func TestUnitKubernetesCluster_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — 404 once delete has been enqueued.
+	// SHOW - 404 once delete has been enqueued.
 	srv.Handle("GET", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		gone := deleted
@@ -194,7 +194,7 @@ func TestUnitKubernetesCluster_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "cluster": showCluster()})
 	})
 
-	// UPDATE — rename; echo the new name into the cluster envelope.
+	// UPDATE - rename; echo the new name into the cluster envelope.
 	srv.Handle("PATCH", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -206,7 +206,7 @@ func TestUnitKubernetesCluster_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "cluster": showCluster()})
 	})
 
-	// DELETE — soft-delete; the next SHOW 404s. Returns a task_id.
+	// DELETE - soft-delete; the next SHOW 404s. Returns a task_id.
 	srv.Handle("DELETE", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		deleted = true
@@ -261,7 +261,7 @@ resource "iaas_kubernetes_cluster" "test" {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"timeouts", "upgrade_drain_grace_period", "upgrade_max_surge", "upgrade_ccm"},
 			},
-			// Update — rename in place (PATCH).
+			// Update - rename in place (PATCH).
 			{
 				Config: cfg("prod-renamed"),
 				Check: resource.ComposeAggregateTestCheckFunc(

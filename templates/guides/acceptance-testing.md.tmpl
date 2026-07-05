@@ -13,16 +13,16 @@ The provider ships two layers of tests:
 |-------|-------|-------------|----------------|
 | Client unit tests (`net/http/httptest`) | `internal/client/*_test.go` | Yes | The HTTP client speaks the real envelopes/verbs/paths. |
 | Mock-backed lifecycle tests (`TestUnit*`, `resource.UnitTest`) | `internal/{resources,datasources}/*_test.go` | Yes (needs `tofu`/`terraform` on PATH) | Create→read→import→update→delete against canned responses; request bodies asserted. |
-| **Live acceptance tests (`TestAcc*`, `resource.Test`)** | `internal/{resources,datasources}/*_test.go` | **No — manual gate** | The provider works end-to-end against a real panel. |
+| **Live acceptance tests (`TestAcc*`, `resource.Test`)** | `internal/{resources,datasources}/*_test.go` | **No - manual gate** | The provider works end-to-end against a real panel. |
 
 The `TestAcc*` tests are a **manual gate**: they only execute when `TF_ACC=1`
 is set, and they talk to a **real staging panel** with a **real IP-locked Bearer
 token**. They cannot run in CI (the panel is private and the token is locked to a
-static egress IP — see below), so a human runs them from a static-IP host and
+static egress IP - see below), so a human runs them from a static-IP host and
 records the outcome in the [results checklist](#results-checklist).
 
 -> Without `TF_ACC` every `TestAcc*` no-ops (the terraform-plugin-testing harness
-skips `resource.Test` automatically). This is verified in CI — see
+skips `resource.Test` automatically). This is verified in CI - see
 [Verifying the suite auto-skips](#verifying-the-suite-auto-skips).
 
 ## Prerequisites
@@ -35,7 +35,7 @@ skips `resource.Test` automatically). This is verified in CI — see
 2. **An IP-locked Bearer token registered FROM that host's egress IP.**
    In the panel, create a user API token *while connected from the host that will
    run the tests* (or register the host's egress IP against the token). The token
-   only authenticates from the IP it was registered with — the same value goes in
+   only authenticates from the IP it was registered with - the same value goes in
    `IAAS_API_TOKEN`. Confirm the host's egress IP first, e.g. `curl https://ifconfig.me`.
 
 3. **A reachable staging panel.** The `/api` base URL goes in
@@ -117,17 +117,17 @@ A few `TestAcc*` are **placeholder skeletons that always `t.Skip`**, even with
 operator must **edit the test's inline HCL `config` to point at a real parent**
 (and remove the leading `t.Skip(...)` line) before running them:
 
-- `iaas_instance` — `TestAccInstance_basic`: the config has
+- `iaas_instance` - `TestAccInstance_basic`: the config has
   `REPLACE-WITH-A-LOCATION-UUID` / `...PLAN-UUID` / `...IMAGE-UUID` placeholders.
   Substitute real catalog UUIDs (from the `iaas_location`/`iaas_plan`/`iaas_image`
   data sources).
-- LB children — `TestAccLBBackend_basic`, `TestAccLBTarget_basic`,
+- LB children - `TestAccLBBackend_basic`, `TestAccLBTarget_basic`,
   `TestAccLBFrontend_basic`, `TestAccLBRoutingRule_basic`,
   `TestAccLBCertificate_basic`: each needs a real `load_balancer` /
   `backend` / `frontend` id wired into its config.
-- DNS — `TestAccDNSZone_basic`, `TestAccDNSRecordSet_basic`,
+- DNS - `TestAccDNSZone_basic`, `TestAccDNSRecordSet_basic`,
   `TestAccDNSRecord_basic`: zone, then record-set, then record (chain the ids).
-- Autoscaling — `TestAccAutoscalingGroup_basic`, `TestAccAutoscalingPolicy_basic`:
+- Autoscaling - `TestAccAutoscalingGroup_basic`, `TestAccAutoscalingPolicy_basic`:
   need a real instance/template to scale.
 
 ~> These do not run unattended. Treat them as "edit then run" during the staging
@@ -147,10 +147,10 @@ go test ./internal/resources/... ./internal/datasources/... \
   -run TestAcc -v -timeout 120m
 ```
 
-Run it tier by tier (recommended — fail fast, lower blast radius):
+Run it tier by tier (recommended - fail fast, lower blast radius):
 
 ```sh
-# Tier 1 — golden path first (cheap, no billing). Edit TestAccInstance_basic config first.
+# Tier 1 - golden path first (cheap, no billing). Edit TestAccInstance_basic config first.
 TF_ACC=1 go test ./internal/resources/ -run \
   'TestAccSSHKey_basic|TestAccVPC_basic|TestAccVPCSubnet_basic|TestAccInstance_basic' \
   -v -timeout 60m
@@ -160,17 +160,17 @@ TF_ACC=1 go test ./internal/resources/ ./internal/datasources/ -run \
   'TestAccProject_basic|TestAccSecurityGroup_basic|TestAccIPSet_basic|TestAccVolume_basic|TestAccVolumeSnapshot_basic|TestAccStaticIP_basic|TestAccLocation_basic|TestAccPlan_basic|TestAccImage_basic|TestAccISO_basic' \
   -v -timeout 60m
 
-# Tier 2 — networking (LB, NAT, VPN, DNS). LB-children + DNS need hand-edited configs.
+# Tier 2 - networking (LB, NAT, VPN, DNS). LB-children + DNS need hand-edited configs.
 TF_ACC=1 go test ./internal/resources/ ./internal/datasources/ -run \
   'TestAccLoadBalancer_basic|TestAccLB|TestAccNatGateway_basic|TestAccVpnGateway_basic|TestAccVpnPeer_basic|TestAccVpnPeerConfig_basic|TestAccDNS' \
   -v -timeout 60m
 
-# Tier 3 — data/storage/observability
+# Tier 3 - data/storage/observability
 TF_ACC=1 go test ./internal/resources/ -run \
   'TestAccManagedDatabase_basic|TestAccDBReplica_basic|TestAccDBParameterGroup_basic|TestAccS3Bucket_basic|TestAccS3AccessKey_basic|TestAccInstanceBackupPolicy_basic|TestAccDBBackupPolicy_basic|TestAccNotificationChannel_basic|TestAccAlertRule_basic|TestAccAutoscaling' \
   -v -timeout 60m
 
-# Tier 4 — Kubernetes (longest; ~45m to converge)
+# Tier 4 - Kubernetes (longest; ~45m to converge)
 TF_ACC=1 go test ./internal/resources/ ./internal/datasources/ -run \
   'TestAccKubernetes' \
   -v -timeout 90m
@@ -198,7 +198,7 @@ but the **`go test -timeout` must exceed the sum** of the tests in the run:
 
 Fill in `pass` / `fail` / `skipped` and notes. Tiers mirror the build order.
 
-### Tier 1 — golden + foundation
+### Tier 1 - golden + foundation
 
 | Resource / DS | TestAcc | Result | Notes |
 |---------------|---------|--------|-------|
@@ -208,7 +208,7 @@ Fill in `pass` / `fail` / `skipped` and notes. Tiers mirror the build order.
 | `iaas_instance` | `TestAccInstance_basic` | | EDIT config UUIDs first; `vnc_password` must not leak |
 | `iaas_project` | `TestAccProject_basic` | | |
 | `iaas_security_group` | `TestAccSecurityGroup_basic` | | rules round-trip (comment preserved) |
-| `iaas_ip_set` | `TestAccIPSet_basic` | | bulk-add drops `comment` — see watch-items |
+| `iaas_ip_set` | `TestAccIPSet_basic` | | bulk-add drops `comment` - see watch-items |
 | `iaas_volume` | `TestAccVolume_basic` | | billing.enabled |
 | `iaas_volume_snapshot` | `TestAccVolumeSnapshot_basic` | | needs `IAAS_TEST_VOLUME_ID` |
 | `iaas_static_ip` | `TestAccStaticIP_basic` | | billing.enabled |
@@ -217,25 +217,25 @@ Fill in `pass` / `fail` / `skipped` and notes. Tiers mirror the build order.
 | `iaas_image` (DS) | `TestAccImage_basic` | | |
 | `iaas_iso` (DS) | `TestAccISO_basic` | | |
 
-### Tier 2 — networking
+### Tier 2 - networking
 
 | Resource / DS | TestAcc | Result | Notes |
 |---------------|---------|--------|-------|
 | `iaas_nat_gateway` | `TestAccNatGateway_basic` | | one NAT gw per VPC |
 | `iaas_load_balancer` | `TestAccLoadBalancer_basic` | | billing; async converge |
-| `iaas_lb_backend` | `TestAccLBBackend_basic` | | placeholder — hand-edit config |
-| `iaas_lb_target` | `TestAccLBTarget_basic` | | placeholder — hand-edit config |
-| `iaas_lb_frontend` | `TestAccLBFrontend_basic` | | placeholder — hand-edit config |
-| `iaas_lb_routing_rule` | `TestAccLBRoutingRule_basic` | | placeholder — hand-edit config |
-| `iaas_lb_certificate` | `TestAccLBCertificate_basic` | | placeholder — hand-edit config |
+| `iaas_lb_backend` | `TestAccLBBackend_basic` | | placeholder - hand-edit config |
+| `iaas_lb_target` | `TestAccLBTarget_basic` | | placeholder - hand-edit config |
+| `iaas_lb_frontend` | `TestAccLBFrontend_basic` | | placeholder - hand-edit config |
+| `iaas_lb_routing_rule` | `TestAccLBRoutingRule_basic` | | placeholder - hand-edit config |
+| `iaas_lb_certificate` | `TestAccLBCertificate_basic` | | placeholder - hand-edit config |
 | `iaas_vpn_gateway` | `TestAccVpnGateway_basic` | | async converge |
 | `iaas_vpn_peer` | `TestAccVpnPeer_basic` | | needs `IAAS_TEST_VPN_GATEWAY_ID` |
 | `iaas_vpn_peer_config` (DS) | `TestAccVpnPeerConfig_basic` | | `config` Sensitive, road_warrior only |
-| `iaas_dns_zone` | `TestAccDNSZone_basic` | | placeholder — hand-edit config |
-| `iaas_dns_record_set` | `TestAccDNSRecordSet_basic` | | placeholder — hand-edit config |
-| `iaas_dns_record` | `TestAccDNSRecord_basic` | | placeholder — hand-edit config |
+| `iaas_dns_zone` | `TestAccDNSZone_basic` | | placeholder - hand-edit config |
+| `iaas_dns_record_set` | `TestAccDNSRecordSet_basic` | | placeholder - hand-edit config |
+| `iaas_dns_record` | `TestAccDNSRecord_basic` | | placeholder - hand-edit config |
 
-### Tier 3 — data / storage / observability
+### Tier 3 - data / storage / observability
 
 | Resource / DS | TestAcc | Result | Notes |
 |---------------|---------|--------|-------|
@@ -248,10 +248,10 @@ Fill in `pass` / `fail` / `skipped` and notes. Tiers mirror the build order.
 | `iaas_db_backup_policy` | `TestAccDBBackupPolicy_basic` | | billing; credential preservation (watch-item) |
 | `iaas_notification_channel` | `TestAccNotificationChannel_basic` | | hidden config write-only |
 | `iaas_alert_rule` | `TestAccAlertRule_basic` | | |
-| `iaas_autoscaling_group` | `TestAccAutoscalingGroup_basic` | | placeholder — hand-edit config |
-| `iaas_autoscaling_policy` | `TestAccAutoscalingPolicy_basic` | | placeholder — hand-edit config |
+| `iaas_autoscaling_group` | `TestAccAutoscalingGroup_basic` | | placeholder - hand-edit config |
+| `iaas_autoscaling_policy` | `TestAccAutoscalingPolicy_basic` | | placeholder - hand-edit config |
 
-### Tier 4 — Kubernetes
+### Tier 4 - Kubernetes
 
 | Resource / DS | TestAcc | Result | Notes |
 |---------------|---------|--------|-------|
@@ -270,7 +270,7 @@ live panel (from the build adaptation log). Verify each during the staging pass:
 
 1. **VPC `description` empty-vs-null round-trip.** The API stores `null` when
    `description` is omitted. Apply a VPC with no description, then with `""`, then
-   re-plan — confirm **no spurious "inconsistent result after apply"**. If staging
+   re-plan - confirm **no spurious "inconsistent result after apply"**. If staging
    returns `""` for an unset description, the mapping needs revisiting.
 2. **`iaas_db_parameter_group` suffix-param rejection.** Only suffix-free
    parameters are supported. Confirm a suffix-bearing parameter is rejected (or
@@ -311,7 +311,7 @@ Every `TestAcc*` reports `--- SKIP` (the harness skips `resource.Test` when
 
 ## CI note
 
-These live acceptance tests **do not run in CI** — the CI host has a dynamic IP
+These live acceptance tests **do not run in CI** - the CI host has a dynamic IP
 and no staging panel/token, so an IP-locked token cannot authenticate. CI runs
 **only** the client unit tests, the mock-backed `TestUnit*` lifecycle tests
 (with `tofu` on PATH), `go vet`, `gofmt`, and `tofu validate` on the example

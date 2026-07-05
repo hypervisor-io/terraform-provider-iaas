@@ -59,7 +59,7 @@ import (
 //	                                                            → {success,message,record_set}
 //	DELETE  DELETE /dns-zone/{zoneId}/record-set/{rsId}         → {success,message}
 //
-// There is NO individual record-set SHOW route — record sets are EMBEDDED in the
+// There is NO individual record-set SHOW route - record sets are EMBEDDED in the
 // zone SHOW under zone.record_sets[]. GetDnsRecordSet reads-by-scan.
 //
 // ── RECORD CRUD (child of record set; zone_id + rsId in the path) ────────────
@@ -70,7 +70,7 @@ import (
 //	UPDATE  PATCH  /dns-zone/{zoneId}/record-set/{rsId}/record/{recId}   body {value?,
 //	                                                                    weight?,failover_role?,enabled?}
 //	                                                                    → {success,message,record}
-//	TOGGLE  POST   .../record/{recId}/toggle                            (flips enabled — NOT modelled;
+//	TOGGLE  POST   .../record/{recId}/toggle                            (flips enabled - NOT modelled;
 //	                                                                    enabled is set explicitly via UPDATE)
 //	DELETE  DELETE .../record/{recId}                                   → {success,message}
 //
@@ -126,7 +126,7 @@ func (c *Client) GetDnsZone(ctx context.Context, id string) (map[string]any, err
 	return c.doItem(ctx, "GET", "/dns-zone/"+url.PathEscape(id), nil, "zone")
 }
 
-// UpdateDnsZone patches the only mutable scalar field of a zone — description.
+// UpdateDnsZone patches the only mutable scalar field of a zone - description.
 // (The zone name is immutable: updateZone only persists description.) The route is
 // SINGULAR. The PATCH response carries the fresh zone under "zone".
 func (c *Client) UpdateDnsZone(ctx context.Context, id string, fields map[string]any) (map[string]any, error) {

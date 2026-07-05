@@ -13,7 +13,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccS3Bucket_basic — LIVE acceptance test (manual staging gate).
+// TestAccS3Bucket_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set. Requires a reachable panel + IP-locked token
 // and real plan/server UUIDs supplied via env vars; skips cleanly when absent.
@@ -109,7 +109,7 @@ func (s *s3BucketMock) keysPaginator() map[string]any {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitS3Bucket_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitS3Bucket_lifecycle - MOCK-backed lifecycle proof.
 //
 // Steps:
 //  1. Create with default_access=public + ONE attached key (read) → asserts the
@@ -134,7 +134,7 @@ func TestUnitS3Bucket_lifecycle(t *testing.T) {
 		attached: map[string]string{},
 	}
 
-	// CREATE — POST /object-storage/buckets stores name/plan/server, returns
+	// CREATE - POST /object-storage/buckets stores name/plan/server, returns
 	// {success,message} with NO id (forcing the by-name readback).
 	srv.Handle("POST", "/object-storage/buckets", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
@@ -151,7 +151,7 @@ func TestUnitS3Bucket_lifecycle(t *testing.T) {
 		})
 	})
 
-	// LIST — GET /object-storage/buckets (by-name readback) returns a paginator.
+	// LIST - GET /object-storage/buckets (by-name readback) returns a paginator.
 	srv.Handle("GET", "/object-storage/buckets", func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -164,21 +164,21 @@ func TestUnitS3Bucket_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — GET /object-storage/bucket/{id} returns the envelope.
+	// SHOW - GET /object-storage/bucket/{id} returns the envelope.
 	srv.Handle("GET", "/object-storage/bucket/"+bucketID, func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
 		writeJSON(w, http.StatusOK, store.showEnvelope())
 	})
 
-	// KEYS — GET /object-storage/bucket/{id}/keys returns attached keys + pivot.
+	// KEYS - GET /object-storage/bucket/{id}/keys returns attached keys + pivot.
 	srv.Handle("GET", "/object-storage/bucket/"+bucketID+"/keys", func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
 		writeJSON(w, http.StatusOK, store.keysPaginator())
 	})
 
-	// ACL — PATCH /object-storage/bucket/{id}/acl/{action}: action is in the path.
+	// ACL - PATCH /object-storage/bucket/{id}/acl/{action}: action is in the path.
 	for _, action := range []string{"public", "private", "upload", "download"} {
 		act := action
 		srv.Handle("PATCH", "/object-storage/bucket/"+bucketID+"/acl/"+act, func(w http.ResponseWriter, r *http.Request) {
@@ -223,7 +223,7 @@ func TestUnitS3Bucket_lifecycle(t *testing.T) {
 		})
 	}
 
-	// DELETE — DELETE /object-storage/bucket/{id}.
+	// DELETE - DELETE /object-storage/bucket/{id}.
 	srv.Handle("DELETE", "/object-storage/bucket/"+bucketID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "queued for deletion"})
 	})

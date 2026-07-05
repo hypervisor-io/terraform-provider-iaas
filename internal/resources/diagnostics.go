@@ -1,5 +1,5 @@
 // Package resources holds the Terraform resource implementations for the IaaS
-// provider. ssh_key.go is the canonical/golden resource — every later resource
+// provider. ssh_key.go is the canonical/golden resource - every later resource
 // copies its structure (model, Metadata/Schema/Configure/CRUD/ImportState).
 //
 // The error→diagnostics translation now lives in the neutral internal/tfdiag

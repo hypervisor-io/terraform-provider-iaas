@@ -60,7 +60,7 @@ func (d *kubernetesSubnetDataSource) Schema(_ context.Context, _ datasource.Sche
 			},
 			"type": schema.StringAttribute{
 				Optional: true,
-				Description: "Optional subnet type filter — `private` (control-plane subnets) or " +
+				Description: "Optional subnet type filter - `private` (control-plane subnets) or " +
 					"`public`. Omit to search all types.",
 				Validators: []validator.String{
 					stringvalidator.OneOf("private", "public"),

@@ -11,7 +11,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/tfdiag"
 )
 
-// Interface assertions — account is a SINGLETON whoami data source, unlike
+// Interface assertions - account is a SINGLETON whoami data source, unlike
 // every other data source in this package: it has no input filter attribute
 // because there is exactly one object to read (the caller's own account), not
 // a catalog to search by name. See internal/client/account.go for why it
@@ -35,7 +35,7 @@ type accountDataSource struct {
 	client *client.Client
 }
 
-// accountModel maps the data-source state. Every attribute is Computed — there
+// accountModel maps the data-source state. Every attribute is Computed - there
 // is no input filter (singleton lookup, no Required/Optional attribute).
 type accountModel struct {
 	ID               types.String `tfsdk:"id"`
@@ -63,7 +63,7 @@ func (d *accountDataSource) Metadata(_ context.Context, req datasource.MetadataR
 func (d *accountDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Returns the authenticated caller's own account (whoami). This is a " +
-			"SINGLETON data source — it has no input filter, since there is exactly one " +
+			"SINGLETON data source - it has no input filter, since there is exactly one " +
 			"account behind the configured provider token. Referencing it (e.g. as " +
 			"`data.iaas_account.current`) validates the token and IP-lock during plan/apply, " +
 			"letting a misconfigured provider fail fast, and exposes `id` for use elsewhere in " +

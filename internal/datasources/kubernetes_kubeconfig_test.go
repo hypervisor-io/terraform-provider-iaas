@@ -14,7 +14,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/datasources"
 )
 
-// TestUnitKubernetesKubeconfig_download — mock-backed data-source proof.
+// TestUnitKubernetesKubeconfig_download - mock-backed data-source proof.
 //
 // data "iaas_kubernetes_kubeconfig" "t" { cluster_id = ... } reads GET
 // /kubernetes/cluster/{id}/kubeconfig, which returns a RAW application/yaml body
@@ -29,7 +29,7 @@ func TestUnitKubernetesKubeconfig_download(t *testing.T) {
 
 	srv := acctest.NewMockServer(t)
 	srv.Handle("GET", "/kubernetes/cluster/"+clusterID+"/kubeconfig", func(w http.ResponseWriter, _ *http.Request) {
-		// RAW YAML body — the kubeconfig endpoint is an attachment download,
+		// RAW YAML body - the kubeconfig endpoint is an attachment download,
 		// NOT a JSON envelope.
 		w.Header().Set("Content-Type", "application/yaml")
 		w.WriteHeader(http.StatusOK)
@@ -56,7 +56,7 @@ data "iaas_kubernetes_kubeconfig" "t" {
 	})
 }
 
-// TestUnitKubernetesKubeconfig_notBootstrapped — a 404 (cluster has not finished
+// TestUnitKubernetesKubeconfig_notBootstrapped - a 404 (cluster has not finished
 // bootstrap, no CA yet) surfaces as a clear error.
 func TestUnitKubernetesKubeconfig_notBootstrapped(t *testing.T) {
 	ensureTFBinary(t)
@@ -66,7 +66,7 @@ func TestUnitKubernetesKubeconfig_notBootstrapped(t *testing.T) {
 	srv := acctest.NewMockServer(t)
 	srv.Handle("GET", "/kubernetes/cluster/"+clusterID+"/kubeconfig", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]any{
-			"error": "kubeconfig not yet available — cluster has not finished bootstrap. Retry after cluster reaches running state.",
+			"error": "kubeconfig not yet available - cluster has not finished bootstrap. Retry after cluster reaches running state.",
 		})
 	})
 
@@ -88,7 +88,7 @@ data "iaas_kubernetes_kubeconfig" "t" {
 }
 
 // TestUnitKubernetesKubeconfig_schemaSensitive asserts the `kubeconfig` attribute
-// is declared Sensitive in the schema — it embeds a live cluster-admin client
+// is declared Sensitive in the schema - it embeds a live cluster-admin client
 // certificate, so it must never be printed in plan/apply output.
 func TestUnitKubernetesKubeconfig_schemaSensitive(t *testing.T) {
 	ds := datasources.NewKubernetesKubeconfigDataSource()

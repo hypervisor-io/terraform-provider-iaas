@@ -16,10 +16,10 @@ import (
 //
 // Notes:
 //   - INDEX is plural (/projects); SHOW/UPDATE/DELETE are singular (/project/{id}).
-//   - CREATE returns {success,message,project} — key "project" unwrapped via doItem.
+//   - CREATE returns {success,message,project} - key "project" unwrapped via doItem.
 //   - SHOW returns {success,project,...} (plus embedded resources); we unwrap key "project".
-//   - UPDATE returns {success,message,project} — key "project" unwrapped via doItem.
-//   - DELETE returns {success,message} — no object; use doVoid.
+//   - UPDATE returns {success,message,project} - key "project" unwrapped via doItem.
+//   - DELETE returns {success,message} - no object; use doVoid.
 //   - All operations are synchronous (no async task/waiter needed).
 //   - Validation: name required max:64 alphanumeric+space+dot+dash+underscore;
 //     description optional max:255; color optional hex #RRGGBB.

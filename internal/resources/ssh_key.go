@@ -14,7 +14,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — ssh_key is the golden resource and implements the
+// Interface assertions - ssh_key is the golden resource and implements the
 // full set of optional resource behaviours later resources also implement.
 var (
 	_ resource.Resource                = &sshKeyResource{}
@@ -144,7 +144,7 @@ func (r *sshKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 }
 
 // Read refreshes state from the API. A 404 means the key was deleted out of
-// band — remove it from state so Terraform plans a recreate (drift handling).
+// band - remove it from state so Terraform plans a recreate (drift handling).
 func (r *sshKeyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state sshKeyModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -172,7 +172,7 @@ func (r *sshKeyResource) Read(ctx context.Context, req resource.ReadRequest, res
 // (same shape as SHOW), which lets us rehydrate all computed fields from it.
 // When copying this template: if a resource's UPDATE response is partial/thinner
 // than SHOW, call Read after a successful update instead of mapping the PATCH
-// response directly — otherwise computed fields get dropped from state.
+// response directly - otherwise computed fields get dropped from state.
 func (r *sshKeyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan sshKeyModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -241,6 +241,6 @@ func stringFromAPI(obj map[string]any, key string, fallback types.String) types.
 	if s, ok := raw.(string); ok {
 		return types.StringValue(s)
 	}
-	// Non-string JSON value (number/bool) — coerce defensively.
+	// Non-string JSON value (number/bool) - coerce defensively.
 	return types.StringValue(fmt.Sprintf("%v", raw))
 }

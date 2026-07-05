@@ -124,7 +124,7 @@ func TestCreateAlertRule_Success(t *testing.T) {
 }
 
 func TestCreateAlertRule_NoResourceID(t *testing.T) {
-	// resource_id is optional — when omitted the rule applies to ALL instances.
+	// resource_id is optional - when omitted the rule applies to ALL instances.
 	var gotBody map[string]any
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -23,7 +23,7 @@ func decodeItem(body []byte, key string) (map[string]any, error) {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 
-	// C3 — success:false at HTTP 200 is still an error.
+	// C3 - success:false at HTTP 200 is still an error.
 	if err := checkSuccessFlag(top); err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func decodeItem(body []byte, key string) (map[string]any, error) {
 		return sub, nil
 	}
 
-	// Key absent (e.g. VPC create {"success":true,"message":"queued"}) —
+	// Key absent (e.g. VPC create {"success":true,"message":"queued"}) -
 	// return the bare envelope so callers can inspect it.
 	return top, nil
 }
@@ -67,7 +67,7 @@ func decodeList(body []byte) ([]map[string]any, error) {
 		return items, nil
 
 	default:
-		// Object — check success flag first, then look for paginator.
+		// Object - check success flag first, then look for paginator.
 		var top map[string]any
 		if err := json.Unmarshal(raw, &top); err != nil {
 			return nil, fmt.Errorf("decoding response object: %w", err)
@@ -110,7 +110,7 @@ func checkSuccessFlag(top map[string]any) error {
 	}
 	successBool, isBool := successRaw.(bool)
 	if !isBool || successBool {
-		return nil // absent or true — not an error
+		return nil // absent or true - not an error
 	}
 
 	// success == false

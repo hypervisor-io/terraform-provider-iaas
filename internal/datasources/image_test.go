@@ -31,7 +31,7 @@ func imageSearchEnvelope() map[string]any {
 	}
 }
 
-// TestUnitImage_lookup — resolves an image by its Select2 child text (exact
+// TestUnitImage_lookup - resolves an image by its Select2 child text (exact
 // match), exposing the computed id/distro. The mock matches on path only, so
 // the query string the client appends is ignored by the dispatcher.
 func TestUnitImage_lookup(t *testing.T) {
@@ -62,7 +62,7 @@ data "iaas_image" "t" {
 	})
 }
 
-// TestUnitImage_noMatch — a name matching no child errors clearly.
+// TestUnitImage_noMatch - a name matching no child errors clearly.
 func TestUnitImage_noMatch(t *testing.T) {
 	ensureTFBinary(t)
 

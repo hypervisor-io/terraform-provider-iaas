@@ -27,7 +27,7 @@ import (
 //     state="created".
 //
 // Create is async: the real ClusterService::create returns
-// {success,cluster:{id,state:"created"},task_id} — the cluster comes up
+// {success,cluster:{id,state:"created"},task_id} - the cluster comes up
 // asynchronously and the caller polls the cluster's "state" field via SHOW.
 func TestCreateKubernetesCluster_Success(t *testing.T) {
 	var gotMethod, gotPath, gotIdemKey string
@@ -523,7 +523,7 @@ func TestRetryK8sClusterUpgrade_Success(t *testing.T) {
 }
 
 // TestRetryK8sClusterUpgrade_NotInErrorState verifies the 422 gate (cluster not
-// in "error" state) surfaces as an error — the ground-truth behavior that makes
+// in "error" state) surfaces as an error - the ground-truth behavior that makes
 // this endpoint unsuitable as an automatic fail path for a failed CP/worker
 // rolling upgrade (which leaves cluster.state=="running", never "error").
 func TestRetryK8sClusterUpgrade_NotInErrorState(t *testing.T) {

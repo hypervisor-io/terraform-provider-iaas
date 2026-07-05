@@ -15,7 +15,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — vpc mirrors the golden ssh_key resource's full set of
+// Interface assertions - vpc mirrors the golden ssh_key resource's full set of
 // optional behaviours (Configure + ImportState).
 var (
 	_ resource.Resource                = &vpcResource{}
@@ -78,7 +78,7 @@ func (r *vpcResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 			"name": schema.StringAttribute{
 				Required: true,
 				Description: "Name of the VPC. Maximum 16 characters; only lowercase letters " +
-					"and digits are allowed (regex ^[a-z0-9]+$ — no spaces, dots, or dashes). " +
+					"and digits are allowed (regex ^[a-z0-9]+$ - no spaces, dots, or dashes). " +
 					"Validated server-side. Changing this forces a new resource.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -146,7 +146,7 @@ func (r *vpcResource) Configure(_ context.Context, req resource.ConfigureRequest
 
 // Create provisions the VPC. name/cidr/hypervisor_group_id are always sent;
 // description is sent only when set so the server stores null rather than "".
-// The create is synchronous — the response carries id and vni_number, which we
+// The create is synchronous - the response carries id and vni_number, which we
 // persist directly (no read-back / waiter).
 func (r *vpcResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan vpcModel
@@ -175,7 +175,7 @@ func (r *vpcResource) Create(ctx context.Context, req resource.CreateRequest, re
 }
 
 // Read refreshes state from the API. A 404 means the VPC was deleted out of
-// band — remove it from state so Terraform plans a recreate (drift handling).
+// band - remove it from state so Terraform plans a recreate (drift handling).
 func (r *vpcResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state vpcModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

@@ -16,7 +16,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — ip_set establishes the NESTED-ENTRIES pattern: a set of
+// Interface assertions - ip_set establishes the NESTED-ENTRIES pattern: a set of
 // child entry rows managed inside the parent resource (rather than as a separate
 // child resource like vpc_subnet). The same diff-by-natural-key approach is what
 // security_group(+rules) copies.
@@ -31,7 +31,7 @@ func NewIPSetResource() resource.Resource {
 	return &ipSetResource{}
 }
 
-// ipSetResource manages an iaas_ip_set — a named, ip_version-scoped collection of
+// ipSetResource manages an iaas_ip_set - a named, ip_version-scoped collection of
 // CIDR entries used by security-group rules.
 //
 // The CHILD entries are managed inline as a SetNestedAttribute rather than as a
@@ -60,7 +60,7 @@ type ipSetResource struct {
 // ipSetModel maps the Terraform state/plan for iaas_ip_set.
 //
 // Entries is a SET (order-independent) of nested entry objects. ip_version is
-// immutable in practice — the controller rejects changing it once entries exist —
+// immutable in practice - the controller rejects changing it once entries exist -
 // so it is RequiresReplace. name/description are updatable in place.
 type ipSetModel struct {
 	ID          types.String `tfsdk:"id"`
@@ -101,7 +101,7 @@ func (r *ipSetResource) Metadata(_ context.Context, req resource.MetadataRequest
 // Schema describes the iaas_ip_set resource.
 func (r *ipSetResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages an IP set — a named, version-scoped collection of CIDR entries " +
+		Description: "Manages an IP set - a named, version-scoped collection of CIDR entries " +
 			"that can be referenced from security group rules. The CIDR entries are managed " +
 			"inline as an order-independent set: adding or removing an entry from the config " +
 			"adds or removes it on the server in place, without replacing the IP set. The " +
@@ -255,7 +255,7 @@ func (r *ipSetResource) Create(ctx context.Context, req resource.CreateRequest, 
 }
 
 // Read refreshes state from the API. A 404 means the set was deleted out of band
-// — remove it from state so Terraform plans a recreate.
+// - remove it from state so Terraform plans a recreate.
 func (r *ipSetResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state ipSetModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -280,7 +280,7 @@ func (r *ipSetResource) Read(ctx context.Context, req resource.ReadRequest, resp
 //   - diffs the entries set (planned vs state): adds entries that are new,
 //     deletes entries that were removed (by their server id).
 //
-// An entry is "the same" only when BOTH its cidr and comment match — so changing
+// An entry is "the same" only when BOTH its cidr and comment match - so changing
 // a comment on an existing cidr deletes the old entry and adds a fresh one (the
 // API has no entry-update endpoint). After mutating, it reads back so state
 // reflects the server entry ids.

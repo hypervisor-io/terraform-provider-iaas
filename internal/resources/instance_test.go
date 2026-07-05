@@ -12,7 +12,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccInstance_basic — LIVE acceptance test (manual staging gate).
+// TestAccInstance_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set (resource.Test enforces this), so it never
 // runs or blocks CI. Requires a reachable panel + IP-locked token via
@@ -54,7 +54,7 @@ resource "iaas_instance" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitInstance_lifecycle — MOCK-backed lifecycle proof (GOLDEN ASYNC).
+// TestUnitInstance_lifecycle - MOCK-backed lifecycle proof (GOLDEN ASYNC).
 //
 // Drives the full two-phase async lifecycle against a STATEFUL mock, with no
 // live panel. The mock:
@@ -118,7 +118,7 @@ func TestUnitInstance_lifecycle(t *testing.T) {
 		}
 	}
 
-	// PHASE 1 — create the record (sync, returns id under "instance").
+	// PHASE 1 - create the record (sync, returns id under "instance").
 	srv.Handle("POST", "/cloud-service/instances", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success":  true,
@@ -127,7 +127,7 @@ func TestUnitInstance_lifecycle(t *testing.T) {
 		})
 	})
 
-	// PHASE 2 — deploy the OS (async, returns top-level task_id).
+	// PHASE 2 - deploy the OS (async, returns top-level task_id).
 	srv.Handle("POST", "/instance/"+instanceID+"/deploy", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
@@ -136,7 +136,7 @@ func TestUnitInstance_lifecycle(t *testing.T) {
 		})
 	})
 
-	// TASK poll — completed on the first poll so the waiter converges instantly.
+	// TASK poll - completed on the first poll so the waiter converges instantly.
 	srv.Handle("GET", "/instance/"+instanceID+"/task/"+taskID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"logs": []any{map[string]any{"message": "deploy complete"}},
@@ -144,7 +144,7 @@ func TestUnitInstance_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — bare model; 404 once delete has been enqueued (delete waiter signal).
+	// SHOW - bare model; 404 once delete has been enqueued (delete waiter signal).
 	srv.Handle("GET", "/instance/"+instanceID, func(w http.ResponseWriter, r *http.Request) {
 		if deleted.Load() {
 			writeJSON(w, http.StatusNotFound, map[string]any{"message": "Not found."})
@@ -153,7 +153,7 @@ func TestUnitInstance_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, showObject())
 	})
 
-	// UPDATE — PATCH metadata (display_name); stateful so SHOW reflects it.
+	// UPDATE - PATCH metadata (display_name); stateful so SHOW reflects it.
 	srv.Handle("PATCH", "/instance/"+instanceID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -167,7 +167,7 @@ func TestUnitInstance_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — async enqueue; flips deleted so the next SHOW 404s.
+	// DELETE - async enqueue; flips deleted so the next SHOW 404s.
 	srv.Handle("DELETE", "/cloud-service/instances/"+instanceID, func(w http.ResponseWriter, r *http.Request) {
 		deleted.Store(true)
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "Instance deletion queued"})
@@ -213,7 +213,7 @@ resource "iaas_instance" "test" {
 					resource.TestCheckResourceAttr("iaas_instance.test", "ssh_keys.0", sshKeyID),
 				),
 			},
-			// Import — write-only deploy fields can't be read back, so ignore them.
+			// Import - write-only deploy fields can't be read back, so ignore them.
 			{
 				ResourceName:            "iaas_instance.test",
 				ImportState:             true,
@@ -221,7 +221,7 @@ resource "iaas_instance" "test" {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"ssh_keys", "timezone", "cloudcfg", "timeouts"},
 			},
-			// Update — rename display_name (metadata PATCH, sync).
+			// Update - rename display_name (metadata PATCH, sync).
 			{
 				Config: updateCfg,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -255,7 +255,7 @@ resource "iaas_instance" "test" {
 	}
 
 	// Assert the phase-2 deploy body carried image_id and ssh_keys (the array
-	// field — NOT ssh_key_id).
+	// field - NOT ssh_key_id).
 	deploys := srv.Requests("POST", "/instance/"+instanceID+"/deploy")
 	if len(deploys) == 0 {
 		t.Fatalf("expected at least one POST /instance/%s/deploy", instanceID)

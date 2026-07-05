@@ -22,11 +22,11 @@ import (
 // TestCreateVPCSubnet_Success verifies that CreateVPCSubnet:
 //   - POSTs to the PLURAL collection path /vpc/{vpcID}/subnets
 //   - sends the prebuilt body the caller supplied (cidr present; unset
-//     name/type omitted — gateway/netmask are DERIVED server-side, never sent)
+//     name/type omitted - gateway/netmask are DERIVED server-side, never sent)
 //   - returns the unwrapped subnet object WITH its id and derived fields.
 //
 // The subnet ROW is created synchronously (id returned immediately). IP
-// generation is async on a queue, so used/free populate later — there is NO
+// generation is async on a queue, so used/free populate later - there is NO
 // status field to wait on.
 func TestCreateVPCSubnet_Success(t *testing.T) {
 	var gotMethod, gotPath string
@@ -84,7 +84,7 @@ func TestCreateVPCSubnet_Success(t *testing.T) {
 }
 
 // TestCreateVPCSubnet_Failure verifies a 200 success:false response surfaces the
-// API message as an error (C3 — create signals failure at HTTP 200, e.g. CIDR
+// API message as an error (C3 - create signals failure at HTTP 200, e.g. CIDR
 // overlap or out-of-range).
 func TestCreateVPCSubnet_Failure(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -204,7 +204,7 @@ func TestDeleteVPCSubnet_Success(t *testing.T) {
 }
 
 // TestDeleteVPCSubnet_Failure verifies a 200 success:false delete surfaces the
-// message as an error (C3 — e.g. an IP is in use).
+// message as an error (C3 - e.g. an IP is in use).
 func TestDeleteVPCSubnet_Failure(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

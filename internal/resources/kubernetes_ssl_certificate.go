@@ -21,7 +21,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — iaas_kubernetes_ssl_certificate is a CHILD resource of
+// Interface assertions - iaas_kubernetes_ssl_certificate is a CHILD resource of
 // iaas_kubernetes_cluster (Gap G6). It secures the cluster's CP load balancer:
 // once an active cert exists, the cluster's Kubeconfig download endpoint
 // rewrites `server:` to use the cert domain instead of the bare LB IP.
@@ -38,7 +38,7 @@ import (
 // KEY DEVIATION vs iaas_lb_certificate: the cluster-scoped LIST
 // (SslCertController::index) explicitly SELECTs only
 // [id,name,type,domain,san_domains,expires_at,letsencrypt_status,
-// letsencrypt_error,letsencrypt_domains,created_at] — certificate, private_key
+// letsencrypt_error,letsencrypt_domains,created_at] - certificate, private_key
 // AND chain are NEVER returned, even right after create (private_key is
 // additionally $hidden model-wide; certificate/chain are simply omitted from
 // the index() query, unlike the plain load-balancer certificates[] embed which
@@ -46,7 +46,7 @@ import (
 // from the plan on Create and preserved verbatim across every Read.
 //
 // SOURCE vs TYPE: the store body requires "source" ("letsencrypt"|"custom"),
-// but the API never echoes "source" back — the persisted row instead reports
+// but the API never echoes "source" back - the persisted row instead reports
 // "type" (DB enum "manual"|"letsencrypt"; source=custom maps to type=manual).
 // Read derives `source` from the returned `type` (letsencrypt -> "letsencrypt",
 // anything else -> "custom") so a composite import populates the Required
@@ -64,7 +64,7 @@ func NewKubernetesSslCertificateResource() resource.Resource {
 	return &kubernetesSslCertResource{}
 }
 
-// kubernetesSslCertResource manages an iaas_kubernetes_ssl_certificate — a TLS
+// kubernetesSslCertResource manages an iaas_kubernetes_ssl_certificate - a TLS
 // certificate on a Kubernetes cluster's CP load balancer.
 type kubernetesSslCertResource struct {
 	client *client.Client
@@ -76,12 +76,12 @@ type kubernetesSslCertResource struct {
 //   - parent (cluster_id): in the URL path → Required + RequiresReplace.
 //   - create inputs: source, domain are Required + RequiresReplace; name,
 //     san_domains, expires_at are Optional+Computed + RequiresReplaceIfConfigured
-//     (the server may apply a default — e.g. name defaults to domain, LE forces
+//     (the server may apply a default - e.g. name defaults to domain, LE forces
 //     "LE: <domain>"); certificate/private_key/chain are write-only, Sensitive,
 //     Optional (required_if source=custom, enforced by ConfigValidators) +
 //     RequiresReplace.
 //   - server-managed computed: type, letsencrypt_status, letsencrypt_error,
-//     letsencrypt_domains — server-mutable, no UseStateForUnknown.
+//     letsencrypt_domains - server-mutable, no UseStateForUnknown.
 type kubernetesSslCertModel struct {
 	ID        types.String `tfsdk:"id"`
 	ClusterID types.String `tfsdk:"cluster_id"`
@@ -110,11 +110,11 @@ func (r *kubernetesSslCertResource) Metadata(_ context.Context, req resource.Met
 // Schema describes the iaas_kubernetes_ssl_certificate resource.
 func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a TLS certificate on a Kubernetes cluster's CP load balancer — either a " +
+		Description: "Manages a TLS certificate on a Kubernetes cluster's CP load balancer - either a " +
 			"manually-uploaded PEM certificate (source = \"custom\") or a Let's Encrypt issuance " +
 			"(source = \"letsencrypt\"). A certificate is a child of a cluster: its parent cluster_id " +
 			"is part of the API path, so changing it forces a new resource. There is NO update route " +
-			"— every field is immutable; changing any of them rotates (replaces) the certificate. " +
+			"- every field is immutable; changing any of them rotates (replaces) the certificate. " +
 			"certificate, private_key and chain are WRITE-ONLY and SENSITIVE: the cluster-scoped list " +
 			"endpoint never returns them (not even right after create), so they are taken from " +
 			"configuration and never refreshed from the server. Once an active certificate exists, " +
@@ -139,7 +139,7 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 			"source": schema.StringAttribute{
 				Required: true,
 				Description: "Certificate source: \"letsencrypt\" (ACME issuance for `domain` + any " +
-					"`san_domains`) or \"custom\" (manual PEM upload — requires certificate + " +
+					"`san_domains`) or \"custom\" (manual PEM upload - requires certificate + " +
 					"private_key). Immutable; changing it forces a new resource. NOTE: the API does not " +
 					"echo this field back; it is reconstructed on read from the persisted `type` " +
 					"(\"letsencrypt\" stays \"letsencrypt\", anything else reads back as \"custom\").",
@@ -163,7 +163,7 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 				Optional: true,
 				Computed: true,
 				Description: "Display name. Defaults to `domain` when omitted for source = \"custom\"; " +
-					"REJECTED AT PLAN TIME for source = \"letsencrypt\" (enforced by ConfigValidators) — " +
+					"REJECTED AT PLAN TIME for source = \"letsencrypt\" (enforced by ConfigValidators) - " +
 					"the server always force-overrides it to \"LE: <domain>\", so setting it would only " +
 					"ever surface as an inconsistent-apply error. Immutable; changing it forces a new " +
 					"resource.",
@@ -177,7 +177,7 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 				Sensitive: true,
 				Description: "PEM-encoded leaf certificate. Required when source = \"custom\" (enforced " +
 					"at plan time); REJECTED AT PLAN TIME for source = \"letsencrypt\" (enforced by " +
-					"ConfigValidators — the server ignores it in favour of the ACME-issued certificate). " +
+					"ConfigValidators - the server ignores it in favour of the ACME-issued certificate). " +
 					"WRITE-ONLY: the cluster ssl-certificates list never returns it, so it is taken from " +
 					"configuration and never refreshed. Immutable; changing it forces a new resource " +
 					"(rotation).",
@@ -190,7 +190,7 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 				Sensitive: true,
 				Description: "PEM-encoded private key. Required when source = \"custom\" (enforced at " +
 					"plan time); REJECTED AT PLAN TIME for source = \"letsencrypt\" (enforced by " +
-					"ConfigValidators — the server ignores it in favour of the ACME-issued key). " +
+					"ConfigValidators - the server ignores it in favour of the ACME-issued key). " +
 					"WRITE-ONLY and SENSITIVE: never returned by the API (private_key is $hidden " +
 					"model-wide), so it is taken from configuration and never refreshed. Immutable; " +
 					"changing it forces a new resource.",
@@ -202,7 +202,7 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 				Optional:  true,
 				Sensitive: true,
 				Description: "Optional PEM-encoded intermediate certificate chain (source = \"custom\" " +
-					"only — REJECTED AT PLAN TIME for source = \"letsencrypt\", enforced by " +
+					"only - REJECTED AT PLAN TIME for source = \"letsencrypt\", enforced by " +
 					"ConfigValidators). WRITE-ONLY: the cluster ssl-certificates list never returns it, " +
 					"so it is taken from configuration and never refreshed. Immutable; changing it " +
 					"forces a new resource.",
@@ -213,7 +213,7 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 			"san_domains": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
-				Description: "Comma-separated SAN domains (optional, either source — the server stores " +
+				Description: "Comma-separated SAN domains (optional, either source - the server stores " +
 					"and uses san_domains for a \"letsencrypt\" issuance too, so this is NOT rejected for " +
 					"that source). Immutable; changing it forces a new resource.",
 				PlanModifiers: []planmodifier.String{
@@ -224,8 +224,8 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 			"expires_at": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
-				Description: "Certificate expiry (nullable date; source = \"custom\" only — accepted by " +
-					"the store validation though not documented on the endpoint — REJECTED AT PLAN TIME " +
+				Description: "Certificate expiry (nullable date; source = \"custom\" only - accepted by " +
+					"the store validation though not documented on the endpoint - REJECTED AT PLAN TIME " +
 					"for source = \"letsencrypt\", enforced by ConfigValidators, since ACME issuance " +
 					"determines the real expiry). Null for a fresh \"letsencrypt\" cert until ACME " +
 					"issuance completes. Immutable; changing it forces a new resource.",
@@ -249,7 +249,7 @@ func (r *kubernetesSslCertResource) Schema(_ context.Context, _ resource.SchemaR
 			"letsencrypt_status": schema.StringAttribute{
 				Computed: true,
 				Description: "Let's Encrypt issuance status (e.g. \"pending_dns\", \"active\", " +
-					"\"error\"). Empty for source = \"custom\". Server-mutable — evolves in the " +
+					"\"error\"). Empty for source = \"custom\". Server-mutable - evolves in the " +
 					"background as ACME issuance progresses; this resource does not wait/poll for it.",
 			},
 			"letsencrypt_error": schema.StringAttribute{
@@ -333,10 +333,10 @@ func (v *kubernetesSslCertCustomFieldsValidator) ValidateResource(ctx context.Co
 // source = "letsencrypt": the server FORCE-OVERRIDES name to "LE: <domain>"
 // and IGNORES certificate/private_key/chain/expires_at entirely for an ACME
 // issuance (StoreClusterSslCertRequest only conditionally requires them for
-// source = "custom" — see kubernetesSslCertCustomFieldsValidator above).
+// source = "custom" - see kubernetesSslCertCustomFieldsValidator above).
 // Before this validator existed, only the "custom" branch was checked, so
 // setting any of these fields alongside source = "letsencrypt" reached Create,
-// which echoes them into state from the plan (kubernetesSslCertStateFromAPI) —
+// which echoes them into state from the plan (kubernetesSslCertStateFromAPI) -
 // the very next Read/plan then observes the server's ACTUAL persisted values
 // (a force-overridden name, or certificate/private_key/chain/expires_at simply
 // absent from the list response) and crashes with "Provider produced
@@ -374,7 +374,7 @@ func (v *kubernetesSslCertLetsencryptFieldsValidator) ValidateResource(ctx conte
 	}
 
 	// Don't evaluate presence checks against an unknown value (e.g. derived
-	// from another resource) — defer to a later validation pass.
+	// from another resource) - defer to a later validation pass.
 	if cfg.Name.IsUnknown() || cfg.Certificate.IsUnknown() || cfg.PrivateKey.IsUnknown() ||
 		cfg.Chain.IsUnknown() || cfg.ExpiresAt.IsUnknown() {
 		return
@@ -438,7 +438,7 @@ func (r *kubernetesSslCertResource) Configure(_ context.Context, req resource.Co
 }
 
 // Create uploads/requests the certificate on its parent cluster's CP load
-// balancer (synchronous at the row level — Let's Encrypt issuance itself may
+// balancer (synchronous at the row level - Let's Encrypt issuance itself may
 // still be pending_dns in the background; this resource does not poll it). A
 // STABLE idempotency key derived from the immutable create inputs makes a
 // lost-response retry safe. The id is persisted before the read-back so a
@@ -603,7 +603,7 @@ func sslCertCreateBody(plan kubernetesSslCertModel) map[string]any {
 // object (the create response or the LIST scan). cluster_id is never in the
 // body (it is in the path) so it always falls back to the prior plan/state
 // value. certificate, private_key and chain are NEVER in the API response
-// (list-and-create alike) — they are taken from prior/plan UNCONDITIONALLY.
+// (list-and-create alike) - they are taken from prior/plan UNCONDITIONALLY.
 // source is derived from the persisted `type`, not read from the body (the API
 // never echoes `source`).
 func kubernetesSslCertStateFromAPI(ctx context.Context, obj map[string]any, prior kubernetesSslCertModel) (kubernetesSslCertModel, diag.Diagnostics) {
@@ -620,7 +620,7 @@ func kubernetesSslCertStateFromAPI(ctx context.Context, obj map[string]any, prio
 		Domain: stringFromAPI(obj, "domain", prior.Domain),
 		Name:   stringFromAPI(obj, "name", settleOptionalString(prior.Name)),
 
-		// WRITE-ONLY — never in the LIST/create response; preserve verbatim.
+		// WRITE-ONLY - never in the LIST/create response; preserve verbatim.
 		Certificate: prior.Certificate,
 		PrivateKey:  prior.PrivateKey,
 		Chain:       prior.Chain,
@@ -640,9 +640,9 @@ func kubernetesSslCertStateFromAPI(ctx context.Context, obj map[string]any, prio
 // optionalStringFromAPI / sanDomainsFromAPI for the Optional+Computed
 // attributes (name, san_domains, expires_at). On a first Create with the
 // attribute omitted from config, the PLAN value is Unknown (there is no prior
-// STATE to inherit from — UseStateForUnknown only helps on Update). In real
+// STATE to inherit from - UseStateForUnknown only helps on Update). In real
 // production traffic Eloquent always serialises every selected column
-// (including nulls), so the "absent key" fallback branch should never fire —
+// (including nulls), so the "absent key" fallback branch should never fire -
 // but this settles it to a KNOWN null defensively so a response that omits a
 // key can never leak an Unknown value into state (which Terraform rejects as
 // an inconsistent apply result).
@@ -673,10 +673,10 @@ func sourceFromType(obj map[string]any, fallback types.String) types.String {
 }
 
 // sanDomainsFromAPI reads the "san_domains" field, tolerating BOTH shapes the
-// Master API can return: a plain comma-separated string (source = "custom" —
+// Master API can return: a plain comma-separated string (source = "custom" -
 // the manual-upload path stores the raw request string, which round-trips
 // through the model's `array` cast as a JSON string rather than a real array)
-// or a genuine JSON array of domains (source = "letsencrypt" — built from a
+// or a genuine JSON array of domains (source = "letsencrypt" - built from a
 // real PHP array server-side). A present null or empty value settles to a
 // KNOWN null (not the prior/fallback) so an Optional+Computed attribute never
 // leaks an unknown value into state; only a truly ABSENT key falls back.
@@ -716,7 +716,7 @@ func sanDomainsFromAPI(obj map[string]any, fallback types.String) types.String {
 // letsencryptDomainsFromAPI converts the API "letsencrypt_domains" field (a
 // real JSON array for Let's Encrypt certs, absent/null for manual/custom) to a
 // types.List(string). Always resolves to a KNOWN value (null list or a
-// populated one) — this is a Computed-only field, never a plan fallback.
+// populated one) - this is a Computed-only field, never a plan fallback.
 func letsencryptDomainsFromAPI(ctx context.Context, obj map[string]any) (types.List, diag.Diagnostics) {
 	raw, ok := obj["letsencrypt_domains"]
 	if !ok || raw == nil {

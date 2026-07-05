@@ -33,7 +33,7 @@ docs:
 .PHONY: release-snapshot
 release-snapshot:
 	@command -v goreleaser >/dev/null 2>&1 || { \
-		echo "goreleaser not installed — see https://goreleaser.com/install/"; \
+		echo "goreleaser not installed - see https://goreleaser.com/install/"; \
 		echo "  (e.g. go install github.com/goreleaser/goreleaser/v2@latest)"; \
 		exit 1; \
 	}

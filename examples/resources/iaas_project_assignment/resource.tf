@@ -7,7 +7,7 @@
 # (e.g. one adopted via `terraform import`) without importing its entire
 # other state too.
 #
-# Every attribute is immutable (RequiresReplace) — there is no "move"
+# Every attribute is immutable (RequiresReplace) - there is no "move"
 # operation, only assign/unassign. Changing project_id, resource_type, or
 # resource_id unassigns the old link and assigns a new one.
 
@@ -26,7 +26,7 @@ resource "iaas_project_assignment" "web_in_production" {
 }
 
 # resource_type must be one of exactly: instance, vpc, load_balancer,
-# s3_bucket, managed_database — the set ProjectController's assign-resource
+# s3_bucket, managed_database - the set ProjectController's assign-resource
 # endpoint accepts. Assigning a VPC works the same way:
 resource "iaas_vpc" "main" {
   # ... vpc configuration ...
@@ -39,7 +39,7 @@ resource "iaas_project_assignment" "vpc_in_production" {
 }
 
 # Deleting this resource unassigns the resource from the project (sets its
-# project_id back to null) — it does NOT delete iaas_instance.web or
+# project_id back to null) - it does NOT delete iaas_instance.web or
 # iaas_project.production themselves.
 
 # Import with a 3-part composite id "<project_id>/<resource_type>/<resource_id>":

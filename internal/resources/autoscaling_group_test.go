@@ -12,7 +12,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccAutoscalingGroup_basic — LIVE acceptance test (manual staging gate).
+// TestAccAutoscalingGroup_basic - LIVE acceptance test (manual staging gate).
 // Auto-skips unless TF_ACC is set.
 // ---------------------------------------------------------------------------
 
@@ -115,12 +115,12 @@ func (s *asgMockServer) applySecurityGroups(body map[string]any) {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitAutoscalingGroup_lifecycle — MOCK-backed lifecycle test.
+// TestUnitAutoscalingGroup_lifecycle - MOCK-backed lifecycle test.
 //
 // Steps:
-//  1. Create — POST /scaling-groups (asserts the create body).
-//  2. Import — by id.
-//  3. Update — resize min/max + flip paused=true (asserts PATCH body + that the
+//  1. Create - POST /scaling-groups (asserts the create body).
+//  2. Import - by id.
+//  3. Update - resize min/max + flip paused=true (asserts PATCH body + that the
 //     pause endpoint fires on the paused toggle).
 //
 // Delete is implicit teardown; the SHOW handler 404s once deleted so the
@@ -144,7 +144,7 @@ func TestUnitAutoscalingGroup_lifecycle(t *testing.T) {
 
 	store := newASGMock()
 
-	// CREATE — POST /scaling-groups (envelope key "group").
+	// CREATE - POST /scaling-groups (envelope key "group").
 	srv.Handle("POST", "/scaling-groups", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -158,7 +158,7 @@ func TestUnitAutoscalingGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — GET /scaling-group/{id} (envelope key "scaling_group"). 404 once deleted.
+	// SHOW - GET /scaling-group/{id} (envelope key "scaling_group"). 404 once deleted.
 	srv.Handle("GET", "/scaling-group/"+groupID, func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -174,7 +174,7 @@ func TestUnitAutoscalingGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// UPDATE — PATCH /scaling-group/{id} (envelope key "group").
+	// UPDATE - PATCH /scaling-group/{id} (envelope key "group").
 	srv.Handle("PATCH", "/scaling-group/"+groupID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -188,7 +188,7 @@ func TestUnitAutoscalingGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// PAUSE — POST /scaling-group/{id}/pause.
+	// PAUSE - POST /scaling-group/{id}/pause.
 	srv.Handle("POST", "/scaling-group/"+groupID+"/pause", func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -200,7 +200,7 @@ func TestUnitAutoscalingGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// RESUME — POST /scaling-group/{id}/resume.
+	// RESUME - POST /scaling-group/{id}/resume.
 	srv.Handle("POST", "/scaling-group/"+groupID+"/resume", func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -212,7 +212,7 @@ func TestUnitAutoscalingGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — DELETE /scaling-group/{id} (async; SHOW 404s afterwards).
+	// DELETE - DELETE /scaling-group/{id} (async; SHOW 404s afterwards).
 	srv.Handle("DELETE", "/scaling-group/"+groupID, func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()

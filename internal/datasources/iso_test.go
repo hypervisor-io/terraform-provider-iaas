@@ -10,7 +10,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/acctest"
 )
 
-// TestUnitISO_lookup — resolves an ISO by exact name from the paginator
+// TestUnitISO_lookup - resolves an ISO by exact name from the paginator
 // response, exposing the computed id/filename. The mock matches on path only,
 // so the ?search= query the client sends is ignored by the dispatcher.
 func TestUnitISO_lookup(t *testing.T) {
@@ -48,7 +48,7 @@ data "iaas_iso" "t" {
 	})
 }
 
-// TestUnitISO_noMatch — a name matching no ISO errors clearly.
+// TestUnitISO_noMatch - a name matching no ISO errors clearly.
 func TestUnitISO_noMatch(t *testing.T) {
 	ensureTFBinary(t)
 

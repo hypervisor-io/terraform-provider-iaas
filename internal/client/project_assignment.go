@@ -10,8 +10,8 @@ import (
 //
 //	ASSIGN  POST /project/assign-resource
 //	        body {resource_type, resource_id, project_id}
-//	        → 200 {success,message} — NO id and NO object is returned at all.
-//	        project_id may be omitted/null to UNASSIGN — this is the ONLY
+//	        → 200 {success,message} - NO id and NO object is returned at all.
+//	        project_id may be omitted/null to UNASSIGN - this is the ONLY
 //	        unassign mechanism; there is no dedicated detach/DELETE route.
 //	        resource_type is validated server-side against exactly:
 //	        instance, vpc, load_balancer, s3_bucket, managed_database.
@@ -24,7 +24,7 @@ import (
 // CRITICALLY, there is no dedicated SHOW/list-membership route for a single
 // assignment (GET /project/{id} embeds paginated, per-type resource lists
 // which are unsuitable for a targeted "is resource X assigned to project P"
-// check — the target could be past the embedded page). Instead every
+// check - the target could be past the embedded page). Instead every
 // assignable resource type carries its OWN project_id un-hidden on its own
 // SHOW response (confirmed against each Model's $hidden array on the
 // Master: Instance, VPC, LoadBalancer, S3Bucket (nested under "bucket"),
@@ -52,11 +52,11 @@ func IsValidProjectResourceType(resourceType string) bool {
 
 // AssignResourceToProject assigns resourceType/resourceID to projectID via
 // POST /project/assign-resource. Pass projectID == "" to UNASSIGN (sends
-// project_id: null) — the same endpoint handles both directions per the
+// project_id: null) - the same endpoint handles both directions per the
 // controller's own doc comment ("Set project_id to null to unassign").
 //
 // The endpoint's success payload carries no object at all ({success,message}),
-// so doVoid — which only checks the success flag — is the correct shared
+// so doVoid - which only checks the success flag - is the correct shared
 // helper; there is nothing for doItem to unwrap.
 func (c *Client) AssignResourceToProject(ctx context.Context, resourceType, resourceID, projectID string) error {
 	if resourceType == "" {
@@ -82,10 +82,10 @@ func (c *Client) AssignResourceToProject(ctx context.Context, resourceType, reso
 // field back from the shape that type's SHOW envelope actually uses.
 //
 // Returns ("", nil) when the resource exists but has no project (project_id
-// is null/absent — e.g. it was unassigned out of band). A resource that no
+// is null/absent - e.g. it was unassigned out of band). A resource that no
 // longer exists at all surfaces the underlying *APIError unchanged, which
 // IsNotFound recognises (a 404 here means "the resource is gone", NOT merely
-// "unassigned" — callers must distinguish the two).
+// "unassigned" - callers must distinguish the two).
 func (c *Client) GetResourceProjectID(ctx context.Context, resourceType, resourceID string) (string, error) {
 	switch resourceType {
 	case "instance":
@@ -114,7 +114,7 @@ func (c *Client) GetResourceProjectID(ctx context.Context, resourceType, resourc
 
 	case "s3_bucket":
 		// GetS3Bucket returns the ENTIRE SHOW envelope (key ""); the bucket
-		// object itself — carrying project_id — is nested under "bucket".
+		// object itself - carrying project_id - is nested under "bucket".
 		obj, err := c.GetS3Bucket(ctx, resourceID)
 		if err != nil {
 			return "", err
@@ -136,7 +136,7 @@ func (c *Client) GetResourceProjectID(ctx context.Context, resourceType, resourc
 }
 
 // projectIDFromObject reads the "project_id" string field from a decoded API
-// object, tolerating a nil map, a missing key, or a JSON null — all collapse
+// object, tolerating a nil map, a missing key, or a JSON null - all collapse
 // to "" (no project assigned).
 func projectIDFromObject(obj map[string]any) string {
 	if obj == nil {

@@ -103,7 +103,7 @@ func TestCreateVPC_OmitsDescription(t *testing.T) {
 }
 
 // TestCreateVPC_Failure verifies a 200 success:false response surfaces the API
-// message as an error (C3 — create signals failure at HTTP 200, e.g. invalid
+// message as an error (C3 - create signals failure at HTTP 200, e.g. invalid
 // CIDR, location not VPC-enabled, or quota exceeded).
 func TestCreateVPC_Failure(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -213,7 +213,7 @@ func TestDeleteVPC_Success(t *testing.T) {
 }
 
 // TestDeleteVPC_Failure verifies a 200 success:false delete surfaces the
-// message as an error (C3 — e.g. a subnet still has used IPs).
+// message as an error (C3 - e.g. a subnet still has used IPs).
 func TestDeleteVPC_Failure(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

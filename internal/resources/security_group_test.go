@@ -12,7 +12,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccSecurityGroup_basic — LIVE acceptance test (manual staging gate).
+// TestAccSecurityGroup_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set (resource.Test enforces this), so it never
 // runs or blocks CI. Requires a reachable panel + IP-locked token via
@@ -160,7 +160,7 @@ func (s *sgMockServer) sgEnvelope(id string) map[string]any {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitSecurityGroup_lifecycle — MOCK-backed lifecycle proof (the key test).
+// TestUnitSecurityGroup_lifecycle - MOCK-backed lifecycle proof (the key test).
 //
 // Steps:
 //  1. Create with TWO rules + ONE attached instance → assert id/name, rules.# = 2,
@@ -185,7 +185,7 @@ func TestUnitSecurityGroup_lifecycle(t *testing.T) {
 		attached: map[string]struct{}{},
 	}
 
-	// CREATE — POST /security-groups stores name/description, returns the group.
+	// CREATE - POST /security-groups stores name/description, returns the group.
 	srv.Handle("POST", "/security-groups", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -206,7 +206,7 @@ func TestUnitSecurityGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// ADD RULE — POST /security-group/{id}/rules stores a new rule, returns it.
+	// ADD RULE - POST /security-group/{id}/rules stores a new rule, returns it.
 	srv.Handle("POST", "/security-group/"+sgID+"/rules", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -221,14 +221,14 @@ func TestUnitSecurityGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — GET /security-group/{id} returns the envelope (rules + attached).
+	// SHOW - GET /security-group/{id} returns the envelope (rules + attached).
 	srv.Handle("GET", "/security-group/"+sgID, func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
 		writeJSON(w, http.StatusOK, store.sgEnvelope(sgID))
 	})
 
-	// UPDATE — PATCH /security-group/{id} applies name/description; NO body.
+	// UPDATE - PATCH /security-group/{id} applies name/description; NO body.
 	srv.Handle("PATCH", "/security-group/"+sgID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -250,13 +250,13 @@ func TestUnitSecurityGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// REMOVE RULE — DELETE /security-group/{id}/rule/{ruleId}. The mock can only
+	// REMOVE RULE - DELETE /security-group/{id}/rule/{ruleId}. The mock can only
 	// exact-match, so register a handler per rule id the mock can assign.
 	for _, rid := range []string{"rule-1", "rule-2", "rule-3", "rule-4", "rule-5"} {
 		srv.Handle("DELETE", "/security-group/"+sgID+"/rule/"+rid, makeRemoveRuleHandler(store, rid))
 	}
 
-	// ATTACH — POST /security-group/{id}/attach-instances adds the ids.
+	// ATTACH - POST /security-group/{id}/attach-instances adds the ids.
 	srv.Handle("POST", "/security-group/"+sgID+"/attach-instances", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -276,7 +276,7 @@ func TestUnitSecurityGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DETACH — POST /security-group/{id}/detach-instances removes the ids.
+	// DETACH - POST /security-group/{id}/detach-instances removes the ids.
 	srv.Handle("POST", "/security-group/"+sgID+"/detach-instances", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -296,7 +296,7 @@ func TestUnitSecurityGroup_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE GROUP — DELETE /security-group/{id}.
+	// DELETE GROUP - DELETE /security-group/{id}.
 	srv.Handle("DELETE", "/security-group/"+sgID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,

@@ -16,10 +16,10 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — iaas_instance_vpc_attachment is a STANDALONE resource
+// Interface assertions - iaas_instance_vpc_attachment is a STANDALONE resource
 // keyed on instance_id (Gap G3). An instance can have AT MOST ONE VPC
 // interface (InstanceService::createVpcInterface refuses a second type=vpc
-// interface), so this is NOT a child-of-instance list resource — it is a
+// interface), so this is NOT a child-of-instance list resource - it is a
 // singleton per instance, with no id of its own beyond the instance's.
 //
 // DEVIATIONS FROM THE ORIGINAL TASK SKETCH (`{instance_id, vpc_id?,
@@ -27,7 +27,7 @@ import (
 // real controller (InstanceVpcController/InstanceService, verified by
 // reading the Master source directly):
 //
-//  1. vpc_id AND vpc_subnet_id are both REQUIRED (not optional) on enable —
+//  1. vpc_id AND vpc_subnet_id are both REQUIRED (not optional) on enable -
 //     EnableVpcRequest validates `vpc_id => required|uuid|exists:vpc,id` and
 //     `vpc_subnet_id => required|uuid|exists:vpc_subnets,id`; there is no
 //     default/auto-selected subnet. Both are RequiresReplace: changing either
@@ -37,13 +37,13 @@ import (
 //  2. A single "ips" attribute cannot be BOTH Optional (user-supplied) and
 //     Computed (accurately reflecting the server) at once, because `enable`
 //     ALWAYS auto-assigns the LOWEST FREE ip in the subnet as the instance's
-//     first (primary) ip — there is no request field to choose or omit it.
+//     first (primary) ip - there is no request field to choose or omit it.
 //     If "ips" were Optional+Computed and a user's first config didn't happen
 //     to already name that unpredictable address, every subsequent plan would
 //     show a perpetual diff trying to remove "drift" that is actually the
 //     server's own mandatory behavior (and the API refuses to remove an
-//     instance's LAST ip via DELETE ip/{id} — "Cannot remove the last VPC IP.
-//     Disable VPC instead" — making that diff unresolvable, not just noisy).
+//     instance's LAST ip via DELETE ip/{id} - "Cannot remove the last VPC IP.
+//     Disable VPC instead" - making that diff unresolvable, not just noisy).
 //     This resource instead splits the concept into three attributes:
 //     - auto_assigned_ip (Computed only): the server-chosen address from
 //     enable, informational and never targeted by add/remove.
@@ -56,7 +56,7 @@ import (
 //     reference (e.g. firewall rules), rebuilt from the API on every Read.
 //
 // Async note: enable/disable additionally fire an un-awaited hot-(re)configure
-// command to the hypervisor when the instance is currently running — but
+// command to the hypervisor when the instance is currently running - but
 // every DB write this resource's Read observes (instances.vpc_id/
 // vpc_subnet_id, vpc_subnet_ips rows) commits synchronously before the HTTP
 // response returns, and neither endpoint returns a task_id to poll even when
@@ -106,8 +106,8 @@ func (r *instanceVpcAttachmentResource) Metadata(_ context.Context, req resource
 func (r *instanceVpcAttachmentResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Attaches an instance to a VPC subnet (the instance's single VPC network " +
-			"interface). An instance may have AT MOST ONE VPC interface at a time — enabling a " +
-			"second one fails server-side — so this is a STANDALONE resource keyed on instance_id, " +
+			"interface). An instance may have AT MOST ONE VPC interface at a time - enabling a " +
+			"second one fails server-side - so this is a STANDALONE resource keyed on instance_id, " +
 			"not a nested block on iaas_instance. Enabling ALWAYS auto-assigns the lowest free ip " +
 			"in vpc_subnet_id as the instance's first (primary) ip; that address is exposed " +
 			"read-only as auto_assigned_ip. Any further secondary addresses are managed via " +
@@ -117,7 +117,7 @@ func (r *instanceVpcAttachmentResource) Schema(_ context.Context, _ resource.Sch
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
-				Description: "Same value as instance_id. The attachment has no id of its own — it " +
+				Description: "Same value as instance_id. The attachment has no id of its own - it " +
 					"is identified entirely by which instance it belongs to.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -155,8 +155,8 @@ func (r *instanceVpcAttachmentResource) Schema(_ context.Context, _ resource.Sch
 				Optional:    true,
 				Computed:    true,
 				ElementType: types.StringType,
-				Description: "Extra dotted-quad addresses — beyond the server auto-assigned " +
-					"auto_assigned_ip — to attach from vpc_subnet_id's free pool, as an " +
+				Description: "Extra dotted-quad addresses - beyond the server auto-assigned " +
+					"auto_assigned_ip - to attach from vpc_subnet_id's free pool, as an " +
 					"order-independent set. Adding or removing an address here attaches or detaches " +
 					"it in place (the API's ip/add and DELETE ip/{id} endpoints). Each address must " +
 					"currently be FREE in the subnet's pool; one already in use, or outside the " +
@@ -164,7 +164,7 @@ func (r *instanceVpcAttachmentResource) Schema(_ context.Context, _ resource.Sch
 					"here: it is tracked separately and the API itself refuses to remove an " +
 					"instance's LAST vpc ip (destroy this resource instead to release everything). " +
 					"Modelled Optional+Computed (like iaas_instance's hostname) so an omitted value " +
-					"— meaning \"just the auto-assigned ip, no extras\" — round-trips cleanly instead " +
+					"- meaning \"just the auto-assigned ip, no extras\" - round-trips cleanly instead " +
 					"of tripping a plan-time consistency error.",
 			},
 			"primary_ip": schema.StringAttribute{
@@ -172,14 +172,14 @@ func (r *instanceVpcAttachmentResource) Schema(_ context.Context, _ resource.Sch
 				Computed: true,
 				Description: "Which attached address (auto_assigned_ip, or one of additional_ips) " +
 					"should be marked primary. Defaults to the server auto-assigned ip when omitted. " +
-					"Must reference an address that is already attached — add it via additional_ips " +
+					"Must reference an address that is already attached - add it via additional_ips " +
 					"in the same apply (or an earlier one) before naming it here.",
 			},
 			"auto_assigned_ip": schema.StringAttribute{
 				Computed: true,
 				Description: "The dotted-quad address the API auto-assigned (the lowest free ip in " +
 					"vpc_subnet_id at the time) when the VPC was enabled. Not user-controlled, and " +
-					"not independently removable — destroy this resource to release it.",
+					"not independently removable - destroy this resource to release it.",
 			},
 			"ips": schema.SetAttribute{
 				Computed:    true,
@@ -242,7 +242,7 @@ func (r *instanceVpcAttachmentResource) Create(ctx context.Context, req resource
 	if len(rows) == 0 {
 		resp.Diagnostics.AddError(
 			"Error enabling VPC on instance",
-			"enable succeeded but no ip was auto-assigned; this is unexpected — please report it",
+			"enable succeeded but no ip was auto-assigned; this is unexpected - please report it",
 		)
 		return
 	}
@@ -289,7 +289,7 @@ func (r *instanceVpcAttachmentResource) Create(ctx context.Context, req resource
 }
 
 // Read refreshes state from the API. An empty vpc/ips listing means no VPC is
-// attached (the instance was detached out of band) — remove it from state so
+// attached (the instance was detached out of band) - remove it from state so
 // Terraform plans a recreate.
 func (r *instanceVpcAttachmentResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state instanceVpcAttachmentModel
@@ -311,7 +311,7 @@ func (r *instanceVpcAttachmentResource) Read(ctx context.Context, req resource.R
 }
 
 // Update diffs additional_ips (add new / remove dropped, by address) and
-// applies a primary_ip change, in that order — additions and removals settle
+// applies a primary_ip change, in that order - additions and removals settle
 // the attached set BEFORE a primary override is applied, so the final primary
 // is deterministic regardless of any transient auto-reassignment the API
 // performs internally when the previously-primary ip is removed.
@@ -361,7 +361,7 @@ func (r *instanceVpcAttachmentResource) Update(ctx context.Context, req resource
 			}
 			row := findIPRowByAddress(rows, addr)
 			if row == nil {
-				continue // already gone (drift) — nothing to do
+				continue // already gone (drift) - nothing to do
 			}
 			id, _ := row["id"].(string)
 			if id == "" {
@@ -417,7 +417,7 @@ func (r *instanceVpcAttachmentResource) Delete(ctx context.Context, req resource
 //
 // KNOWN LIMITATION: on a fresh import there is no prior state to tell
 // auto_assigned_ip apart from additional_ips (the API does not record which
-// ip came from enable vs a later ip/add) — readState falls back to treating
+// ip came from enable vs a later ip/add) - readState falls back to treating
 // the CURRENT primary address as auto_assigned_ip in that case. If the
 // primary has since been moved to a different address than the one enable
 // originally assigned, an import will attribute the wrong address to
@@ -484,7 +484,7 @@ func (r *instanceVpcAttachmentResource) setPrimaryByAddress(ctx context.Context,
 
 // readState fetches the instance's attached vpc ips and builds the full
 // model. An empty listing means no VPC is attached (never enabled, or
-// detached out of band) — the bool return signals the caller to
+// detached out of band) - the bool return signals the caller to
 // RemoveResource; in that case the returned diagnostics are empty.
 func (r *instanceVpcAttachmentResource) readState(ctx context.Context, instanceID string, prior instanceVpcAttachmentModel) (instanceVpcAttachmentModel, bool, diag.Diagnostics) {
 	rows, err := r.client.ListInstanceVpcIPs(ctx, instanceID)
@@ -594,7 +594,7 @@ func findIPRowByAddress(rows []map[string]any, addr string) map[string]any {
 }
 
 // stringSetOrNull builds a types.Set(String) from values, preserving a null
-// result when values is empty AND prior was null/unknown — so an omitted
+// result when values is empty AND prior was null/unknown - so an omitted
 // additional_ips config does not show spurious drift as an empty set.
 func stringSetOrNull(ctx context.Context, values []string, prior types.Set) (types.Set, diag.Diagnostics) {
 	if len(values) == 0 {
@@ -606,7 +606,7 @@ func stringSetOrNull(ctx context.Context, values []string, prior types.Set) (typ
 	return types.SetValueFrom(ctx, types.StringType, values)
 }
 
-// stringSetKnown builds a non-null types.Set(String) from values — used for
+// stringSetKnown builds a non-null types.Set(String) from values - used for
 // the fully computed "ips" output, which is always Known once the resource
 // exists (readState only builds a model when at least one row is attached).
 func stringSetKnown(ctx context.Context, values []string) (types.Set, diag.Diagnostics) {

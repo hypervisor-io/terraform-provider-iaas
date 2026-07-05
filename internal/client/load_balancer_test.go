@@ -24,7 +24,7 @@ import (
 //     status="deploying".
 //
 // Create is async: the real LoadBalancerService::deploy returns
-// {success,message,load_balancer:{id,status:"deploying",...}} — the controller's
+// {success,message,load_balancer:{id,status:"deploying",...}} - the controller's
 // Scribe annotation showing only {success,message} is stale (like VPC). The
 // resource reads the id from the create response, then polls SHOW until
 // status="active".
@@ -70,11 +70,11 @@ func TestCreateLoadBalancer_Success(t *testing.T) {
 
 // TestCreateLoadBalancer_FeatureDisabled verifies that an in-controller feature
 // gate (the LB routes are NOT wrapped in billing.enabled middleware, so gating
-// arrives as HTTP 200 success:false — e.g. "Load balancing is not enabled for
+// arrives as HTTP 200 success:false - e.g. "Load balancing is not enabled for
 // this hypervisor group", quota reached, no public IP) surfaces as an error (C3).
 func TestCreateLoadBalancer_FeatureDisabled(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// HTTP 200 with success:false — the LB core routes have no 403 billing gate.
+		// HTTP 200 with success:false - the LB core routes have no 403 billing gate.
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"success":false,"message":"Load balancing is not enabled for this hypervisor group."}`))
 	}))

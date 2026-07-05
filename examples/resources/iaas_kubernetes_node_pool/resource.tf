@@ -8,14 +8,14 @@
 # (current_node_count) populates on subsequent reads.
 #
 # NOTE: for user-driven edits the API keeps min_size and target_count in lockstep
-# — set them to the same value (supplying only one mirrors it to the other).
+# - set them to the same value (supplying only one mirrors it to the other).
 
 resource "iaas_kubernetes_node_pool" "gpu" {
   cluster_id       = iaas_kubernetes_cluster.prod.id
   name             = "gpu-pool" # DNS-1123 style, unique within the cluster
   instance_plan_id = "99999999-9999-9999-9999-999999999999"
 
-  # Sizing — min_size and target_count are kept equal for user edits.
+  # Sizing - min_size and target_count are kept equal for user edits.
   min_size     = 2
   max_size     = 5
   target_count = 2

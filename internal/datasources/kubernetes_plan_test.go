@@ -11,14 +11,14 @@ import (
 )
 
 const (
-	// k8sWorkerPlansBody — FLAT Select2 from /kubernetes/search/plans (text
+	// k8sWorkerPlansBody - FLAT Select2 from /kubernetes/search/plans (text
 	// decorated with specs; "name" is the clean plan name to match on).
 	k8sWorkerPlansBody = `{"results":[{"id":"ip-1","text":"std-2 - 2 CPU, 4096 MB, 80 GB","name":"std-2","cpu_cores":2,"ram":4096,"storage":80,"credit_value":1000}],"pagination":{"more":false}}`
-	// k8sLbPlansBody — FLAT Select2 from /kubernetes/search/lb-plans (NO storage).
+	// k8sLbPlansBody - FLAT Select2 from /kubernetes/search/lb-plans (NO storage).
 	k8sLbPlansBody = `{"results":[{"id":"lbp-1","text":"lb-2 - 2 CPU, 2048 MB","name":"lb-2","cpu_cores":2,"ram":2048,"credit_value":500}],"pagination":{"more":false}}`
 )
 
-// TestUnitKubernetesPlan_worker — kind="worker" hits /kubernetes/search/plans,
+// TestUnitKubernetesPlan_worker - kind="worker" hits /kubernetes/search/plans,
 // matches on the clean plan name, and exposes id + specs.
 func TestUnitKubernetesPlan_worker(t *testing.T) {
 	ensureTFBinary(t)
@@ -53,7 +53,7 @@ data "iaas_kubernetes_plan" "t" {
 	})
 }
 
-// TestUnitKubernetesPlan_cp — kind="cp" hits /kubernetes/search/cp-plans. The cp
+// TestUnitKubernetesPlan_cp - kind="cp" hits /kubernetes/search/cp-plans. The cp
 // catalog is the IDENTICAL underlying instance-plan list as worker (the server
 // splits the route only for semantic clarity), so it resolves the same specs.
 func TestUnitKubernetesPlan_cp(t *testing.T) {
@@ -89,7 +89,7 @@ data "iaas_kubernetes_plan" "t" {
 	})
 }
 
-// TestUnitKubernetesPlan_lb — kind="lb" hits the distinct /kubernetes/search/
+// TestUnitKubernetesPlan_lb - kind="lb" hits the distinct /kubernetes/search/
 // lb-plans route; LB plans carry no storage, so it settles to 0.
 func TestUnitKubernetesPlan_lb(t *testing.T) {
 	ensureTFBinary(t)
@@ -122,7 +122,7 @@ data "iaas_kubernetes_plan" "t" {
 	})
 }
 
-// TestUnitKubernetesPlan_noMatch — a plan name matching nothing errors clearly.
+// TestUnitKubernetesPlan_noMatch - a plan name matching nothing errors clearly.
 func TestUnitKubernetesPlan_noMatch(t *testing.T) {
 	ensureTFBinary(t)
 

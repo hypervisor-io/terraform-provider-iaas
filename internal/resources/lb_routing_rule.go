@@ -32,7 +32,7 @@ func NewLBRoutingRuleResource() resource.Resource {
 	return &lbRoutingRuleResource{}
 }
 
-// lbRoutingRuleResource manages an iaas_lb_routing_rule — an L7 routing rule of a
+// lbRoutingRuleResource manages an iaas_lb_routing_rule - an L7 routing rule of a
 // load balancer frontend.
 type lbRoutingRuleResource struct {
 	client *client.Client

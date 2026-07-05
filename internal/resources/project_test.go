@@ -11,7 +11,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccProject_basic — LIVE acceptance test (manual staging gate).
+// TestAccProject_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set (resource.Test enforces this), so it never
 // runs or blocks CI. Requires a reachable panel + IP-locked token via
@@ -48,14 +48,14 @@ resource "iaas_project" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitProject_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitProject_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the full resource lifecycle against canned API responses, with no
 // live panel. The Steps execute in this order:
 //
-//  1. Create + read-back — applies createCfg; checks id, name, description, color.
-//  2. Import — imports the resource by UUID and verifies state matches prior step.
-//  3. Update — applies updateCfg (renamed + new color + cleared description).
+//  1. Create + read-back - applies createCfg; checks id, name, description, color.
+//  2. Import - imports the resource by UUID and verifies state matches prior step.
+//  3. Update - applies updateCfg (renamed + new color + cleared description).
 //
 // Delete is implicit teardown after the final step, not an explicit Step.
 //
@@ -73,12 +73,12 @@ func TestUnitProject_lifecycle(t *testing.T) {
 	)
 
 	// currentState tracks the mutable server-side fields so READ always
-	// reflects the latest state — exercising real drift-free read-back.
+	// reflects the latest state - exercising real drift-free read-back.
 	currentName := "My Project"
 	currentDesc := "Initial description"
 	currentColor := "#3B82F6"
 
-	// CREATE — POST /projects returns 200 + {success,message,project}.
+	// CREATE - POST /projects returns 200 + {success,message,project}.
 	srv.Handle("POST", "/projects", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -102,7 +102,7 @@ func TestUnitProject_lifecycle(t *testing.T) {
 		})
 	})
 
-	// UPDATE — PATCH /project/{id} applies new fields.
+	// UPDATE - PATCH /project/{id} applies new fields.
 	srv.Handle("PATCH", "/project/"+projectID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -129,12 +129,12 @@ func TestUnitProject_lifecycle(t *testing.T) {
 		})
 	})
 
-	// READ — GET /project/{id} reflects the latest state.
+	// READ - GET /project/{id} reflects the latest state.
 	srv.Handle("GET", "/project/"+projectID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
 			"project": buildProjectObj(projectID, currentName, currentDesc, currentColor),
-			// SHOW also returns embedded resource lists — resource ignores them.
+			// SHOW also returns embedded resource lists - resource ignores them.
 			"instances":         map[string]any{"data": []any{}},
 			"vpcs":              map[string]any{"data": []any{}},
 			"load_balancers":    map[string]any{"data": []any{}},
@@ -143,7 +143,7 @@ func TestUnitProject_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — DELETE /project/{id} succeeds at 200.
+	// DELETE - DELETE /project/{id} succeeds at 200.
 	srv.Handle("DELETE", "/project/"+projectID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,

@@ -12,7 +12,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccDBBackupPolicy_basic — LIVE acceptance test (manual staging gate).
+// TestAccDBBackupPolicy_basic - LIVE acceptance test (manual staging gate).
 // Auto-skips unless TF_ACC is set.
 // ---------------------------------------------------------------------------
 func TestAccDBBackupPolicy_basic(t *testing.T) {
@@ -55,7 +55,7 @@ resource "iaas_db_backup_policy" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// dbpMockServer — stateful mock of the database backup policy API.
+// dbpMockServer - stateful mock of the database backup policy API.
 // ---------------------------------------------------------------------------
 type dbpMockServer struct {
 	mu sync.Mutex
@@ -118,7 +118,7 @@ func (s *dbpMockServer) policyObject(id string) map[string]any {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitDBBackupPolicy_lifecycle — MOCK-backed lifecycle test.
+// TestUnitDBBackupPolicy_lifecycle - MOCK-backed lifecycle test.
 //
 // Steps:
 //  1. Create with daily schedule, 6h incrementals, attach db-a → assert id/name,
@@ -140,7 +140,7 @@ func TestUnitDBBackupPolicy_lifecycle(t *testing.T) {
 		attached: map[string]struct{}{},
 	}
 
-	// CREATE — POST /networking/db-backup-policies
+	// CREATE - POST /networking/db-backup-policies
 	srv.Handle("POST", "/networking/db-backup-policies", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -186,7 +186,7 @@ func TestUnitDBBackupPolicy_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — GET /networking/db-backup-policy/{id}
+	// SHOW - GET /networking/db-backup-policy/{id}
 	srv.Handle("GET", "/networking/db-backup-policy/"+policyID, func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
@@ -196,7 +196,7 @@ func TestUnitDBBackupPolicy_lifecycle(t *testing.T) {
 		})
 	})
 
-	// UPDATE — PATCH /networking/db-backup-policy/{id}
+	// UPDATE - PATCH /networking/db-backup-policy/{id}
 	srv.Handle("PATCH", "/networking/db-backup-policy/"+policyID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -218,7 +218,7 @@ func TestUnitDBBackupPolicy_lifecycle(t *testing.T) {
 		})
 	})
 
-	// ATTACH — POST /networking/db-backup-policy/{id}/attach
+	// ATTACH - POST /networking/db-backup-policy/{id}/attach
 	srv.Handle("POST", "/networking/db-backup-policy/"+policyID+"/attach", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -234,7 +234,7 @@ func TestUnitDBBackupPolicy_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DETACH — POST /networking/db-backup-policy/{id}/detach
+	// DETACH - POST /networking/db-backup-policy/{id}/detach
 	srv.Handle("POST", "/networking/db-backup-policy/"+policyID+"/detach", func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -250,7 +250,7 @@ func TestUnitDBBackupPolicy_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE — DELETE /networking/db-backup-policy/{id}
+	// DELETE - DELETE /networking/db-backup-policy/{id}
 	srv.Handle("DELETE", "/networking/db-backup-policy/"+policyID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
@@ -322,7 +322,7 @@ resource "iaas_db_backup_policy" "test" {
 					resource.TestCheckTypeSetElemAttr("iaas_db_backup_policy.test", "database_ids.*", "db-a"),
 				),
 			},
-			// 2. Import by id — credentials not recoverable from SHOW, must ignore.
+			// 2. Import by id - credentials not recoverable from SHOW, must ignore.
 			{
 				ResourceName:            "iaas_db_backup_policy.test",
 				ImportState:             true,
@@ -402,7 +402,7 @@ resource "iaas_db_backup_policy" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitDBBackupPolicy_s3PathPrefixClear — verifies that removing
+// TestUnitDBBackupPolicy_s3PathPrefixClear - verifies that removing
 // s3_path_prefix from config (so the server returns "" or omits it) causes
 // the attribute to become null in state rather than perpetually retaining the
 // prior value.
@@ -522,7 +522,7 @@ resource "iaas_db_backup_policy" "ptest" {
 }
 `
 
-	// Step 2: remove s3_path_prefix — it must become null, not keep "backups/prod".
+	// Step 2: remove s3_path_prefix - it must become null, not keep "backups/prod".
 	withoutPrefix := providerCfg + `
 resource "iaas_db_backup_policy" "ptest" {
   name                       = "prefix-test"

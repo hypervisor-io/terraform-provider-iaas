@@ -18,7 +18,7 @@ import (
 	"github.com/iaas/terraform-provider-iaas/internal/client"
 )
 
-// Interface assertions — dns_record is a CHILD of dns_record_set (zone_id +
+// Interface assertions - dns_record is a CHILD of dns_record_set (zone_id +
 // record_set_id in the path). It copies the read-by-scan pattern (records are
 // embedded in the zone SHOW under record_sets[].records[]) and the 3-part
 // composite-import pattern (zone_id/record_set_id/record_id, like lb_target).
@@ -35,7 +35,7 @@ func NewDNSRecordResource() resource.Resource {
 	return &dnsRecordResource{}
 }
 
-// dnsRecordResource manages an iaas_dns_record — a single value within a record
+// dnsRecordResource manages an iaas_dns_record - a single value within a record
 // set (e.g. one IP for an A record set), optionally with a health check.
 //
 // Route summary (verified against UserApi\VpcDnsRecordController + VpcDnsService +
@@ -84,7 +84,7 @@ type dnsHealthCheckModel struct {
 }
 
 // dnsHealthCheckAttrTypes is the attribute-type map for the nested health_check
-// object — the single source of truth reused everywhere a health_check object is
+// object - the single source of truth reused everywhere a health_check object is
 // (re)built so the schema and runtime values never drift.
 var dnsHealthCheckAttrTypes = map[string]attr.Type{
 	"type":                types.StringType,
@@ -142,7 +142,7 @@ func (r *dnsRecordResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			},
 			"weight": schema.Int64Attribute{
 				Optional: true,
-				Description: "Relative weight (1–255) for weighted routing. Required by the API " +
+				Description: "Relative weight (1-255) for weighted routing. Required by the API " +
 					"when the record set uses the \"weighted\" policy; ignored otherwise. " +
 					"Updatable in place.",
 			},
@@ -177,7 +177,7 @@ func (r *dnsRecordResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 					},
 					"port": schema.Int64Attribute{
 						Optional:    true,
-						Description: "Probe port (1–65535). Defaults server-side by type.",
+						Description: "Probe port (1-65535). Defaults server-side by type.",
 					},
 					"path": schema.StringAttribute{
 						Optional:    true,
@@ -185,32 +185,32 @@ func (r *dnsRecordResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 					},
 					"expected_status": schema.Int64Attribute{
 						Optional:    true,
-						Description: "Expected HTTP status code (100–599) for http/https probes.",
+						Description: "Expected HTTP status code (100-599) for http/https probes.",
 					},
 					"interval": schema.Int64Attribute{
 						Optional: true,
 						Computed: true,
-						Description: "Seconds between probes (10–300). Optional; null is stored when " +
-							"omitted — the check agent applies its own default.",
+						Description: "Seconds between probes (10-300). Optional; null is stored when " +
+							"omitted - the check agent applies its own default.",
 					},
 					"timeout": schema.Int64Attribute{
 						Optional: true,
 						Computed: true,
-						Description: "Probe timeout in seconds (2–60). Optional; null is stored when " +
-							"omitted — the check agent applies its own default.",
+						Description: "Probe timeout in seconds (2-60). Optional; null is stored when " +
+							"omitted - the check agent applies its own default.",
 					},
 					"unhealthy_threshold": schema.Int64Attribute{
 						Optional: true,
 						Computed: true,
 						Description: "Consecutive failures before the record is marked unhealthy " +
-							"(1–10). Optional; null is stored when omitted — the check agent " +
+							"(1-10). Optional; null is stored when omitted - the check agent " +
 							"applies its own default.",
 					},
 					"healthy_threshold": schema.Int64Attribute{
 						Optional: true,
 						Computed: true,
 						Description: "Consecutive successes before the record is marked healthy " +
-							"again (1–10). Optional; null is stored when omitted — the check " +
+							"again (1-10). Optional; null is stored when omitted - the check " +
 							"agent applies its own default.",
 					},
 				},

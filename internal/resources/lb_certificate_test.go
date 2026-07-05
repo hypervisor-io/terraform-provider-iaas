@@ -15,16 +15,16 @@ func TestAccLBCertificate_basic(t *testing.T) {
 	t.Skip("TestAccLBCertificate_basic: acceptance test runs only with TF_ACC + a real load balancer id (manual staging gate)")
 }
 
-// TestUnitLBCertificate_lifecycle drives the CHILD lifecycle (no update — every
+// TestUnitLBCertificate_lifecycle drives the CHILD lifecycle (no update - every
 // field is RequiresReplace):
 //
-//  1. Create — POST .../certificates with name/certificate/private_key; the cert
+//  1. Create - POST .../certificates with name/certificate/private_key; the cert
 //     appears in certificates[] but WITHOUT private_key (it is $hidden). Asserts
 //     the create body carried private_key.
-//  2. Read — scans the LB SHOW certificates[]; private_key is echoed from plan.
-//  3. Import — composite "<lb>/<cert>"; private_key is in ImportStateVerifyIgnore
+//  2. Read - scans the LB SHOW certificates[]; private_key is echoed from plan.
+//  3. Import - composite "<lb>/<cert>"; private_key is in ImportStateVerifyIgnore
 //     because the SHOW cannot return it.
-//  4. Delete — removes the cert from the embedded array.
+//  4. Delete - removes the cert from the embedded array.
 func TestUnitLBCertificate_lifecycle(t *testing.T) {
 	ensureTFBinary(t)
 
@@ -46,7 +46,7 @@ func TestUnitLBCertificate_lifecycle(t *testing.T) {
 		if !exists {
 			return []any{}
 		}
-		// NOTE: no private_key — it is $hidden server-side.
+		// NOTE: no private_key - it is $hidden server-side.
 		return []any{
 			map[string]any{
 				"id":          certID,

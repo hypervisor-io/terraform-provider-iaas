@@ -21,7 +21,7 @@ Manages a Cloud Service block storage volume. Creation is asynchronous: the volu
 #      and offer the chosen volume plan.
 #   3. volume_plan_id selects the size and IO tier (sizing is PLAN-BASED, not a
 #      free-form size_gb). To resize, switch to a larger plan of the same storage
-#      class and datastore type — the provider issues an in-place resize.
+#      class and datastore type - the provider issues an in-place resize.
 #
 # Creation is asynchronous: the provider waits for the volume's status to become
 # "available" before completing. The create timeout is configurable below.
@@ -31,7 +31,7 @@ Manages a Cloud Service block storage volume. Creation is asynchronous: the volu
 # (attach/detach).
 
 resource "iaas_volume" "data" {
-  # Display name. Immutable — changing it replaces the volume.
+  # Display name. Immutable - changing it replaces the volume.
   name = "app-data"
 
   # UUID of the volume plan (size + IO limits). Change to a larger plan to resize.
@@ -70,7 +70,7 @@ output "volume_device" {
 
 - `hypervisor_group_id` (String) UUID of the hypervisor group the volume is provisioned in. Immutable; a volume cannot move groups, so changing this forces a new resource.
 - `name` (String) Display name for the volume. Immutable (there is no update endpoint for it); changing it forces a new resource.
-- `volume_plan_id` (String) UUID of the volume plan, which determines the size and IO limits. Sizing is PLAN-BASED (not a free-form size_gb): to resize, select a plan with the desired capacity. Resizing in place is supported by the API's resize endpoint (same storage class and datastore type required), so changing this is NOT a replace — the resource issues a resize. A cross-class/cross-type change is rejected by the API.
+- `volume_plan_id` (String) UUID of the volume plan, which determines the size and IO limits. Sizing is PLAN-BASED (not a free-form size_gb): to resize, select a plan with the desired capacity. Resizing in place is supported by the API's resize endpoint (same storage class and datastore type required), so changing this is NOT a replace - the resource issues a resize. A cross-class/cross-type change is rejected by the API.
 
 ### Optional
 

@@ -15,7 +15,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccVolumeSnapshot_basic — LIVE acceptance test (manual staging gate).
+// TestAccVolumeSnapshot_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set. Requires a reachable panel, billing enabled,
 // and a real, already-available volume id supplied via IAAS_TEST_VOLUME_ID; the
@@ -59,16 +59,16 @@ resource "iaas_volume_snapshot" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitVolumeSnapshot_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitVolumeSnapshot_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the full async CHILD lifecycle against canned responses:
 //
-//  1. Create — POST /storage/volume/{id}/snapshot returns {queue:{...}}; the
+//  1. Create - POST /storage/volume/{id}/snapshot returns {queue:{...}}; the
 //     parent volume SHOW immediately embeds the new snapshot with
 //     status="available", so id-resolution-by-name and the readiness wait both
 //     converge on the FIRST poll (no sleep). Asserts the snapshot create body.
-//  2. Import — composite id "<volume_id>/<snapshot_id>", verifies state matches.
-//  3. Delete — DELETE removes the snapshot from the embedded array, so the next
+//  2. Import - composite id "<volume_id>/<snapshot_id>", verifies state matches.
+//  3. Delete - DELETE removes the snapshot from the embedded array, so the next
 //     GetVolumeSnapshot 404s and the delete waiter converges.
 //
 // No update step: every input is RequiresReplace. The IAAS_INSTANCE_POLL_INTERVAL
@@ -105,7 +105,7 @@ func TestUnitVolumeSnapshot_lifecycle(t *testing.T) {
 		}
 	}
 
-	// Parent volume SHOW — embeds snapshots[] (the snapshot read/poll source).
+	// Parent volume SHOW - embeds snapshots[] (the snapshot read/poll source).
 	srv.Handle("GET", "/storage/volume/"+volumeID, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
@@ -117,7 +117,7 @@ func TestUnitVolumeSnapshot_lifecycle(t *testing.T) {
 		})
 	})
 
-	// CREATE snapshot — returns the QUEUE; flips the snapshot into existence so
+	// CREATE snapshot - returns the QUEUE; flips the snapshot into existence so
 	// the next volume SHOW embeds it (available on the first poll).
 	srv.Handle("POST", "/storage/volume/"+volumeID+"/snapshot", func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
@@ -130,7 +130,7 @@ func TestUnitVolumeSnapshot_lifecycle(t *testing.T) {
 		})
 	})
 
-	// DELETE snapshot — removes it from the embedded array so the next read 404s.
+	// DELETE snapshot - removes it from the embedded array so the next read 404s.
 	srv.Handle("DELETE", "/storage/volume/"+volumeID+"/snapshot/"+snapshotID, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		snapshotExists = false

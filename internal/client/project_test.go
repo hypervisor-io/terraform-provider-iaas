@@ -182,7 +182,7 @@ func TestGetProject_Success(t *testing.T) {
 		resp, _ := json.Marshal(map[string]any{
 			"success": true,
 			"project": projectObject("p1", "MyProject", "desc", "#3B82F6"),
-			// SHOW also returns embedded resource lists — we ignore them.
+			// SHOW also returns embedded resource lists - we ignore them.
 			"instances": map[string]any{"data": []any{}},
 			"vpcs":      map[string]any{"data": []any{}},
 		})

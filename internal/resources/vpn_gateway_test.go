@@ -15,15 +15,15 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// TestAccVpnGateway_basic — LIVE acceptance test (manual staging gate).
+// TestAccVpnGateway_basic - LIVE acceptance test (manual staging gate).
 //
 // Auto-skips unless TF_ACC is set. Requires a reachable panel + IP-locked token,
 // a VPC in a VPN-gateway-enabled location with a PUBLIC subnet that has free IPs,
 // a valid VPN gateway plan id, and the account's VPN gateway quota not exhausted:
 //
-//	IAAS_TEST_VPC_ID         — UUID of a VPC in a vpngw-enabled location
-//	IAAS_TEST_VPC_SUBNET_ID  — UUID of a PUBLIC subnet in that VPC with a free IP
-//	IAAS_TEST_VPNGW_PLAN_ID  — UUID of an enabled VPN gateway plan
+//	IAAS_TEST_VPC_ID         - UUID of a VPC in a vpngw-enabled location
+//	IAAS_TEST_VPC_SUBNET_ID  - UUID of a PUBLIC subnet in that VPC with a free IP
+//	IAAS_TEST_VPNGW_PLAN_ID  - UUID of an enabled VPN gateway plan
 //
 // Skips cleanly when any var is absent so a bare TF_ACC=1 run does not fail.
 // ---------------------------------------------------------------------------
@@ -70,18 +70,18 @@ resource "iaas_vpn_gateway" "test" {
 }
 
 // ---------------------------------------------------------------------------
-// TestUnitVpnGateway_lifecycle — MOCK-backed lifecycle proof.
+// TestUnitVpnGateway_lifecycle - MOCK-backed lifecycle proof.
 //
 // Drives the full CHILD + ASYNC resource lifecycle against canned API responses:
 //
-//  1. Create — POST /vpc/{vpcId}/vpn-gateway returns {gateway:{id,status:"deploying"}};
+//  1. Create - POST /vpc/{vpcId}/vpn-gateway returns {gateway:{id,status:"deploying"}};
 //     the FLAT SHOW (GET /vpn-gateway/{id}) immediately returns status="active"
 //     (ready on the FIRST poll → the waiter converges instantly, no sleep).
 //     Asserts the create body carries vpngw_plan_id + vpc_subnet_id + name and
 //     omits server-only computed fields.
-//  2. Import — by COMPOSITE id "<vpc_id>/<gateway_id>", ignoring the write-only
+//  2. Import - by COMPOSITE id "<vpc_id>/<gateway_id>", ignoring the write-only
 //     vpc_subnet_id (not recoverable from SHOW) + timeouts.
-//  3. Delete — implicit teardown; DELETE soft-deletes and the next SHOW 404s.
+//  3. Delete - implicit teardown; DELETE soft-deletes and the next SHOW 404s.
 //
 // There is NO update step: the gateway has no update endpoint, so every input is
 // RequiresReplace (the vpc no-update pattern). The IAAS_INSTANCE_POLL_INTERVAL
@@ -132,7 +132,7 @@ func TestUnitVpnGateway_lifecycle(t *testing.T) {
 		}
 	}
 
-	// CREATE — record the row (status "deploying" in the create response); the first
+	// CREATE - record the row (status "deploying" in the create response); the first
 	// SHOW already reports "active" so the waiter converges on the first poll.
 	srv.Handle("POST", createPath, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
@@ -146,7 +146,7 @@ func TestUnitVpnGateway_lifecycle(t *testing.T) {
 		})
 	})
 
-	// SHOW — FLAT path; 404 once delete has been enqueued.
+	// SHOW - FLAT path; 404 once delete has been enqueued.
 	srv.Handle("GET", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		gone := deleted
@@ -158,7 +158,7 @@ func TestUnitVpnGateway_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "gateway": showGateway(), "other_gateways": []any{}})
 	})
 
-	// DELETE — soft-delete; the next SHOW 404s.
+	// DELETE - soft-delete; the next SHOW 404s.
 	srv.Handle("DELETE", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		deleted = true

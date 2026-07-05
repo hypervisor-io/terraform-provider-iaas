@@ -38,7 +38,7 @@ import (
 // JSON with the cast 'array'. The controller appends unit suffixes from the
 // catalog (e.g. 512 → "512M") before storing. Values in the API response may be
 // strings with those suffixes. The Terraform resource models parameters as
-// MapAttribute(String) — users provide string values as stored/returned by the
+// MapAttribute(String) - users provide string values as stored/returned by the
 // API. This keeps the schema simple (a flat map, no nested set or per-param
 // endpoints).
 //

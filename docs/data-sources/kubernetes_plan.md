@@ -3,12 +3,12 @@
 page_title: "iaas_kubernetes_plan Data Source - iaas"
 subcategory: ""
 description: |-
-  Looks up a Kubernetes cluster plan by name from the cluster-create catalog, resolving the id you pass on an iaas_kubernetes_cluster. The kind argument selects the picker: worker and cp resolve instance plans (the same underlying list — use the result as worker_instance_plan_id / cp_instance_plan_id), and lb resolves the control-plane load-balancer plan (use as cp_lb_plan_id). Only enabled plans are returned; exactly one plan must match the given name.
+  Looks up a Kubernetes cluster plan by name from the cluster-create catalog, resolving the id you pass on an iaas_kubernetes_cluster. The kind argument selects the picker: worker and cp resolve instance plans (the same underlying list - use the result as worker_instance_plan_id / cp_instance_plan_id), and lb resolves the control-plane load-balancer plan (use as cp_lb_plan_id). Only enabled plans are returned; exactly one plan must match the given name.
 ---
 
 # iaas_kubernetes_plan (Data Source)
 
-Looks up a Kubernetes cluster plan by name from the cluster-create catalog, resolving the `id` you pass on an `iaas_kubernetes_cluster`. The `kind` argument selects the picker: `worker` and `cp` resolve instance plans (the same underlying list — use the result as `worker_instance_plan_id` / `cp_instance_plan_id`), and `lb` resolves the control-plane load-balancer plan (use as `cp_lb_plan_id`). Only enabled plans are returned; exactly one plan must match the given `name`.
+Looks up a Kubernetes cluster plan by name from the cluster-create catalog, resolving the `id` you pass on an `iaas_kubernetes_cluster`. The `kind` argument selects the picker: `worker` and `cp` resolve instance plans (the same underlying list - use the result as `worker_instance_plan_id` / `cp_instance_plan_id`), and `lb` resolves the control-plane load-balancer plan (use as `cp_lb_plan_id`). Only enabled plans are returned; exactly one plan must match the given `name`.
 
 ## Example Usage
 
@@ -51,7 +51,7 @@ output "worker_plan_id" {
 
 ### Required
 
-- `kind` (String) Which plan catalog to search: `worker` (worker instance plan), `cp` (control-plane instance plan — identical list to `worker`), or `lb` (control-plane load-balancer plan). Any other value errors.
+- `kind` (String) Which plan catalog to search: `worker` (worker instance plan), `cp` (control-plane instance plan - identical list to `worker`), or `lb` (control-plane load-balancer plan). Any other value errors.
 - `name` (String) Exact plan name to look up (e.g. `std-2`). Matched against the plan name (not the specs-decorated display text). Exactly one plan must match.
 
 ### Read-Only

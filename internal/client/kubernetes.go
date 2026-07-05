@@ -12,12 +12,12 @@ import (
 //
 // This file covers the cluster ITSELF (create/show/list/update/destroy + async
 // state convergence) PLUS the in-place version-upgrade lifecycle (T7/id-G8:
-// upgrade/{cp,workers,ccm,retry}) — folded into the same
+// upgrade/{cp,workers,ccm,retry}) - folded into the same
 // iaas_kubernetes_cluster resource's Update rather than a separate resource,
 // since it mutates the SAME row's version columns. The cluster's remaining
-// CHILDREN — node pools, default-pool workers (scale/labels/autoscaling/
+// CHILDREN - node pools, default-pool workers (scale/labels/autoscaling/
 // delete-node), per-cluster security-group rules, SSL certs, kubeconfig +
-// autoscaler manifest, and tasks/logs/node-stats — are SEPARATE tasks (id32/34)
+// autoscaler manifest, and tasks/logs/node-stats - are SEPARATE tasks (id32/34)
 // and are NOT here. The child routes (for the next agents) are:
 //
 //	POOLS         GET    /kubernetes/cluster/{id}/pools
@@ -68,7 +68,7 @@ import (
 //	                                                         drain_grace_period (int 0-3600, req)}
 //	                                                         → {task_id,target_version_id,
 //	                                                         current_version_id,planned_waves} (BARE,
-//	                                                         no success/cluster wrapper). ASYNC — a
+//	                                                         no success/cluster wrapper). ASYNC - a
 //	                                                         detached `kubernetes:cp-rolling-upgrade`
 //	                                                         command surge-replaces CP nodes one at a
 //	                                                         time. [k8s.throttle:k8s_cp_upgrade,
@@ -77,15 +77,15 @@ import (
 //	                                                         max_surge (int >=1, req),
 //	                                                         drain_grace_period (int 0-3600, req)}
 //	                                                         → same bare envelope shape as upgrade/cp.
-//	                                                         ASYNC — `kubernetes:workers-rolling-upgrade`
+//	                                                         ASYNC - `kubernetes:workers-rolling-upgrade`
 //	                                                         surge-replaces up to max_surge workers per
 //	                                                         wave. Rejected 422 "target_exceeds_cp_version"
 //	                                                         if target > the CP's CURRENT version (upstream
-//	                                                         kubelet-must-not-outrun-apiserver policy) — CP
+//	                                                         kubelet-must-not-outrun-apiserver policy) - CP
 //	                                                         must be upgraded first for a multi-minor jump.
 //	                                                         [k8s.throttle:k8s_upgrade, idempotency.user]
 //	UPG CCM POST   /kubernetes/cluster/{id}/upgrade/ccm      no body → {success,message} SYNCHRONOUS (no
-//	                                                         task_id) — redeploys cloud-controller-manager
+//	                                                         task_id) - redeploys cloud-controller-manager
 //	                                                         using whatever image the CURRENT worker-
 //	                                                         baseline kubernetes_version's
 //	                                                         bundled_components.ccm_image resolves to. No
@@ -94,7 +94,7 @@ import (
 //	                                                         [k8s.throttle:k8s_upgrade, idempotency.user]
 //	UPG RETRY POST /kubernetes/cluster/{id}/upgrade/retry    no body → {success,task_id,cleanup_errors}
 //	                                                         or 422 success:false. NOT a "resume the failed
-//	                                                         CP/worker upgrade" — see
+//	                                                         CP/worker upgrade" - see
 //	                                                         RetryK8sClusterUpgrade's doc comment; gated on
 //	                                                         cluster.state=="error" and rebuilds the WHOLE
 //	                                                         cluster from scratch on the same row.
@@ -104,9 +104,9 @@ import (
 // tracks TWO independent version columns, both initialised to the SAME value at
 // create (ClusterService::create sets cp_kubernetes_version_id ==
 // kubernetes_version_id):
-//   - kubernetes_version_id     — the WORKER baseline (also what CreateKubernetesCluster
+//   - kubernetes_version_id     - the WORKER baseline (also what CreateKubernetesCluster
 //     accepts and what upgrade/workers finalizes into on success).
-//   - cp_kubernetes_version_id  — the control-plane's current version (only
+//   - cp_kubernetes_version_id  - the control-plane's current version (only
 //     upgrade/cp's rolling-upgrade command finalize step mutates this).
 //
 // Both relations (kubernetes_version, cp_kubernetes_version) are eager-loaded on
@@ -115,17 +115,17 @@ import (
 // {cp_kubernetes_version_id,cp_kubernetes_version:{semantic_version,...}}. There
 // are also two EPHEMERAL *_target_kubernetes_version_id columns (non-null only
 // while a CP or worker rolling upgrade is in flight; cleared to null on both
-// success and failure) — not surfaced as separate client methods here since the
+// success and failure) - not surfaced as separate client methods here since the
 // resource waiter polls the task, not these columns, for convergence.
 //
 // Convergence signal for upgrade/cp and upgrade/workers: cluster.state is NEVER
 // touched by either rolling-upgrade command (state stays "running" throughout,
 // confirmed against both Console\Commands\Kubernetes\{Cp,Workers}RollingUpgrade
-// — neither ever calls KubernetesClusterStateMachine::transition nor writes
+// - neither ever calls KubernetesClusterStateMachine::transition nor writes
 // `state`). The authoritative per-task signal is instead the
 // KubernetesClusterTask row named by the response's task_id: `status` transitions
 // pending → running → completed|failed. There is NO per-task GET route for
-// clusters (unlike instances' GetInstanceTask) — SHOW eager-loads the cluster's
+// clusters (unlike instances' GetInstanceTask) - SHOW eager-loads the cluster's
 // last 20 tasks under "tasks", so the resource-level waiter polls
 // GetKubernetesCluster and scans that embedded array for the matching task id's
 // "status" (see waitForClusterUpgradeTask in internal/resources), reusing the
@@ -139,7 +139,7 @@ import (
 //     authoritative async signal is the cluster's OWN "state" field, polled via
 //     the SHOW endpoint (KubernetesClusterStateMachine drives it):
 //         created → starting → running   (READY)
-//                            → error      (FAIL — recoverable via /retry)
+//                            → error      (FAIL - recoverable via /retry)
 //     Other states (stopped, alert, destroying, destroyed) occur later in the
 //     cluster's life. Ready="running"; fail="error". GetKubernetesCluster IS the
 //     poll. (We poll the cluster state rather than the task because the state
@@ -154,7 +154,7 @@ import (
 // Idempotency (controller-verified): the create/update/delete routes carry the
 // `idempotency.user` middleware, which reads the "Idempotency-Key" REQUEST
 // header. When present it caches the first 2xx response for 24h and replays it
-// for any later request reusing the same key+user — so a retried create is
+// for any later request reusing the same key+user - so a retried create is
 // deduplicated server-side (it will NOT spin up a second cluster). The header is
 // OPTIONAL (the server falls back to a random per-request UUID when absent,
 // which gives NO dedup), so to make retries safe the resource generates a stable
@@ -162,7 +162,7 @@ import (
 // the caller passes an empty key.
 //
 // Billing/feature gating (controller-verified): the cluster create is NOT
-// wrapped in billing.enabled middleware — gating is IN-SERVICE and arrives as
+// wrapped in billing.enabled middleware - gating is IN-SERVICE and arrives as
 // HTTP 200/403/422 success:false: "Cloud Service billing is disabled" (403),
 // "This region does not have VPC and Load Balancer features enabled" / "Control
 // plane must be deployed in a private subnet" / "Selected VPC has no NAT
@@ -176,7 +176,7 @@ import (
 // prebuilt body. Create is ASYNC: the returned object carries the id but
 // state="created"; the caller must poll GetKubernetesCluster until
 // state="running". The "cluster" envelope is unwrapped (the top-level task_id is
-// dropped — state polling is the convergence signal).
+// dropped - state polling is the convergence signal).
 //
 // idemKey is sent as the "Idempotency-Key" request header so a retried create is
 // deduplicated by the idempotency.user middleware. When idemKey is "", a random
@@ -206,13 +206,13 @@ func (c *Client) GetKubernetesCluster(ctx context.Context, id string) (map[strin
 
 // ListKubernetesClusters returns all clusters belonging to the authenticated
 // account. The index wraps the Laravel paginator under the named "clusters" key
-// ({success,clusters:{data:[...]}}) — NOT a top-level "data" array — so the
+// ({success,clusters:{data:[...]}}) - NOT a top-level "data" array - so the
 // shared doList paginator decoder cannot be used directly. Instead doItem
 // unwraps the named key (surfacing C3 success:false), then the inner paginator's
 // "data" array is flattened to []map[string]any.
 //
 // CAVEAT: this fetches only page 1 (the named-key paginator can't use the
-// auto-paginating doList) — a future list data source must add page iteration.
+// auto-paginating doList) - a future list data source must add page iteration.
 func (c *Client) ListKubernetesClusters(ctx context.Context) ([]map[string]any, error) {
 	paginator, err := c.doItem(ctx, "GET", "/kubernetes/clusters", nil, "clusters")
 	if err != nil {
@@ -234,7 +234,7 @@ func (c *Client) ListKubernetesClusters(ctx context.Context) ([]map[string]any, 
 
 // UpdateKubernetesCluster patches the user-facing metadata of a cluster. Only
 // name/description/project_id are mutable through this endpoint (resource
-// topology is intentionally immutable — version/plan/CIDR changes go through the
+// topology is intentionally immutable - version/plan/CIDR changes go through the
 // dedicated lifecycle endpoints). The route is a PATCH to the SINGULAR path and
 // carries the idempotency.user middleware. The "cluster" envelope is unwrapped.
 func (c *Client) UpdateKubernetesCluster(ctx context.Context, id string, body map[string]any, idemKey string) (map[string]any, error) {
@@ -282,11 +282,11 @@ func (c *Client) DeleteKubernetesCluster(ctx context.Context, id, idemKey string
 // body["drain_grace_period"] (required int, 0-3600 seconds) before each old CP
 // is drained. ASYNC: the response is a BARE envelope
 // {task_id,target_version_id,current_version_id,planned_waves} (no
-// "cluster"/"success" wrapper) — the caller polls the cluster's own embedded
+// "cluster"/"success" wrapper) - the caller polls the cluster's own embedded
 // "tasks" array for task_id to reach status "completed" (fail: "failed"); see
 // the package doc comment and internal/resources' waitForClusterUpgradeTask.
 // Errors: 422 {"code":"target_not_active"} (or another
-// InvalidUpgradeTargetException code — forward-only / same-major / ≤1-minor
+// InvalidUpgradeTargetException code - forward-only / same-major / ≤1-minor
 // jump / target must be state=="active"), 409 {"code":"op_locked"} when another
 // cluster operation is in flight. The route carries idempotency.user; idemKey
 // is sent as the Idempotency-Key header (a UUID is generated when empty).
@@ -309,7 +309,7 @@ func (c *Client) UpgradeK8sClusterControlPlane(ctx context.Context, clusterID st
 // idempotency.user handling as UpgradeK8sClusterControlPlane. The Master
 // enforces "kubelet must not run ahead of the apiserver": a target exceeding
 // the CP's CURRENT version is rejected 422 {"code":"target_exceeds_cp_version"}
-// — callers wanting a multi-minor jump must upgrade the control plane first.
+// - callers wanting a multi-minor jump must upgrade the control plane first.
 func (c *Client) UpgradeK8sClusterWorkers(ctx context.Context, clusterID string, body map[string]any, idemKey string) (map[string]any, error) {
 	if clusterID == "" {
 		return nil, fmt.Errorf("UpgradeK8sClusterWorkers: empty cluster id")
@@ -323,14 +323,14 @@ func (c *Client) UpgradeK8sClusterWorkers(ctx context.Context, clusterID string,
 }
 
 // UpgradeK8sClusterCCM redeploys the cloud-controller-manager. UNLIKE the CP/
-// worker stages this is SYNCHRONOUS — no request body, no task_id; the response
+// worker stages this is SYNCHRONOUS - no request body, no task_id; the response
 // is {"success":true,"message":"CCM redeployed"} and the call blocks
 // server-side until the kubectl apply + rollout restart finish (or fails 409 if
 // cluster.state != "running", 500 on a kubectl/apply error). There is no
 // separate CCM version to target: the image is resolved server-side from the
 // cluster's CURRENT worker-baseline kubernetes_version's
 // bundled_components.ccm_image, so this is a plain "resync the CCM to whatever
-// version is now in effect" action — callers wanting the CCM image to track a
+// version is now in effect" action - callers wanting the CCM image to track a
 // version bump should invoke this AFTER the worker upgrade stage completes.
 func (c *Client) UpgradeK8sClusterCCM(ctx context.Context, clusterID, idemKey string) error {
 	if clusterID == "" {
@@ -346,7 +346,7 @@ func (c *Client) UpgradeK8sClusterCCM(ctx context.Context, clusterID, idemKey st
 }
 
 // RetryK8sClusterUpgrade is NOT a "resume the stuck CP/worker rolling upgrade"
-// operation despite the route name — verified against the Master's
+// operation despite the route name - verified against the Master's
 // Kubernetes\ClusterService::retry(), which UpgradeController::retryUpgrade
 // unconditionally delegates to: it is gated on cluster.state=="error" (422
 // otherwise) and, when it runs, tears down every partial artifact (worker + CP
@@ -354,16 +354,16 @@ func (c *Client) UpgradeK8sClusterCCM(ctx context.Context, clusterID, idemKey st
 // clears BOTH cp_target_kubernetes_version_id and
 // worker_target_kubernetes_version_id, transitions state error→starting, and
 // re-dispatches the FULL cluster-create job on the same row (same CA, same
-// row id — effectively a from-scratch rebuild). A failed CP/worker rolling
+// row id - effectively a from-scratch rebuild). A failed CP/worker rolling
 // upgrade leaves cluster.state=="running" (rolling upgrades never touch
-// `state` — only the per-task KubernetesClusterTask.status fails), so calling
+// `state` - only the per-task KubernetesClusterTask.status fails), so calling
 // this after a failed upgrade task would itself fail 422 ("Retry is only
 // available for clusters in 'error' state") rather than resume anything, and
 // calling it whenever state genuinely IS "error" destroys/rebuilds the whole
-// cluster — a disproportionate response to a narrowly-failed version bump.
+// cluster - a disproportionate response to a narrowly-failed version bump.
 // Implemented for completeness/future use (e.g. a dedicated cluster-recovery
 // action); the iaas_kubernetes_cluster resource's Update does NOT call this
-// automatically on an upgrade-task failure — see that Update method's doc
+// automatically on an upgrade-task failure - see that Update method's doc
 // comment for the reasoning.
 func (c *Client) RetryK8sClusterUpgrade(ctx context.Context, clusterID, idemKey string) (map[string]any, error) {
 	if clusterID == "" {

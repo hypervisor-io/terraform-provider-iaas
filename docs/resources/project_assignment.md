@@ -3,12 +3,12 @@
 page_title: "iaas_project_assignment Resource - iaas"
 subcategory: ""
 description: |-
-  Assigns a single resource (instance, vpc, load_balancer, s3_bucket, or managed_database) to an iaas_project (ProjectController::assignResource, POST /project/assign-resource). There is no "move" operation — every attribute is immutable; changing any of them unassigns the old link and assigns a new one. Deleting this resource unassigns the resource from the project (sets its project_id back to null) rather than deleting the underlying resource or the project. Import with a 3-part composite id: "<project_id>/<resource_type>/<resource_id>".
+  Assigns a single resource (instance, vpc, load_balancer, s3_bucket, or managed_database) to an iaas_project (ProjectController::assignResource, POST /project/assign-resource). There is no "move" operation - every attribute is immutable; changing any of them unassigns the old link and assigns a new one. Deleting this resource unassigns the resource from the project (sets its project_id back to null) rather than deleting the underlying resource or the project. Import with a 3-part composite id: "<project_id>/<resource_type>/<resource_id>".
 ---
 
 # iaas_project_assignment (Resource)
 
-Assigns a single resource (instance, vpc, load_balancer, s3_bucket, or managed_database) to an iaas_project (ProjectController::assignResource, POST /project/assign-resource). There is no "move" operation — every attribute is immutable; changing any of them unassigns the old link and assigns a new one. Deleting this resource unassigns the resource from the project (sets its project_id back to null) rather than deleting the underlying resource or the project. Import with a 3-part composite id: "<project_id>/<resource_type>/<resource_id>".
+Assigns a single resource (instance, vpc, load_balancer, s3_bucket, or managed_database) to an iaas_project (ProjectController::assignResource, POST /project/assign-resource). There is no "move" operation - every attribute is immutable; changing any of them unassigns the old link and assigns a new one. Deleting this resource unassigns the resource from the project (sets its project_id back to null) rather than deleting the underlying resource or the project. Import with a 3-part composite id: "<project_id>/<resource_type>/<resource_id>".
 
 ## Example Usage
 
@@ -22,7 +22,7 @@ Assigns a single resource (instance, vpc, load_balancer, s3_bucket, or managed_d
 # (e.g. one adopted via `terraform import`) without importing its entire
 # other state too.
 #
-# Every attribute is immutable (RequiresReplace) — there is no "move"
+# Every attribute is immutable (RequiresReplace) - there is no "move"
 # operation, only assign/unassign. Changing project_id, resource_type, or
 # resource_id unassigns the old link and assigns a new one.
 
@@ -41,7 +41,7 @@ resource "iaas_project_assignment" "web_in_production" {
 }
 
 # resource_type must be one of exactly: instance, vpc, load_balancer,
-# s3_bucket, managed_database — the set ProjectController's assign-resource
+# s3_bucket, managed_database - the set ProjectController's assign-resource
 # endpoint accepts. Assigning a VPC works the same way:
 resource "iaas_vpc" "main" {
   # ... vpc configuration ...
@@ -54,7 +54,7 @@ resource "iaas_project_assignment" "vpc_in_production" {
 }
 
 # Deleting this resource unassigns the resource from the project (sets its
-# project_id back to null) — it does NOT delete iaas_instance.web or
+# project_id back to null) - it does NOT delete iaas_instance.web or
 # iaas_project.production themselves.
 
 # Import with a 3-part composite id "<project_id>/<resource_type>/<resource_id>":
@@ -72,4 +72,4 @@ resource "iaas_project_assignment" "vpc_in_production" {
 
 ### Read-Only
 
-- `id` (String) Composite id "<project_id>/<resource_type>/<resource_id>" — the API's assign-resource endpoint returns no object of its own (and there is no dedicated assignment row/id to read back), so the id is synthesized from the three inputs.
+- `id` (String) Composite id "<project_id>/<resource_type>/<resource_id>" - the API's assign-resource endpoint returns no object of its own (and there is no dedicated assignment row/id to read back), so the id is synthesized from the three inputs.

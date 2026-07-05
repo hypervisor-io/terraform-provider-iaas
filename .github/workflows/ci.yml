@@ -88,5 +88,5 @@ jobs:
           TF_CLI_CONFIG_FILE: ${{ runner.temp }}/iaas-dev.tfrc
         # NOTE: a dev override short-circuits `tofu init`, so we validate directly.
         # This proves the composed stack stays consistent with the provider schema.
-        # We do NOT run apply — there is no live panel in CI.
+        # We do NOT run apply - there is no live panel in CI.
         run: tofu validate

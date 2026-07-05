@@ -3,12 +3,12 @@
 page_title: "iaas_volume_snapshot Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a point-in-time snapshot of a volume. A snapshot is a child of a volume: its parent volume_id is part of the API path, so changing it forces a new resource. Creation is asynchronous — the snapshot is enqueued and this resource waits for it to become "available". Snapshots are immutable (there is no update endpoint); changing the name forces a new snapshot. Import with a composite id: "<volume_id>/<snapshot_id>".
+  Manages a point-in-time snapshot of a volume. A snapshot is a child of a volume: its parent volume_id is part of the API path, so changing it forces a new resource. Creation is asynchronous - the snapshot is enqueued and this resource waits for it to become "available". Snapshots are immutable (there is no update endpoint); changing the name forces a new snapshot. Import with a composite id: "<volume_id>/<snapshot_id>".
 ---
 
 # iaas_volume_snapshot (Resource)
 
-Manages a point-in-time snapshot of a volume. A snapshot is a child of a volume: its parent volume_id is part of the API path, so changing it forces a new resource. Creation is asynchronous — the snapshot is enqueued and this resource waits for it to become "available". Snapshots are immutable (there is no update endpoint); changing the name forces a new snapshot. Import with a composite id: "<volume_id>/<snapshot_id>".
+Manages a point-in-time snapshot of a volume. A snapshot is a child of a volume: its parent volume_id is part of the API path, so changing it forces a new resource. Creation is asynchronous - the snapshot is enqueued and this resource waits for it to become "available". Snapshots are immutable (there is no update endpoint); changing the name forces a new snapshot. Import with a composite id: "<volume_id>/<snapshot_id>".
 
 ## Example Usage
 
@@ -16,11 +16,11 @@ Manages a point-in-time snapshot of a volume. A snapshot is a child of a volume:
 # Take a point-in-time snapshot of a volume.
 #
 # A snapshot is a CHILD of a volume: the parent volume_id is part of the API path,
-# so changing it forces a new resource. Creation is asynchronous — the provider
+# so changing it forces a new resource. Creation is asynchronous - the provider
 # enqueues the snapshot and waits for it to become "available".
 #
 # Snapshots are immutable: there is no update endpoint, so changing the name
-# forces a new snapshot. Use a UNIQUE name per volume — the provider resolves the
+# forces a new snapshot. Use a UNIQUE name per volume - the provider resolves the
 # server-assigned snapshot id by matching the name in the parent volume's snapshot
 # list (the create endpoint returns a job queue, not the snapshot id).
 #

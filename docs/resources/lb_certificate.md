@@ -3,19 +3,19 @@
 page_title: "iaas_lb_certificate Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a manually-uploaded SSL/TLS certificate on a load balancer (PEM certificate + private key, optional chain). A certificate is a child of a load balancer: its parent load_balancer_id is part of the API path, so changing it forces a new resource. Certificates are immutable — there is no update endpoint — so changing any field rotates (replaces) the certificate. The private_key is write-only and sensitive: it is never returned by the API, so it is taken from configuration and never refreshed. Attach a certificate to an https frontend via its ssl_certificate_id. (Let's Encrypt issuance is not managed by this resource.) Import with a composite id: "<load_balancer_id>/<certificate_id>".
+  Manages a manually-uploaded SSL/TLS certificate on a load balancer (PEM certificate + private key, optional chain). A certificate is a child of a load balancer: its parent load_balancer_id is part of the API path, so changing it forces a new resource. Certificates are immutable - there is no update endpoint - so changing any field rotates (replaces) the certificate. The private_key is write-only and sensitive: it is never returned by the API, so it is taken from configuration and never refreshed. Attach a certificate to an https frontend via its ssl_certificate_id. (Let's Encrypt issuance is not managed by this resource.) Import with a composite id: "<load_balancer_id>/<certificate_id>".
 ---
 
 # iaas_lb_certificate (Resource)
 
-Manages a manually-uploaded SSL/TLS certificate on a load balancer (PEM certificate + private key, optional chain). A certificate is a child of a load balancer: its parent load_balancer_id is part of the API path, so changing it forces a new resource. Certificates are immutable — there is no update endpoint — so changing any field rotates (replaces) the certificate. The private_key is write-only and sensitive: it is never returned by the API, so it is taken from configuration and never refreshed. Attach a certificate to an https frontend via its ssl_certificate_id. (Let's Encrypt issuance is not managed by this resource.) Import with a composite id: "<load_balancer_id>/<certificate_id>".
+Manages a manually-uploaded SSL/TLS certificate on a load balancer (PEM certificate + private key, optional chain). A certificate is a child of a load balancer: its parent load_balancer_id is part of the API path, so changing it forces a new resource. Certificates are immutable - there is no update endpoint - so changing any field rotates (replaces) the certificate. The private_key is write-only and sensitive: it is never returned by the API, so it is taken from configuration and never refreshed. Attach a certificate to an https frontend via its ssl_certificate_id. (Let's Encrypt issuance is not managed by this resource.) Import with a composite id: "<load_balancer_id>/<certificate_id>".
 
 ## Example Usage
 
 ```terraform
 # A certificate is a CHILD of a load balancer: a manually-uploaded SSL/TLS
 # certificate (PEM cert + private key, optional chain). Certificates are
-# IMMUTABLE — there is no update endpoint — so changing any field rotates
+# IMMUTABLE - there is no update endpoint - so changing any field rotates
 # (replaces) the certificate. (Let's Encrypt issuance is not managed here.)
 resource "iaas_load_balancer" "example" {
   name                = "web-lb"
@@ -24,7 +24,7 @@ resource "iaas_load_balancer" "example" {
 }
 
 resource "iaas_lb_certificate" "example" {
-  # Parent load balancer id — part of the API path. Changing it forces a new resource.
+  # Parent load balancer id - part of the API path. Changing it forces a new resource.
   load_balancer_id = iaas_load_balancer.example.id
 
   name        = "example-com"

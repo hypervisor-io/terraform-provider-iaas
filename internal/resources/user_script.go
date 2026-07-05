@@ -25,7 +25,7 @@ func NewUserScriptResource() resource.Resource {
 	return &userScriptResource{}
 }
 
-// userScriptResource manages an iaas_user_script — a reusable cloud-init /
+// userScriptResource manages an iaas_user_script - a reusable cloud-init /
 // startup script that can be injected into instances at provision time.
 type userScriptResource struct {
 	client *client.Client

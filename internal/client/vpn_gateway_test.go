@@ -18,7 +18,7 @@ import (
 // ---------------------------------------------------------------------------
 
 // TestCreateVpnGateway_Success verifies CreateVpnGateway:
-//   - POSTs to /vpc/{vpcId}/vpn-gateway (parent vpc id in the path — create is
+//   - POSTs to /vpc/{vpcId}/vpn-gateway (parent vpc id in the path - create is
 //     the ONLY nested operation)
 //   - sends the prebuilt body verbatim (vpngw_plan_id + vpc_subnet_id required)
 //   - returns the unwrapped "gateway" object WITH its id and deploying status.
@@ -73,7 +73,7 @@ func TestCreateVpnGateway_Success(t *testing.T) {
 	}
 }
 
-// TestCreateVpnGateway_FeatureGated verifies a feature-gate failure (HTTP 403 —
+// TestCreateVpnGateway_FeatureGated verifies a feature-gate failure (HTTP 403 -
 // vpngw not enabled for the location) surfaces as an error. These routes are NOT
 // billing-gated, so the gating is in-controller (403/422/200-success:false).
 func TestCreateVpnGateway_FeatureGated(t *testing.T) {
@@ -113,7 +113,7 @@ func TestCreateVpnGateway_OnePerVpc(t *testing.T) {
 }
 
 // TestCreateVpnGateway_ServiceException verifies a service exception during deploy
-// (HTTP 200 success:false — e.g. subnet not public) surfaces as an error (C3).
+// (HTTP 200 success:false - e.g. subnet not public) surfaces as an error (C3).
 func TestCreateVpnGateway_ServiceException(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
