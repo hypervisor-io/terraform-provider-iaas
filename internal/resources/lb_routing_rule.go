@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/iaas/terraform-provider-iaas/internal/client"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/client"
 )
 
 // Interface assertions. iaas_lb_routing_rule is a 3-LEVEL CHILD resource: a rule

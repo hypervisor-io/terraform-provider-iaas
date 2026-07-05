@@ -17,7 +17,7 @@ package datasources
 import (
 	"fmt"
 
-	"github.com/iaas/terraform-provider-iaas/internal/client"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/client"
 )
 
 // configureClient is the body every data source's Configure shares: it pulls

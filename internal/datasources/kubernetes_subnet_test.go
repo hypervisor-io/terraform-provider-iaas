@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
-	"github.com/iaas/terraform-provider-iaas/internal/acctest"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/acctest"
 )
 
 // k8sSubnetsBody is the FLAT Select2 envelope /kubernetes/search/subnets returns.

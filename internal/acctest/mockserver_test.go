@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/iaas/terraform-provider-iaas/internal/acctest"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/acctest"
 )
 
 // TestMockServer_HandleJSON_RegisteredPath verifies that a HandleJSON registration

@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
-	"github.com/iaas/terraform-provider-iaas/internal/acctest"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/acctest"
 )
 
 // k8sRegionsBody is the FLAT Select2 envelope the real /kubernetes/search/

@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
-	"github.com/iaas/terraform-provider-iaas/internal/client"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/client"
 )
 
 // Interface assertions - dns_record is a CHILD of dns_record_set (zone_id +

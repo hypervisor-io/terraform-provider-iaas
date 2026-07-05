@@ -17,7 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 
-	"github.com/iaas/terraform-provider-iaas/internal/provider"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/provider"
 )
 
 // Factories maps the provider name to a protocol-v6 server built from our

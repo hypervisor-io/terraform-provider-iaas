@@ -10,8 +10,8 @@ import (
 	dschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
-	"github.com/iaas/terraform-provider-iaas/internal/acctest"
-	"github.com/iaas/terraform-provider-iaas/internal/datasources"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/acctest"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/datasources"
 )
 
 // TestUnitKubernetesKubeconfig_download - mock-backed data-source proof.

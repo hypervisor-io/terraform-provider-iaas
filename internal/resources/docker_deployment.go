@@ -20,8 +20,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/iaas/terraform-provider-iaas/internal/client"
-	"github.com/iaas/terraform-provider-iaas/internal/waiter"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/client"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/waiter"
 )
 
 // Interface assertions - iaas_docker_deployment (Gap G2, the largest of the

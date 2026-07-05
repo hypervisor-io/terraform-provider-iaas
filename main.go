@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"github.com/iaas/terraform-provider-iaas/internal/provider"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/provider"
 )
 
 // version is set at build time via -ldflags.

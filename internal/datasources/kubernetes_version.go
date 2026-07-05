@@ -7,8 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/iaas/terraform-provider-iaas/internal/client"
-	"github.com/iaas/terraform-provider-iaas/internal/tfdiag"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/client"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/tfdiag"
 )
 
 // Interface assertions - kubernetes_version is a lookup-by-name catalog data

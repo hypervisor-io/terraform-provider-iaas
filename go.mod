@@ -1,4 +1,4 @@
-module github.com/iaas/terraform-provider-iaas
+module github.com/hypervisor-io/terraform-provider-iaas
 
 go 1.25.8
 
