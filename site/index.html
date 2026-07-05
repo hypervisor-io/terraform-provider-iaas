@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>iaas Provider - OpenTofu / Terraform Documentation</title>
 <meta name="description" content="Manage the entire Hypervisor.io IaaS platform - compute, VPCs, Kubernetes, managed databases, load balancers, storage, DNS, VPN and S3 - as code with the iaas OpenTofu / Terraform provider.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230a0d0e'/%3E%3Ctext x='32' y='42' font-family='monospace' font-size='30' font-weight='700' fill='%23ffb020' text-anchor='middle'%3E&gt;_%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111535'/%3E%3Ctext x='32' y='42' font-family='monospace' font-size='30' font-weight='700' fill='%23818cf8' text-anchor='middle'%3E&gt;_%3C/text%3E%3C/svg%3E">
 <style>
 /* ============================================================
    0. RESET + THEME TOKENS
@@ -16,21 +16,21 @@ body { margin: 0; }
 img, svg { display: block; max-width: 100%; }
 
 :root{
-  --bg:        #0a0d0e;
-  --bg-1:      #0f1417;
-  --bg-2:      #151b1e;
-  --bg-code:   #0d1112;
-  --ink:       #e9efee;
-  --ink-dim:   #93a6a3;
-  --ink-faint: #5b6b69;
-  --rule:      rgba(233,239,238,0.10);
-  --rule-strong: rgba(233,239,238,0.20);
-  --amber:     #ffb020;
-  --amber-dim: #a66c14;
-  --amber-bg:  rgba(255,176,32,0.10);
-  --cyan:      #6fe3d8;
-  --cyan-dim:  #2f7d76;
-  --cyan-bg:   rgba(111,227,216,0.08);
+  --bg:        #111535;
+  --bg-1:      #161a40;
+  --bg-2:      #1a1f4a;
+  --bg-code:   #0c0f28;
+  --ink:       #e2e8f0;
+  --ink-dim:   #94a3b8;
+  --ink-faint: #64748b;
+  --rule:      rgba(129,140,248,0.15);
+  --rule-strong: rgba(129,140,248,0.28);
+  --amber:     #818cf8;
+  --amber-dim: #4f46e5;
+  --amber-bg:  rgba(129,140,248,0.10);
+  --cyan:      #a78bfa;
+  --cyan-dim:  #7c3aed;
+  --cyan-bg:   rgba(167,139,250,0.08);
   --danger:    #ff6b57;
   --danger-bg: rgba(255,107,87,0.10);
   --ok:        #7ee787;
@@ -42,44 +42,44 @@ img, svg { display: block; max-width: 100%; }
 }
 @media (prefers-color-scheme: light){
   :root{
-    --bg:        #f4efe2;
-    --bg-1:      #fbf8ef;
-    --bg-2:      #ebe3cd;
-    --bg-code:   #1c211d;
-    --ink:       #171d1b;
-    --ink-dim:   #4d5754;
-    --ink-faint: #838b86;
-    --rule:      rgba(23,29,27,0.14);
-    --rule-strong: rgba(23,29,27,0.26);
-    --amber:     #965603;
-    --amber-dim: #7a4204;
-    --amber-bg:  rgba(150,86,3,0.08);
-    --cyan:      #0d7d76;
-    --cyan-dim:  #0a5a55;
-    --cyan-bg:   rgba(13,125,118,0.08);
+    --bg:        #f6f7fb;
+    --bg-1:      #ffffff;
+    --bg-2:      #eef0f8;
+    --bg-code:   #0c0f28;
+    --ink:       #1e1b4b;
+    --ink-dim:   #475569;
+    --ink-faint: #64748b;
+    --rule:      rgba(79,70,229,0.15);
+    --rule-strong: rgba(79,70,229,0.28);
+    --amber:     #4f46e5;
+    --amber-dim: #4338ca;
+    --amber-bg:  rgba(79,70,229,0.08);
+    --cyan:      #7c3aed;
+    --cyan-dim:  #6d28d9;
+    --cyan-bg:   rgba(124,58,237,0.08);
     --danger:    #a23324;
     --danger-bg: rgba(162,51,36,0.08);
     --ok:        #2f7d3d;
-    --shadow:    0 20px 45px rgba(23,29,27,0.14);
+    --shadow:    0 20px 45px rgba(30,27,75,0.14);
     color-scheme: light;
   }
 }
 :root[data-theme="dark"]{
-  --bg:        #0a0d0e;
-  --bg-1:      #0f1417;
-  --bg-2:      #151b1e;
-  --bg-code:   #0d1112;
-  --ink:       #e9efee;
-  --ink-dim:   #93a6a3;
-  --ink-faint: #5b6b69;
-  --rule:      rgba(233,239,238,0.10);
-  --rule-strong: rgba(233,239,238,0.20);
-  --amber:     #ffb020;
-  --amber-dim: #a66c14;
-  --amber-bg:  rgba(255,176,32,0.10);
-  --cyan:      #6fe3d8;
-  --cyan-dim:  #2f7d76;
-  --cyan-bg:   rgba(111,227,216,0.08);
+  --bg:        #111535;
+  --bg-1:      #161a40;
+  --bg-2:      #1a1f4a;
+  --bg-code:   #0c0f28;
+  --ink:       #e2e8f0;
+  --ink-dim:   #94a3b8;
+  --ink-faint: #64748b;
+  --rule:      rgba(129,140,248,0.15);
+  --rule-strong: rgba(129,140,248,0.28);
+  --amber:     #818cf8;
+  --amber-dim: #4f46e5;
+  --amber-bg:  rgba(129,140,248,0.10);
+  --cyan:      #a78bfa;
+  --cyan-dim:  #7c3aed;
+  --cyan-bg:   rgba(167,139,250,0.08);
   --danger:    #ff6b57;
   --danger-bg: rgba(255,107,87,0.10);
   --ok:        #7ee787;
@@ -87,25 +87,25 @@ img, svg { display: block; max-width: 100%; }
   color-scheme: dark;
 }
 :root[data-theme="light"]{
-  --bg:        #f4efe2;
-  --bg-1:      #fbf8ef;
-  --bg-2:      #ebe3cd;
-  --bg-code:   #1c211d;
-  --ink:       #171d1b;
-  --ink-dim:   #4d5754;
-  --ink-faint: #838b86;
-  --rule:      rgba(23,29,27,0.14);
-  --rule-strong: rgba(23,29,27,0.26);
-  --amber:     #965603;
-  --amber-dim: #7a4204;
-  --amber-bg:  rgba(150,86,3,0.08);
-  --cyan:      #0d7d76;
-  --cyan-dim:  #0a5a55;
-  --cyan-bg:   rgba(13,125,118,0.08);
+  --bg:        #f6f7fb;
+  --bg-1:      #ffffff;
+  --bg-2:      #eef0f8;
+  --bg-code:   #0c0f28;
+  --ink:       #1e1b4b;
+  --ink-dim:   #475569;
+  --ink-faint: #64748b;
+  --rule:      rgba(79,70,229,0.15);
+  --rule-strong: rgba(79,70,229,0.28);
+  --amber:     #4f46e5;
+  --amber-dim: #4338ca;
+  --amber-bg:  rgba(79,70,229,0.08);
+  --cyan:      #7c3aed;
+  --cyan-dim:  #6d28d9;
+  --cyan-bg:   rgba(124,58,237,0.08);
   --danger:    #a23324;
   --danger-bg: rgba(162,51,36,0.08);
   --ok:        #2f7d3d;
-  --shadow:    0 20px 45px rgba(23,29,27,0.14);
+  --shadow:    0 20px 45px rgba(30,27,75,0.14);
   color-scheme: light;
 }
 
@@ -193,7 +193,7 @@ section[id]{ scroll-margin-top: 76px; }
   padding: 13px 20px; border-radius: var(--radius); border: 1px solid var(--rule-strong); cursor: pointer;
   display:inline-flex; align-items:center; gap:.5em; border-bottom-width: 1px;
 }
-.btn-primary{ background: var(--amber); color: #14100a; border-color: var(--amber); font-weight: 700; }
+.btn-primary{ background: var(--amber); color: #0c0f28; border-color: var(--amber); font-weight: 700; }
 .btn-primary:hover{ background: var(--ink); border-color: var(--ink); color: var(--bg); }
 .btn-ghost{ background: transparent; color: var(--ink); }
 .btn-ghost:hover{ border-color: var(--cyan); color: var(--cyan); }
@@ -209,13 +209,13 @@ section[id]{ scroll-margin-top: 76px; }
 .term-bar{ display:flex; align-items:center; gap: 8px; padding: 10px 14px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--rule); }
 .term-dot{ width: 9px; height: 9px; border-radius: 50%; background: var(--ink-faint); }
 .term-dot:nth-child(1){ background: #ff6b57; }
-.term-dot:nth-child(2){ background: #ffb020; }
+.term-dot:nth-child(2){ background: #818cf8; }
 .term-dot:nth-child(3){ background: #7ee787; }
 .term-title{ margin-left: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint); }
-.term pre{ margin: 0; padding: 20px 18px; font-size: 13.2px; line-height: 1.7; overflow-x: auto; color: #d9e2df; }
+.term pre{ margin: 0; padding: 20px 18px; font-size: 13.2px; line-height: 1.7; overflow-x: auto; color: #d2d8e0; }
 .tok-com{ color: #6b7d79; }
-.tok-key{ color: #6fe3d8; }
-.tok-str{ color: #ffb020; }
+.tok-key{ color: #a78bfa; }
+.tok-str{ color: #818cf8; }
 .tok-add{ color: #7ee787; }
 .tok-flag{ color: #d9a5ff; }
 
@@ -223,7 +223,7 @@ section[id]{ scroll-margin-top: 76px; }
    4. CODE BLOCKS + COPY
    ============================================================ */
 .code-wrap{ position: relative; background: var(--bg-code); border: 1px solid var(--rule-strong); border-radius: var(--radius); margin: 16px 0; }
-.code-wrap pre{ margin: 0; padding: 18px; overflow-x: auto; font-size: 13.3px; line-height: 1.65; color: #d9e2df; }
+.code-wrap pre{ margin: 0; padding: 18px; overflow-x: auto; font-size: 13.3px; line-height: 1.65; color: #d2d8e0; }
 .copy{
   position: absolute; top: 8px; right: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em;
   text-transform: uppercase; background: rgba(255,255,255,0.06); color: var(--ink-dim); border: 1px solid var(--rule-strong);
@@ -285,7 +285,7 @@ td code{ font-size: 13px; color: var(--cyan); }
   border: 1px solid var(--rule-strong); background: transparent; color: var(--ink-dim); cursor: pointer;
 }
 .chip:hover{ border-color: var(--cyan); color: var(--cyan); }
-.chip.is-active{ background: var(--amber); border-color: var(--amber); color: #14100a; font-weight: 700; }
+.chip.is-active{ background: var(--amber); border-color: var(--amber); color: #0c0f28; font-weight: 700; }
 #catalog-count{ font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-faint); margin-left: auto; }
 
 .group{ margin-top: 46px; }
