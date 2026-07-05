@@ -68,6 +68,32 @@ import (
 // hypervisor_group_id, plan_id, image_id required; the rest optional). The create
 // is synchronous; the returned "group" object carries id + status. The collection
 // path is PLURAL (/scaling-groups).
+// ListAutoscalingGroups returns every autoscaling group visible to the token.
+// The INDEX route GET /scaling-groups returns {success,scaling_groups:{data:[...]}}
+// (a named-key Laravel paginator), so this unwraps "scaling_groups" then its
+// "data" array. Like ListManagedDatabases it returns page 1 only.
+//
+// This read has no matching Terraform resource/data-source (the provider works
+// per-id), so it exists purely for the MCP server's user.autoscaling_group.list
+// tool; it is additive and referenced by nothing else in the provider.
+func (c *Client) ListAutoscalingGroups(ctx context.Context) ([]map[string]any, error) {
+	paginator, err := c.doItem(ctx, "GET", "/scaling-groups", nil, "scaling_groups")
+	if err != nil {
+		return nil, err
+	}
+	dataRaw, ok := paginator["data"].([]any)
+	if !ok {
+		return []map[string]any{}, nil
+	}
+	out := make([]map[string]any, 0, len(dataRaw))
+	for _, v := range dataRaw {
+		if obj, ok := v.(map[string]any); ok {
+			out = append(out, obj)
+		}
+	}
+	return out, nil
+}
+
 func (c *Client) CreateAutoscalingGroup(ctx context.Context, body map[string]any) (map[string]any, error) {
 	return c.doItem(ctx, "POST", "/scaling-groups", body, "group")
 }
