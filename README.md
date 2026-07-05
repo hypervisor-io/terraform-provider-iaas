@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.svg" alt="terraform-provider-iaas" width="100%">
+</p>
+
 # terraform-provider-iaas
 
 A Terraform / OpenTofu provider for managing virtual machine infrastructure - compute,
