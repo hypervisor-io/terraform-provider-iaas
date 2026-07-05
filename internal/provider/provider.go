@@ -248,6 +248,7 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewKubernetesSecurityGroupRuleResource,
 		resources.NewUserScriptResource,
 		resources.NewImageResource,
+		resources.NewInstanceVpcAttachmentResource,
 	}
 }
 
