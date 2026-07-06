@@ -7114,8 +7114,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.alert_rule.acknowledge"
       }
     },
     {
@@ -7296,8 +7296,8 @@
         "type": "iaas_instance_backup_policy"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance_backup_policy.update"
       }
     },
     {
@@ -7338,8 +7338,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance_backup_policy.reset_failures"
       }
     },
     {
@@ -7352,8 +7352,8 @@
         "reason": "collection/search read; not modeled as a provider resource or data source"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.catalog.currencies"
       }
     },
     {
@@ -7534,8 +7534,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.managed_database.backup"
       }
     },
     {
@@ -7562,8 +7562,8 @@
         "type": "iaas_managed_database"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.managed_database.apply_parameter_group"
       }
     },
     {
@@ -7576,8 +7576,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.managed_database.promote"
       }
     },
     {
@@ -7646,8 +7646,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.managed_database.restore"
       }
     },
     {
@@ -7660,8 +7660,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.managed_database.restore_pitr"
       }
     },
     {
@@ -7716,8 +7716,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.managed_database.retry_pitr"
       }
     },
     {
@@ -7828,8 +7828,8 @@
         "reason": "collection/search read; not modeled as a provider resource or data source"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.catalog.db_plans"
       }
     },
     {
@@ -7968,8 +7968,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.dns_record.delete_health_check"
       }
     },
     {
@@ -7982,8 +7982,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.dns_record.set_health_check"
       }
     },
     {
@@ -7996,8 +7996,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.dns_record.toggle"
       }
     },
     {
@@ -8150,8 +8150,8 @@
         "type": "iaas_instance"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.update"
       }
     },
     {
@@ -8178,8 +8178,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.delete_backup"
       }
     },
     {
@@ -8192,8 +8192,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.restore_backup"
       }
     },
     {
@@ -8206,8 +8206,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.list_backups"
       }
     },
     {
@@ -8220,8 +8220,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.create_backup"
       }
     },
     {
@@ -8234,8 +8234,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.destroy_backups"
       }
     },
     {
@@ -8276,8 +8276,8 @@
         "type": "iaas_instance"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.deploy"
       }
     },
     {
@@ -8318,8 +8318,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.disk_action"
       }
     },
     {
@@ -8332,8 +8332,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.list_disks"
       }
     },
     {
@@ -8416,8 +8416,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.docker_deployment.install"
       }
     },
     {
@@ -8458,8 +8458,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.docker_deployment.check_status"
       }
     },
     {
@@ -8486,8 +8486,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.docker_deployment.retry"
       }
     },
     {
@@ -8500,8 +8500,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.docker_deployment.control"
       }
     },
     {
@@ -8528,8 +8528,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.forge_commit"
       }
     },
     {
@@ -8542,8 +8542,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.forge_discard"
       }
     },
     {
@@ -8556,8 +8556,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.forge_enable"
       }
     },
     {
@@ -8570,8 +8570,8 @@
         "type": "iaas_image"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.deploy_images"
       }
     },
     {
@@ -8598,8 +8598,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.set_ip_rdns"
       }
     },
     {
@@ -8612,8 +8612,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.list_ips"
       }
     },
     {
@@ -8627,7 +8627,7 @@
       },
       "mcp": {
         "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "reason": "controller validator/service contract mismatch (validator accepts add/release/swap; the service accepts add/remove/set-primary with an ips[] array). VPC IP add/remove is covered by user.instance_vpc.add_ip / user.instance_vpc.remove_ip"
       }
     },
     {
@@ -8640,8 +8640,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.iso_action"
       }
     },
     {
@@ -8668,8 +8668,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.enable_public_network"
       }
     },
     {
@@ -8808,8 +8808,8 @@
         "type": "iaas_instance"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.instance.self_deploy"
       }
     },
     {
@@ -9116,8 +9116,8 @@
         "type": "iaas_ip_set"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.ip_set.update"
       }
     },
     {
@@ -9242,8 +9242,8 @@
         "type": "iaas_kubernetes_cluster"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.kubernetes_cluster.update"
       }
     },
     {
@@ -9256,8 +9256,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.kubernetes_cluster.acknowledge_error"
       }
     },
     {
@@ -9298,8 +9298,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.kubernetes_cluster.kubeconfig_acknowledge"
       }
     },
     {
@@ -9354,8 +9354,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.kubernetes_node_pool.cancel_pending"
       }
     },
     {
@@ -9368,8 +9368,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.kubernetes_node_pool.reassign"
       }
     },
     {
@@ -9592,8 +9592,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.kubernetes_cluster.delete_worker"
       }
     },
     {
@@ -9606,8 +9606,8 @@
         "type": "iaas_kubernetes_node_pool"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.kubernetes_cluster.workers_autoscaling"
       }
     },
     {
@@ -9620,8 +9620,8 @@
         "type": "iaas_kubernetes_node_pool"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.kubernetes_cluster.workers_labels"
       }
     },
     {
@@ -9634,8 +9634,8 @@
         "type": "iaas_kubernetes_node_pool"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.kubernetes_cluster.workers_scale"
       }
     },
     {
@@ -9774,8 +9774,8 @@
         "reason": "collection/search read; not modeled as a provider resource or data source"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.catalog.lb_locations"
       }
     },
     {
@@ -9788,8 +9788,8 @@
         "reason": "collection/search read; not modeled as a provider resource or data source"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.catalog.lb_plans"
       }
     },
     {
@@ -9844,8 +9844,8 @@
         "type": "iaas_lb_backend"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.load_balancer.backend_update"
       }
     },
     {
@@ -9928,8 +9928,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.load_balancer.certificate_retry"
       }
     },
     {
@@ -10040,8 +10040,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.load_balancer.le_certificate"
       }
     },
     {
@@ -10068,8 +10068,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.load_balancer.remove_security_group_rule"
       }
     },
     {
@@ -10082,8 +10082,8 @@
         "reason": "collection/search read; not modeled as a provider resource or data source"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.load_balancer.list_security_group_rules"
       }
     },
     {
@@ -10096,8 +10096,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.load_balancer.add_security_group_rule"
       }
     },
     {
@@ -10110,8 +10110,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.load_balancer.sync"
       }
     },
     {
@@ -10222,8 +10222,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.db_backup_policy.test_connection"
       }
     },
     {
@@ -10264,8 +10264,8 @@
         "type": "iaas_db_backup_policy"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.db_backup_policy.update"
       }
     },
     {
@@ -10320,8 +10320,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.db_backup_policy.reset_failures"
       }
     },
     {
@@ -10376,8 +10376,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.notification_channel.test"
       }
     },
     {
@@ -10544,8 +10544,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.s3_bucket.object_public_url"
       }
     },
     {
@@ -10978,8 +10978,8 @@
         "type": "iaas_security_group"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.security_group.update"
       }
     },
     {
@@ -11118,8 +11118,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.ssh_key.generate"
       }
     },
     {
@@ -11328,8 +11328,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.volume.backup_create"
       }
     },
     {
@@ -11342,8 +11342,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.volume.backup_delete"
       }
     },
     {
@@ -11356,8 +11356,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.volume.backup_restore"
       }
     },
     {
@@ -11426,8 +11426,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.volume.snapshot_restore"
       }
     },
     {
@@ -11482,8 +11482,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.task.delete"
       }
     },
     {
@@ -11510,8 +11510,8 @@
         "reason": "live telemetry/metrics read; not declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.task.list"
       }
     },
     {
@@ -11706,8 +11706,8 @@
         "type": "iaas_location"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.catalog.vpc_locations"
       }
     },
     {
@@ -11720,8 +11720,8 @@
         "type": "iaas_vpc"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.vpc.delete"
       }
     },
     {
@@ -11804,8 +11804,8 @@
         "type": "iaas_nat_gateway"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.nat_gateway.update"
       }
     },
     {
@@ -11874,8 +11874,8 @@
         "type": "iaas_vpc_subnet"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.vpc_subnet.delete"
       }
     },
     {
@@ -11888,8 +11888,8 @@
         "type": "iaas_vpc_subnet"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.vpc_subnet.get"
       }
     },
     {
@@ -11902,8 +11902,8 @@
         "type": "iaas_vpc_subnet"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.vpc_subnet.update"
       }
     },
     {
@@ -11916,8 +11916,8 @@
         "type": "iaas_vpc_subnet"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.vpc_subnet.list"
       }
     },
     {
@@ -11930,8 +11930,8 @@
         "type": "iaas_vpc_subnet"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.vpc_subnet.create"
       }
     },
     {
@@ -11986,8 +11986,8 @@
         "reason": "collection/search read; not modeled as a provider resource or data source"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.catalog.vpn_plans"
       }
     },
     {
@@ -12098,8 +12098,8 @@
         "reason": "imperative action, not representable as declarative IaC"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.vpn_gateway.retry"
       }
     },
     {
@@ -12112,8 +12112,8 @@
         "type": "iaas_vpn_gateway"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "not in the v1 curated MCP tool set; candidate for a later tool phase"
+        "status": "covered",
+        "tool": "user.vpn_gateway.list"
       }
     }
   ]
