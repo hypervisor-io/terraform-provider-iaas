@@ -440,7 +440,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
           <div class="step-num"></div>
           <div>
             <h3>Require the provider</h3>
-            <p>The provider address is <code class="mono">iaas/iaas</code>, protocol v6, requiring
+            <p>The provider address is <code class="mono">hypervisor-io/iaas</code>, protocol v6, requiring
               OpenTofu / Terraform ≥ 1.6. It is not yet published to a public registry - until it is,
               build it locally and wire in a dev override (see the snippet's second block).</p>
             <div class="code-wrap">
@@ -449,7 +449,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
   required_version = <span class="tok-str">">= 1.6"</span>
   required_providers {
     iaas = {
-      source = <span class="tok-str">"iaas/iaas"</span>
+      source = <span class="tok-str">"hypervisor-io/iaas"</span>
       <span class="tok-com"># version = "~> 0.1" # pin once published to the registry</span>
     }
   }
@@ -461,7 +461,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 <span class="tok-com">#</span>
 <span class="tok-com">#   cat > ~/.terraformrc &lt;&lt;'RC'</span>
 <span class="tok-com">#   provider_installation {</span>
-<span class="tok-com">#     dev_overrides { "iaas/iaas" = "/absolute/path/to/terraform-provider-iaas" }</span>
+<span class="tok-com">#     dev_overrides { "hypervisor-io/iaas" = "/absolute/path/to/terraform-provider-iaas" }</span>
 <span class="tok-com">#     direct {}</span>
 <span class="tok-com">#   }</span>
 <span class="tok-com">#   RC</span>

@@ -3,7 +3,7 @@ terraform {
 
   required_providers {
     iaas = {
-      source = "iaas/iaas"
+      source = "hypervisor-io/iaas"
     }
   }
 }

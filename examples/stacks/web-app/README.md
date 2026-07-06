@@ -104,7 +104,7 @@ attribute names and types match the provider schema) without contacting a panel:
 go build -o terraform-provider-iaas .
 cat > /tmp/iaas-dev.tfrc <<EOF
 provider_installation {
-  dev_overrides { "iaas/iaas" = "$(pwd)" }
+  dev_overrides { "hypervisor-io/iaas" = "$(pwd)" }
   direct {}
 }
 EOF
