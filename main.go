@@ -19,7 +19,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/hypervisor-io/iaas",
+		Address: "registry.opentofu.org/hypervisor-io/iaas",
 		Debug:   debug,
 	}
 
