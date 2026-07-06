@@ -35,6 +35,34 @@ import (
 //     rather than sent as null).
 //   - Both vpcID and id are url.PathEscape'd into the path.
 
+// ListVPCSubnets returns every subnet under the given VPC. The INDEX route
+// GET /vpc/{vpcId}/subnets returns {success,vpc,subnets:{data:[...]}} (a
+// named-key Laravel paginator under "subnets"), so this unwraps "subnets" then
+// its "data" array. Page 1 only (mirrors ListManagedDatabases).
+//
+// This read has no dedicated Terraform data source (the provider works per-id);
+// it exists for the MCP server's user.vpc_subnet.list tool. Additive.
+func (c *Client) ListVPCSubnets(ctx context.Context, vpcID string) ([]map[string]any, error) {
+	if vpcID == "" {
+		return nil, fmt.Errorf("ListVPCSubnets: empty vpcID")
+	}
+	paginator, err := c.doItem(ctx, "GET", "/vpc/"+url.PathEscape(vpcID)+"/subnets", nil, "subnets")
+	if err != nil {
+		return nil, err
+	}
+	dataRaw, ok := paginator["data"].([]any)
+	if !ok {
+		return []map[string]any{}, nil
+	}
+	out := make([]map[string]any, 0, len(dataRaw))
+	for _, v := range dataRaw {
+		if obj, ok := v.(map[string]any); ok {
+			out = append(out, obj)
+		}
+	}
+	return out, nil
+}
+
 // CreateVPCSubnet creates a subnet under the given VPC from the supplied body
 // (cidr required; name/type optional). The create is synchronous: the returned
 // object carries id plus the server-derived gateway/netmask. The collection
