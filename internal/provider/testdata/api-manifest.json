@@ -10367,6 +10367,48 @@
             }
         },
         {
+            "id": "user DELETE /api/load-balancer/{user_lbId}/waf/policy",
+            "method": "DELETE",
+            "path": "/api/load-balancer/{user_lbId}/waf/policy",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_lb_waf_policy"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.load_balancer.waf.disable_policy"
+            }
+        },
+        {
+            "id": "user GET /api/load-balancer/{user_lbId}/waf/policy",
+            "method": "GET",
+            "path": "/api/load-balancer/{user_lbId}/waf/policy",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_lb_waf_policy"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.load_balancer.waf.get_policy"
+            }
+        },
+        {
+            "id": "user PUT /api/load-balancer/{user_lbId}/waf/policy",
+            "method": "PUT",
+            "path": "/api/load-balancer/{user_lbId}/waf/policy",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_lb_waf_policy"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.load_balancer.waf.set_policy"
+            }
+        },
+        {
             "id": "user GET /api/load-balancers",
             "method": "GET",
             "path": "/api/load-balancers",
