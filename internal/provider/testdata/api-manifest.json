@@ -4557,6 +4557,132 @@
             }
         },
         {
+            "id": "admin GET /api/v1/load-balancer/{loadBalancerId}/waf/events",
+            "method": "GET",
+            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/events",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "admin.load_balancer.waf.query_events"
+            }
+        },
+        {
+            "id": "admin POST /api/v1/load-balancer/{loadBalancerId}/waf/events/export",
+            "method": "POST",
+            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/events/export",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "admin.load_balancer.waf.export_events"
+            }
+        },
+        {
+            "id": "admin DELETE /api/v1/load-balancer/{loadBalancerId}/waf/policy",
+            "method": "DELETE",
+            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/policy",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "destructive admin op excluded from the D3 safe allowlist"
+            }
+        },
+        {
+            "id": "admin GET /api/v1/load-balancer/{loadBalancerId}/waf/policy",
+            "method": "GET",
+            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/policy",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "admin.load_balancer.waf.get_policy"
+            }
+        },
+        {
+            "id": "admin PUT /api/v1/load-balancer/{loadBalancerId}/waf/policy",
+            "method": "PUT",
+            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/policy",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "admin.load_balancer.waf.set_policy"
+            }
+        },
+        {
+            "id": "admin DELETE /api/v1/load-balancer/{loadBalancerId}/waf/rule/{lbWafRuleId}",
+            "method": "DELETE",
+            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/rule/{lbWafRuleId}",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "destructive admin op excluded from the D3 safe allowlist"
+            }
+        },
+        {
+            "id": "admin PATCH /api/v1/load-balancer/{loadBalancerId}/waf/rule/{lbWafRuleId}",
+            "method": "PATCH",
+            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/rule/{lbWafRuleId}",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "admin.load_balancer.waf.update_rule"
+            }
+        },
+        {
+            "id": "admin GET /api/v1/load-balancer/{loadBalancerId}/waf/rules",
+            "method": "GET",
+            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/rules",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "admin.load_balancer.waf.list_rules"
+            }
+        },
+        {
+            "id": "admin POST /api/v1/load-balancer/{loadBalancerId}/waf/rules",
+            "method": "POST",
+            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/rules",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "admin.load_balancer.waf.create_rule"
+            }
+        },
+        {
             "id": "admin GET /api/v1/load-balancers",
             "method": "GET",
             "path": "/api/v1/load-balancers",

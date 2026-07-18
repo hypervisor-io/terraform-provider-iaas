@@ -218,3 +218,132 @@ func (c *Client) ExportLBWafEvents(ctx context.Context, lbID string, filters map
 	}
 	return "", fmt.Errorf("ExportLBWafEvents: response missing download_url")
 }
+
+// Admin api/v1 mirror (S6 Task 4, spec 17 tri-sync, manifest entries 10-18),
+// verified against Master's App\Http\Controllers\Api\LbWafController +
+// routes/api.php. Same path shapes and response envelopes as the user
+// methods above (that admin controller is a structural mirror of
+// UserApi\LbWafController, delegating to the same LbWafService/
+// LbWafLogService) - only the base path differs: every admin path here is
+// prefixed "/v1" so it resolves to ".../api/v1/<path>" (see admin.go's file
+// docblock for why: the shared transport's baseURL already ends in "/api").
+// These methods exist ONLY for the MCP server's curated admin.* tool
+// allowlist (spec 17 decision D3) - the OpenTofu provider does not call
+// them (opentofu.status is "excluded" for all nine manifest entries: an
+// admin/imperative surface, not declarative IaC).
+//
+// AdminDeleteLBWafPolicy and AdminDeleteLBWafRule are deliberately NOT
+// defined here: DELETE policy/rule are excluded from the D3 safe allowlist
+// (destructive admin ops), so no admin.* MCP tool calls them and no client
+// method is needed.
+
+// AdminGetLBWafPolicy returns the singleton WAF policy of any load balancer
+// (admin, not owner-scoped). Same null-handling as GetLBWafPolicy - a
+// response with policy:null is surfaced as a 404-shaped *APIError.
+func (c *Client) AdminGetLBWafPolicy(ctx context.Context, lbID string) (map[string]any, error) {
+	if lbID == "" {
+		return nil, fmt.Errorf("AdminGetLBWafPolicy: empty lbID")
+	}
+	path := "/v1/load-balancer/" + url.PathEscape(lbID) + "/waf/policy"
+
+	resp, raw, err := c.do(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+	if err := responseError(resp, raw); err != nil {
+		return nil, err
+	}
+
+	var top map[string]any
+	if err := json.Unmarshal(raw, &top); err != nil {
+		return nil, fmt.Errorf("decoding response: %w", err)
+	}
+	if err := checkSuccessFlag(top); err != nil {
+		return nil, err
+	}
+
+	policy, ok := top["policy"]
+	if !ok || policy == nil {
+		return nil, &APIError{Status: 404, Message: "load balancer WAF policy not configured"}
+	}
+	obj, ok := policy.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("expected object under \"policy\"; got %T", policy)
+	}
+	return obj, nil
+}
+
+// AdminPutLBWafPolicy upserts the WAF policy of any load balancer (admin).
+func (c *Client) AdminPutLBWafPolicy(ctx context.Context, lbID string, body map[string]any) (map[string]any, error) {
+	if lbID == "" {
+		return nil, fmt.Errorf("AdminPutLBWafPolicy: empty lbID")
+	}
+	path := "/v1/load-balancer/" + url.PathEscape(lbID) + "/waf/policy"
+	return c.doItem(ctx, "PUT", path, body, "policy")
+}
+
+// AdminListLBWafRules lists the custom WAF rules of any load balancer (admin).
+func (c *Client) AdminListLBWafRules(ctx context.Context, lbID string) ([]map[string]any, error) {
+	if lbID == "" {
+		return nil, fmt.Errorf("AdminListLBWafRules: empty lbID")
+	}
+	path := "/v1/load-balancer/" + url.PathEscape(lbID) + "/waf/rules"
+	return c.namedList(ctx, "GET", path, "rules")
+}
+
+// AdminCreateLBWafRule creates a custom WAF rule on any load balancer
+// (admin; rule_id must be 190000-199999).
+func (c *Client) AdminCreateLBWafRule(ctx context.Context, lbID string, body map[string]any) (map[string]any, error) {
+	if lbID == "" {
+		return nil, fmt.Errorf("AdminCreateLBWafRule: empty lbID")
+	}
+	path := "/v1/load-balancer/" + url.PathEscape(lbID) + "/waf/rules"
+	return c.doItem(ctx, "POST", path, body, "rule")
+}
+
+// AdminUpdateLBWafRule patches a custom WAF rule on any load balancer (admin).
+func (c *Client) AdminUpdateLBWafRule(ctx context.Context, lbID, ruleID string, body map[string]any) (map[string]any, error) {
+	if lbID == "" || ruleID == "" {
+		return nil, fmt.Errorf("AdminUpdateLBWafRule: empty lbID or ruleID")
+	}
+	path := "/v1/load-balancer/" + url.PathEscape(lbID) + "/waf/rule/" + url.PathEscape(ruleID)
+	return c.doItem(ctx, "PATCH", path, body, "rule")
+}
+
+// AdminQueryLBWafEvents lists one page of the WAF event log for any load
+// balancer (admin, not owner-scoped - LbWafLogService::paginateForLb()).
+// filters keys: from, to, client_ip, rule_id, action, page, per_page -
+// forwarded as query params.
+func (c *Client) AdminQueryLBWafEvents(ctx context.Context, lbID string, filters map[string]string) ([]map[string]any, error) {
+	if lbID == "" {
+		return nil, fmt.Errorf("AdminQueryLBWafEvents: empty lbID")
+	}
+	q := url.Values{}
+	for k, v := range filters {
+		if v != "" {
+			q.Set(k, v)
+		}
+	}
+	path := "/v1/load-balancer/" + url.PathEscape(lbID) + "/waf/events"
+	if enc := q.Encode(); enc != "" {
+		path += "?" + enc
+	}
+	return c.namedPaginatorList(ctx, "GET", path, "events")
+}
+
+// AdminExportLBWafEvents archives the filtered events of any load balancer
+// (admin) to object storage and returns a temporary download URL.
+func (c *Client) AdminExportLBWafEvents(ctx context.Context, lbID string, filters map[string]any) (string, error) {
+	if lbID == "" {
+		return "", fmt.Errorf("AdminExportLBWafEvents: empty lbID")
+	}
+	path := "/v1/load-balancer/" + url.PathEscape(lbID) + "/waf/events/export"
+	obj, err := c.doItem(ctx, "POST", path, filters, "")
+	if err != nil {
+		return "", err
+	}
+	if u, ok := obj["download_url"].(string); ok {
+		return u, nil
+	}
+	return "", fmt.Errorf("AdminExportLBWafEvents: response missing download_url")
+}
