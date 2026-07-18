@@ -95,3 +95,76 @@ func (c *Client) DeleteLBWafPolicy(ctx context.Context, lbID string) error {
 	path := "/load-balancer/" + url.PathEscape(lbID) + "/waf/policy"
 	return c.doVoid(ctx, "DELETE", path, nil)
 }
+
+// Load Balancer WAF custom-rule endpoints (S6 Task 2, verified against
+// Master's App\Http\Controllers\UserApi\LbWafController + routes/user_api.php):
+//
+//	LIST   GET    /load-balancer/{lbId}/waf/rules              -> 200 {success, rules:[{...}]}
+//	CREATE POST   /load-balancer/{lbId}/waf/rules              -> 200 {success, rule:{...}}
+//	UPDATE PATCH  /load-balancer/{lbId}/waf/rule/{ruleId}       -> 200 {success, rule:{...}}
+//	DELETE DELETE /load-balancer/{lbId}/waf/rule/{ruleId}       -> 200 {success, message}
+//
+// The rule object's wire field names are the real `lb_waf_rules` columns
+// only: {id, rule_id, name, seclang, enabled, sort_order}. Custom rule ids
+// must be 190000-199999 (rejected with a 422 otherwise). A rule may be
+// authored either directly (rule_id + raw_seclang) or via a guided-builder
+// convenience shape (target/operator/match_value/action/priority, rendered
+// into `seclang` server-side) - see StoreWafRuleRequest's docblock in Master.
+//
+// ListLBWafRules's response is a bare Eloquent collection under "rules"
+// ({"success":true,"rules":[...]}), NOT a Laravel paginator ({"data":[...]}) -
+// the shared doList helper only understands top-level arrays or a "data"
+// envelope (client/decode.go's decodeList), so it would fail on this shape
+// with "no 'data' array". namedList is the existing helper for exactly this
+// envelope (see ListLBSecurityGroupRules).
+
+// ListLBWafRules lists the custom WAF rules of a load balancer.
+func (c *Client) ListLBWafRules(ctx context.Context, lbID string) ([]map[string]any, error) {
+	if lbID == "" {
+		return nil, fmt.Errorf("ListLBWafRules: empty lbID")
+	}
+	path := "/load-balancer/" + url.PathEscape(lbID) + "/waf/rules"
+	return c.namedList(ctx, "GET", path, "rules")
+}
+
+// CreateLBWafRule creates a custom WAF rule (rule_id must be 190000-199999).
+func (c *Client) CreateLBWafRule(ctx context.Context, lbID string, body map[string]any) (map[string]any, error) {
+	if lbID == "" {
+		return nil, fmt.Errorf("CreateLBWafRule: empty lbID")
+	}
+	path := "/load-balancer/" + url.PathEscape(lbID) + "/waf/rules"
+	return c.doItem(ctx, "POST", path, body, "rule")
+}
+
+// UpdateLBWafRule patches a custom WAF rule.
+func (c *Client) UpdateLBWafRule(ctx context.Context, lbID, ruleID string, body map[string]any) (map[string]any, error) {
+	if lbID == "" || ruleID == "" {
+		return nil, fmt.Errorf("UpdateLBWafRule: empty lbID or ruleID")
+	}
+	path := "/load-balancer/" + url.PathEscape(lbID) + "/waf/rule/" + url.PathEscape(ruleID)
+	return c.doItem(ctx, "PATCH", path, body, "rule")
+}
+
+// DeleteLBWafRule removes a custom WAF rule.
+func (c *Client) DeleteLBWafRule(ctx context.Context, lbID, ruleID string) error {
+	if lbID == "" || ruleID == "" {
+		return fmt.Errorf("DeleteLBWafRule: empty lbID or ruleID")
+	}
+	path := "/load-balancer/" + url.PathEscape(lbID) + "/waf/rule/" + url.PathEscape(ruleID)
+	return c.doVoid(ctx, "DELETE", path, nil)
+}
+
+// GetLBWafRule resolves a single rule by scanning the rules list (there is no
+// individual SHOW route). Returns a 404-shaped *APIError when absent.
+func (c *Client) GetLBWafRule(ctx context.Context, lbID, ruleID string) (map[string]any, error) {
+	rules, err := c.ListLBWafRules(ctx, lbID)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range rules {
+		if id, ok := r["id"].(string); ok && id == ruleID {
+			return r, nil
+		}
+	}
+	return nil, &APIError{Status: 404, Message: "load balancer WAF rule not found"}
+}

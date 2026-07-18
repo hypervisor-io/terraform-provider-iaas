@@ -10409,6 +10409,62 @@
             }
         },
         {
+            "id": "user DELETE /api/load-balancer/{user_lbId}/waf/rule/{user_lbWafRuleId}",
+            "method": "DELETE",
+            "path": "/api/load-balancer/{user_lbId}/waf/rule/{user_lbWafRuleId}",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_lb_waf_rule"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.load_balancer.waf.delete_rule"
+            }
+        },
+        {
+            "id": "user PATCH /api/load-balancer/{user_lbId}/waf/rule/{user_lbWafRuleId}",
+            "method": "PATCH",
+            "path": "/api/load-balancer/{user_lbId}/waf/rule/{user_lbWafRuleId}",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_lb_waf_rule"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.load_balancer.waf.update_rule"
+            }
+        },
+        {
+            "id": "user GET /api/load-balancer/{user_lbId}/waf/rules",
+            "method": "GET",
+            "path": "/api/load-balancer/{user_lbId}/waf/rules",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "collection/search read; the individual rule is modeled by iaas_lb_waf_rule, not the list"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.load_balancer.waf.list_rules"
+            }
+        },
+        {
+            "id": "user POST /api/load-balancer/{user_lbId}/waf/rules",
+            "method": "POST",
+            "path": "/api/load-balancer/{user_lbId}/waf/rules",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_lb_waf_rule"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.load_balancer.waf.create_rule"
+            }
+        },
+        {
             "id": "user GET /api/load-balancers",
             "method": "GET",
             "path": "/api/load-balancers",
