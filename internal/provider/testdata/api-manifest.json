@@ -10367,6 +10367,34 @@
             }
         },
         {
+            "id": "user GET /api/load-balancer/{user_lbId}/waf/events",
+            "method": "GET",
+            "path": "/api/load-balancer/{user_lbId}/waf/events",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "log/telemetry read; WAF events are runtime data, not declarative IaC"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.load_balancer.waf.query_events"
+            }
+        },
+        {
+            "id": "user POST /api/load-balancer/{user_lbId}/waf/events/export",
+            "method": "POST",
+            "path": "/api/load-balancer/{user_lbId}/waf/events/export",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "imperative export/download action, not representable as declarative IaC"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.load_balancer.waf.export_events"
+            }
+        },
+        {
             "id": "user DELETE /api/load-balancer/{user_lbId}/waf/policy",
             "method": "DELETE",
             "path": "/api/load-balancer/{user_lbId}/waf/policy",

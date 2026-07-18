@@ -168,3 +168,53 @@ func (c *Client) GetLBWafRule(ctx context.Context, lbID, ruleID string) (map[str
 	}
 	return nil, &APIError{Status: 404, Message: "load balancer WAF rule not found"}
 }
+
+// WAF event log endpoints (S6 Task 3, spec 17). Read-only log access, owner-
+// scoped server-side by Master's LbWafLogService - OpenTofu does not model
+// these as a resource (log/telemetry reads and an imperative export action
+// have no declarative state), they exist here only so the MCP server can
+// reuse this client:
+//
+//	QUERY  GET  /load-balancer/{lbId}/waf/events         -> 200 {success, events:{data:[...],current_page,total,...}}
+//	EXPORT POST /load-balancer/{lbId}/waf/events/export   -> 200 {success, download_url}
+//
+// QueryLBWafEvents lists one page of the owner-scoped WAF event log.
+// filters keys: from, to, client_ip, rule_id, action, page, per_page -
+// forwarded as query params. The response nests a Laravel paginator under
+// "events" (not a bare array or top-level "data") - namedPaginatorList is the
+// existing helper for exactly this envelope shape (see ListVPNGateways).
+func (c *Client) QueryLBWafEvents(ctx context.Context, lbID string, filters map[string]string) ([]map[string]any, error) {
+	if lbID == "" {
+		return nil, fmt.Errorf("QueryLBWafEvents: empty lbID")
+	}
+	q := url.Values{}
+	for k, v := range filters {
+		if v != "" {
+			q.Set(k, v)
+		}
+	}
+	path := "/load-balancer/" + url.PathEscape(lbID) + "/waf/events"
+	if enc := q.Encode(); enc != "" {
+		path += "?" + enc
+	}
+	return c.namedPaginatorList(ctx, "GET", path, "events")
+}
+
+// ExportLBWafEvents archives the filtered events to object storage and
+// returns a temporary download URL. The response envelope has no nested
+// object key ({"success":true,"download_url":"..."}), so key is "" (bare
+// top-level envelope).
+func (c *Client) ExportLBWafEvents(ctx context.Context, lbID string, filters map[string]any) (string, error) {
+	if lbID == "" {
+		return "", fmt.Errorf("ExportLBWafEvents: empty lbID")
+	}
+	path := "/load-balancer/" + url.PathEscape(lbID) + "/waf/events/export"
+	obj, err := c.doItem(ctx, "POST", path, filters, "")
+	if err != nil {
+		return "", err
+	}
+	if u, ok := obj["download_url"].(string); ok {
+		return u, nil
+	}
+	return "", fmt.Errorf("ExportLBWafEvents: response missing download_url")
+}
