@@ -391,9 +391,16 @@ func ncStateFromAPI(ctx context.Context, obj map[string]any, prior notificationC
 		}
 	}
 
-	// config: map[string]any → types.Map(string) using the shared helper.
-	cfgMap, err := apiMapToParameters(ctx, obj["config"])
-	if err != nil {
+	// config is WRITE-ONLY on the API: it holds bearer credentials (Slack /
+	// Discord incoming-webhook URLs, Telegram bot tokens, the outbound-webhook
+	// HMAC secret) and the server stopped serializing it so read-only callers
+	// could not harvest them (Master SEC-20260730-03). When the key is absent
+	// we must keep the practitioner's configured value rather than recording an
+	// empty map — apiMapToParameters() maps a missing field to {}, which would
+	// show as permanent drift and make every apply try to rewrite the channel.
+	if _, present := obj["config"]; !present {
+		m.Config = prior.Config
+	} else if cfgMap, err := apiMapToParameters(ctx, obj["config"]); err != nil {
 		d.Append(diagFromErr("Error reading notification channel config", err))
 		m.Config = prior.Config
 	} else {
