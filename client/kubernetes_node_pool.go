@@ -142,6 +142,38 @@ func (c *Client) UpdateKubernetesNodePool(ctx context.Context, clusterID, poolID
 // progressive deletion in flight. The route is a DELETE to the SINGULAR pool
 // path and carries idempotency.user.
 //
+// RotateKubernetesNodePool starts a surge-replace rotation of the pool's
+// STALE workers (instances whose plan_id differs from the pool's current
+// instance_plan_id) after an instance-plan change: provision up to
+// body["max_surge"] replacement workers per wave on the new plan, wait ready,
+// honour body["drain_grace_period"] seconds, then cordon/drain/destroy each
+// replaced worker. ASYNC — bare {task_id} response, idempotency.user, POST to
+// the SINGULAR pool path + "/rotate", throttled in the k8s_upgrade bucket
+// (3/hour — rotation is the same weight class as a cluster upgrade).
+//
+// Downsize guard: rotating onto a SMALLER plan (any stale worker's plan
+// out-sizes the target — folded ANY-wise across mixed stale plans) is
+// rejected 422 {"errors":{"confirm_downsize":["downsize_confirmation_required"]}}
+// unless body["confirm_downsize"] is true; the caller must re-submit with the
+// explicit confirmation. Other errors: 422 no_outdated_workers (nothing
+// stale — the pool is already on the plan), 409 op_locked (a rotation,
+// upgrade or scale op already holds the cluster/pool op-lock), or the
+// standard non-2xx mapping.
+func (c *Client) RotateKubernetesNodePool(ctx context.Context, clusterID, poolID string, body map[string]any, idemKey string) (map[string]any, error) {
+	if clusterID == "" {
+		return nil, fmt.Errorf("RotateKubernetesNodePool: empty cluster id")
+	}
+	if poolID == "" {
+		return nil, fmt.Errorf("RotateKubernetesNodePool: empty pool id")
+	}
+	if idemKey == "" {
+		idemKey = newUUIDv4()
+	}
+	return c.doItemWithHeaders(ctx, "POST",
+		"/kubernetes/cluster/"+url.PathEscape(clusterID)+"/pool/"+url.PathEscape(poolID)+"/rotate",
+		body, "", map[string]string{"Idempotency-Key": idemKey})
+}
+
 // Errors surface as: 409 op_locked / no_eligible_victims (another op in flight,
 // or the drain config has no eligible victims), 422 success:false
 // (default_pool_protected - last/default pool; reassign first), or the standard

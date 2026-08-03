@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -393,5 +394,95 @@ func TestDeleteKubernetesNodePool_EmptyIDs(t *testing.T) {
 	}
 	if err := c.DeleteKubernetesNodePool(context.Background(), "cl-1", "", "k"); err == nil {
 		t.Fatal("expected error for empty pool id")
+	}
+}
+
+// --- RotateKubernetesNodePool ----------------------------------------------
+
+func TestRotateKubernetesNodePool_Success(t *testing.T) {
+	var gotMethod, gotPath, gotIdemKey string
+	var gotBody map[string]any
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotIdemKey = r.Header.Get("Idempotency-Key")
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"task_id":"task-uuid-1"}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	body := map[string]any{"max_surge": 2, "drain_grace_period": 30, "confirm_downsize": true}
+	obj, err := c.RotateKubernetesNodePool(context.Background(), "cl-1", "pool-1", body, "idem-key-rot")
+	if err != nil {
+		t.Fatalf("RotateKubernetesNodePool returned error: %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %s; want POST", gotMethod)
+	}
+	if gotPath != "/api/kubernetes/cluster/cl-1/pool/pool-1/rotate" {
+		t.Errorf("path = %s; want /api/kubernetes/cluster/cl-1/pool/pool-1/rotate", gotPath)
+	}
+	if gotIdemKey != "idem-key-rot" {
+		t.Errorf("Idempotency-Key header = %q; want %q", gotIdemKey, "idem-key-rot")
+	}
+	if gotBody["max_surge"] != float64(2) || gotBody["confirm_downsize"] != true {
+		t.Errorf("body did not round-trip: %+v", gotBody)
+	}
+	// Bare envelope: task_id must surface on the returned object directly.
+	if obj["task_id"] != "task-uuid-1" {
+		t.Errorf("task_id = %v; want task-uuid-1", obj["task_id"])
+	}
+}
+
+func TestRotateKubernetesNodePool_GeneratesKeyWhenEmpty(t *testing.T) {
+	var gotIdemKey string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotIdemKey = r.Header.Get("Idempotency-Key")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"task_id":"t"}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	if _, err := c.RotateKubernetesNodePool(context.Background(), "cl-1", "pool-1", map[string]any{}, ""); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotIdemKey == "" {
+		t.Error("expected a generated non-empty Idempotency-Key header when none supplied")
+	}
+}
+
+// TestRotateKubernetesNodePool_DownsizeConfirmationError pins the 422 shape the
+// Master emits when a smaller target plan is submitted without
+// confirm_downsize — the MCP tool surfaces this verbatim so the agent can
+// re-submit with the confirmation.
+func TestRotateKubernetesNodePool_DownsizeConfirmationError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"errors":{"confirm_downsize":["downsize_confirmation_required"]}}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	_, err := c.RotateKubernetesNodePool(context.Background(), "cl-1", "pool-1", map[string]any{}, "k")
+	if err == nil {
+		t.Fatal("expected an error for the 422 downsize-confirmation response")
+	}
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) || apiErr.Status != 422 {
+		t.Fatalf("expected *APIError with Status 422, got: %v", err)
+	}
+}
+
+func TestRotateKubernetesNodePool_EmptyIDs(t *testing.T) {
+	c := New("http://unused/api", "tok", time.Second, false)
+	if _, err := c.RotateKubernetesNodePool(context.Background(), "", "pool-1", nil, "k"); err == nil {
+		t.Error("expected error for empty cluster id")
+	}
+	if _, err := c.RotateKubernetesNodePool(context.Background(), "cl-1", "", nil, "k"); err == nil {
+		t.Error("expected error for empty pool id")
 	}
 }
