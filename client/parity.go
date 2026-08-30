@@ -185,14 +185,6 @@ func (c *Client) SyncLoadBalancer(ctx context.Context, lbID string) error {
 	return c.doVoid(ctx, "POST", lb(lbID)+"/sync", nil)
 }
 
-func (c *Client) CreateLBLetsEncryptCertificate(ctx context.Context, lbID string, body map[string]any) (map[string]any, error) {
-	return c.doItem(ctx, "POST", lb(lbID)+"/le-certificate", body, "certificate")
-}
-
-func (c *Client) RetryLBCertificate(ctx context.Context, lbID, certID string) error {
-	return c.doVoid(ctx, "POST", lb(lbID)+"/certificate/"+url.PathEscape(certID)+"/retry", nil)
-}
-
 // ── catalog reads ────────────────────────────────────────────────────────────
 
 func (c *Client) ListDbPlans(ctx context.Context) ([]map[string]any, error) {

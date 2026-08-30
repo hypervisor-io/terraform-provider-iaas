@@ -57,6 +57,15 @@ environment variable is used as a fallback when the attribute is unset.
 The provider ships **35 resources** and **10 data sources**, grouped by area below. Every name
 listed here is registered in [`internal/provider/provider.go`](internal/provider/provider.go).
 
+> **Breaking change:** `iaas_lb_certificate` is **removed**. Its backing API endpoints
+> (`/load-balancer/{lb}/certificate*`, `/load-balancer/{lb}/le-certificate`) no longer exist on
+> the Master API - they are not deprecated shims any more, they 404. Migrate to `iaas_certificate`
+> (an account-level resource, not a child of a load balancer) and attach it to a listener with
+> `iaas_lb_frontend`'s new `certificate_ids` list attribute (the legacy single `ssl_certificate_id`
+> attribute still works and is equivalent to a one-element `certificate_ids`).
+
+
+
 ### Compute / instances
 
 - `iaas_instance` - virtual machine lifecycle (deploy, power, reinstall, destroy; async-converged)
@@ -76,7 +85,9 @@ listed here is registered in [`internal/provider/provider.go`](internal/provider
 - `iaas_lb_target` - backend target (instance/IP + port)
 - `iaas_lb_frontend` - frontend listener
 - `iaas_lb_routing_rule` - routing rule
-- `iaas_lb_certificate` - TLS certificate for a frontend
+- `iaas_certificate` - account-level TLS certificate (manual upload or Let's Encrypt); attach to
+  one or more frontends with `certificate_ids` (or the legacy single `ssl_certificate_id`).
+  Replaces the removed `iaas_lb_certificate` resource - see "Breaking change" below.
 - `iaas_vpn_gateway` - VPN gateway
 - `iaas_vpn_peer` - VPN peer (child of a gateway)
 - `iaas_dns_zone` - DNS zone

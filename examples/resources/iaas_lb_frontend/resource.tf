@@ -24,10 +24,14 @@ resource "iaas_lb_frontend" "http" {
   # Optional: traffic with no matching routing rule goes to this default backend.
   default_backend_id = iaas_lb_backend.web.id
 
-  # For an https listener, attach a certificate:
-  # protocol           = "https"
-  # port               = 443
-  # ssl_certificate_id = iaas_lb_certificate.example.id
+  # For an https listener, attach one or more account certificates for SNI
+  # (first is the default served when the client sends no matching SNI host):
+  # protocol        = "https"
+  # port            = 443
+  # certificate_ids = [iaas_certificate.example.id]
+  #
+  # Or, for a single certificate, the legacy form still works:
+  # ssl_certificate_id = iaas_certificate.example.id
 
   enabled = true
 }

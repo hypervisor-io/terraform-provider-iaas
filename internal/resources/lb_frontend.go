@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -38,8 +39,8 @@ type lbFrontendResource struct {
 // lbFrontendModel maps the Terraform state/plan for iaas_lb_frontend.
 //
 // load_balancer_id is in the path (Required + RequiresReplace). name/mode/port/
-// protocol/ssl_certificate_id/default_backend_id/enabled are all updatable in
-// place (the frontend has a PATCH route).
+// protocol/ssl_certificate_id/certificate_ids/default_backend_id/enabled are
+// all updatable in place (the frontend has a PATCH route).
 type lbFrontendModel struct {
 	ID               types.String `tfsdk:"id"`
 	LoadBalancerID   types.String `tfsdk:"load_balancer_id"`
@@ -48,6 +49,7 @@ type lbFrontendModel struct {
 	Port             types.Int64  `tfsdk:"port"`
 	Protocol         types.String `tfsdk:"protocol"`
 	SSLCertificateID types.String `tfsdk:"ssl_certificate_id"`
+	CertificateIDs   types.List   `tfsdk:"certificate_ids"`
 	DefaultBackendID types.String `tfsdk:"default_backend_id"`
 	Enabled          types.Bool   `tfsdk:"enabled"`
 }
@@ -65,7 +67,8 @@ func (r *lbFrontendResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"load_balancer_id is part of the API path, so changing it forces a new resource. The " +
 			"listener is identified by (port, protocol), which must be unique per load balancer. " +
 			"All other fields are updatable in place. Point a frontend at a default backend with " +
-			"default_backend_id and, for HTTPS, attach a certificate with ssl_certificate_id. " +
+			"default_backend_id and, for HTTPS, attach one or more certificates with " +
+			"certificate_ids (or a single one with the legacy ssl_certificate_id). " +
 			"Import with a composite id: \"<load_balancer_id>/<frontend_id>\".",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -114,8 +117,24 @@ func (r *lbFrontendResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			},
 			"ssl_certificate_id": schema.StringAttribute{
 				Optional: true,
-				Description: "Optional UUID of an iaas_lb_certificate to terminate TLS with (for an " +
-					"https listener). Updatable in place.",
+				Description: "Optional UUID of an iaas_certificate to terminate TLS with (for an " +
+					"https listener). Legacy single-certificate form, kept for backward " +
+					"compatibility - equivalent to certificate_ids with one element. Setting " +
+					"both in the same apply sends certificate_ids; prefer certificate_ids for " +
+					"new configurations, especially SNI (multiple certificates on one listener). " +
+					"Updatable in place.",
+			},
+			"certificate_ids": schema.ListAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
+				Description: "Ordered list of iaas_certificate UUIDs to attach to this listener for " +
+					"SNI (the first entry is the default certificate served when the client sends " +
+					"no SNI hostname or one that matches none of the attached certificates). " +
+					"Superset of ssl_certificate_id - set this instead to attach more than one " +
+					"certificate to a single https listener. Reflects the listener's attached " +
+					"certificates even when only the legacy ssl_certificate_id was set. Updatable " +
+					"in place.",
 			},
 			"default_backend_id": schema.StringAttribute{
 				Optional: true,
@@ -159,7 +178,17 @@ func frontendBody(plan lbFrontendModel) map[string]any {
 	if !plan.Mode.IsNull() && !plan.Mode.IsUnknown() {
 		body["mode"] = plan.Mode.ValueString()
 	}
-	if !plan.SSLCertificateID.IsNull() && !plan.SSLCertificateID.IsUnknown() && plan.SSLCertificateID.ValueString() != "" {
+	// certificate_ids[] takes precedence when explicitly set in the config
+	// (even an empty list, which clears every attached certificate - mirrors
+	// LoadBalancerService::storeFrontend/updateFrontend's `$request->has('certificate_ids')`
+	// check). Otherwise fall back to the legacy single ssl_certificate_id.
+	if !plan.CertificateIDs.IsNull() && !plan.CertificateIDs.IsUnknown() {
+		ids := stringListValues(plan.CertificateIDs)
+		if ids == nil {
+			ids = []string{}
+		}
+		body["certificate_ids"] = ids
+	} else if !plan.SSLCertificateID.IsNull() && !plan.SSLCertificateID.IsUnknown() && plan.SSLCertificateID.ValueString() != "" {
 		body["ssl_certificate_id"] = plan.SSLCertificateID.ValueString()
 	}
 	if !plan.DefaultBackendID.IsNull() && !plan.DefaultBackendID.IsUnknown() && plan.DefaultBackendID.ValueString() != "" {
@@ -195,7 +224,12 @@ func (r *lbFrontendResource) Create(ctx context.Context, req resource.CreateRequ
 	if err != nil {
 		obj = created
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, lbFrontendStateFromAPI(obj, plan))...)
+	state, diags := lbFrontendStateFromAPI(ctx, obj, plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Read refreshes state by scanning the LB SHOW frontends[]. A 404 removes it.
@@ -216,7 +250,12 @@ func (r *lbFrontendResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, lbFrontendStateFromAPI(obj, state))...)
+	newState, diags := lbFrontendStateFromAPI(ctx, obj, state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
 }
 
 // Update patches the mutable frontend fields, then reads back by scan.
@@ -238,7 +277,12 @@ func (r *lbFrontendResource) Update(ctx context.Context, req resource.UpdateRequ
 		resp.Diagnostics.Append(diagFromErr("Error reading load balancer frontend after update", err))
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, lbFrontendStateFromAPI(obj, plan))...)
+	newState, diags := lbFrontendStateFromAPI(ctx, obj, plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
 }
 
 // Delete removes the frontend (and its routing rules).
@@ -273,7 +317,12 @@ func (r *lbFrontendResource) ImportState(ctx context.Context, req resource.Impor
 }
 
 // lbFrontendStateFromAPI builds the model from an embedded frontend object.
-func lbFrontendStateFromAPI(obj map[string]any, prior lbFrontendModel) lbFrontendModel {
+// certificate_ids is derived from the response's embedded "certificates"
+// array (see frontendCertificateIDsFromAPI) so it reflects reality even when
+// the caller only ever set the legacy ssl_certificate_id.
+func lbFrontendStateFromAPI(ctx context.Context, obj map[string]any, prior lbFrontendModel) (lbFrontendModel, diag.Diagnostics) {
+	certIDs, diags := frontendCertificateIDsFromAPI(ctx, obj, prior.CertificateIDs)
+
 	return lbFrontendModel{
 		ID:               stringFromAPI(obj, "id", prior.ID),
 		LoadBalancerID:   prior.LoadBalancerID, // from the path
@@ -282,7 +331,35 @@ func lbFrontendStateFromAPI(obj map[string]any, prior lbFrontendModel) lbFronten
 		Port:             int64FromAPI(obj, "port", prior.Port),
 		Protocol:         stringFromAPI(obj, "protocol", prior.Protocol),
 		SSLCertificateID: optionalStringFromAPI(obj, "ssl_certificate_id", prior.SSLCertificateID),
+		CertificateIDs:   certIDs,
 		DefaultBackendID: optionalStringFromAPI(obj, "default_backend_id", prior.DefaultBackendID),
 		Enabled:          boolFromIntAPI(obj, "enabled", prior.Enabled),
+	}, diags
+}
+
+// frontendCertificateIDsFromAPI extracts the ordered list of certificate
+// UUIDs attached to a frontend from the API's embedded "certificates" array
+// (each element an object with at least an "id" key) into a types.List(string)
+// for iaas_lb_frontend's certificate_ids. A present array (possibly empty)
+// becomes a known list; an absent/non-array key falls back to the prior value.
+func frontendCertificateIDsFromAPI(ctx context.Context, obj map[string]any, fallback types.List) (types.List, diag.Diagnostics) {
+	raw, ok := obj["certificates"]
+	if !ok {
+		return fallback, nil
 	}
+	arr, ok := raw.([]any)
+	if !ok {
+		return fallback, nil
+	}
+	ids := make([]string, 0, len(arr))
+	for _, v := range arr {
+		cert, ok := v.(map[string]any)
+		if !ok {
+			continue
+		}
+		if id, ok := cert["id"].(string); ok && id != "" {
+			ids = append(ids, id)
+		}
+	}
+	return types.ListValueFrom(ctx, types.StringType, ids)
 }

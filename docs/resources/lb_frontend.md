@@ -3,12 +3,12 @@
 page_title: "iaas_lb_frontend Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a frontend listener of a load balancer (a port + protocol the load balancer accepts traffic on). A frontend is a child of a load balancer: its parent load_balancer_id is part of the API path, so changing it forces a new resource. The listener is identified by (port, protocol), which must be unique per load balancer. All other fields are updatable in place. Point a frontend at a default backend with default_backend_id and, for HTTPS, attach a certificate with ssl_certificate_id. Import with a composite id: "<load_balancer_id>/<frontend_id>".
+  Manages a frontend listener of a load balancer (a port + protocol the load balancer accepts traffic on). A frontend is a child of a load balancer: its parent load_balancer_id is part of the API path, so changing it forces a new resource. The listener is identified by (port, protocol), which must be unique per load balancer. All other fields are updatable in place. Point a frontend at a default backend with default_backend_id and, for HTTPS, attach one or more certificates with certificate_ids (or a single one with the legacy ssl_certificate_id). Import with a composite id: "<load_balancer_id>/<frontend_id>".
 ---
 
 # iaas_lb_frontend (Resource)
 
-Manages a frontend listener of a load balancer (a port + protocol the load balancer accepts traffic on). A frontend is a child of a load balancer: its parent load_balancer_id is part of the API path, so changing it forces a new resource. The listener is identified by (port, protocol), which must be unique per load balancer. All other fields are updatable in place. Point a frontend at a default backend with default_backend_id and, for HTTPS, attach a certificate with ssl_certificate_id. Import with a composite id: "<load_balancer_id>/<frontend_id>".
+Manages a frontend listener of a load balancer (a port + protocol the load balancer accepts traffic on). A frontend is a child of a load balancer: its parent load_balancer_id is part of the API path, so changing it forces a new resource. The listener is identified by (port, protocol), which must be unique per load balancer. All other fields are updatable in place. Point a frontend at a default backend with default_backend_id and, for HTTPS, attach one or more certificates with certificate_ids (or a single one with the legacy ssl_certificate_id). Import with a composite id: "<load_balancer_id>/<frontend_id>".
 
 ## Example Usage
 
@@ -39,10 +39,14 @@ resource "iaas_lb_frontend" "http" {
   # Optional: traffic with no matching routing rule goes to this default backend.
   default_backend_id = iaas_lb_backend.web.id
 
-  # For an https listener, attach a certificate:
-  # protocol           = "https"
-  # port               = 443
-  # ssl_certificate_id = iaas_lb_certificate.example.id
+  # For an https listener, attach one or more account certificates for SNI
+  # (first is the default served when the client sends no matching SNI host):
+  # protocol        = "https"
+  # port            = 443
+  # certificate_ids = [iaas_certificate.example.id]
+  #
+  # Or, for a single certificate, the legacy form still works:
+  # ssl_certificate_id = iaas_certificate.example.id
 
   enabled = true
 }
@@ -64,11 +68,12 @@ resource "iaas_lb_frontend" "http" {
 
 ### Optional
 
+- `certificate_ids` (List of String) Ordered list of iaas_certificate UUIDs to attach to this listener for SNI (the first entry is the default certificate served when the client sends no SNI hostname or one that matches none of the attached certificates). Superset of ssl_certificate_id - set this instead to attach more than one certificate to a single https listener. Reflects the listener's attached certificates even when only the legacy ssl_certificate_id was set. Updatable in place.
 - `default_backend_id` (String) Optional UUID of the default backend traffic is sent to when no routing rule matches. Updatable in place.
 - `enabled` (Boolean) Whether the listener is active. Defaults to true. Updatable in place.
 - `mode` (String) Proxy mode: "http" (default) or "tcp". Updatable in place.
 - `protocol` (String) Listener protocol: "http" (default), "https", "tcp" or "udp". Together with port it must be unique per load balancer. Updatable in place.
-- `ssl_certificate_id` (String) Optional UUID of an iaas_lb_certificate to terminate TLS with (for an https listener). Updatable in place.
+- `ssl_certificate_id` (String) Optional UUID of an iaas_certificate to terminate TLS with (for an https listener). Legacy single-certificate form, kept for backward compatibility - equivalent to certificate_ids with one element. Setting both in the same apply sends certificate_ids; prefer certificate_ids for new configurations, especially SNI (multiple certificates on one listener). Updatable in place.
 
 ### Read-Only
 

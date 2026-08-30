@@ -43,3 +43,13 @@ resource "iaas_alert_rule" "db_disk" {
   enabled       = false
   channel_ids   = [iaas_notification_channel.slack_ops.id]
 }
+
+# Alert rule watching certificate expiry
+resource "iaas_alert_rule" "cert_expiry" {
+  name          = "Certificate expiring soon"
+  resource_type = "certificate"
+  metric        = "days_until_expiry"
+  operator      = "lt"
+  threshold     = 30
+  channel_ids   = [iaas_notification_channel.slack_ops.id]
+}

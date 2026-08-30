@@ -41,7 +41,7 @@ func NewAlertRuleResource() resource.Resource {
 //	CREATE  POST   /alert-rules                (PLURAL)
 //	                body {name (required,max:255),
 //	                      resource_type (required,in:instance|managed_database|
-//	                                     load_balancer|vpn_gateway),
+//	                                     load_balancer|vpn_gateway|certificate),
 //	                      resource_id   (nullable|uuid),
 //	                      metric        (required|string),
 //	                      operator      (required,in:gt|lt|gte|lte|eq),
@@ -128,7 +128,7 @@ func (r *alertRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			"resource_type": schema.StringAttribute{
 				Required: true,
 				Description: "The type of resource this rule monitors. One of: `instance`, " +
-					"`managed_database`, `load_balancer`, `vpn_gateway`. Updatable in place.",
+					"`managed_database`, `load_balancer`, `vpn_gateway`, `certificate`. Updatable in place.",
 			},
 			"resource_id": schema.StringAttribute{
 				Optional: true,

@@ -1477,6 +1477,20 @@
             }
         },
         {
+            "id": "admin GET /api/v1/grantable-account-owners",
+            "method": "GET",
+            "path": "/api/v1/grantable-account-owners",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+            }
+        },
+        {
             "id": "admin GET /api/v1/hypervisor-group/{groupId}/backup-jobs",
             "method": "GET",
             "path": "/api/v1/hypervisor-group/{groupId}/backup-jobs",
@@ -1712,6 +1726,48 @@
             "mcp": {
                 "status": "excluded",
                 "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+            }
+        },
+        {
+            "id": "admin PUT /api/v1/hypervisor/group/{hypervisorGroupId}/access",
+            "method": "PUT",
+            "path": "/api/v1/hypervisor/group/{hypervisorGroupId}/access",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+            }
+        },
+        {
+            "id": "admin POST /api/v1/hypervisor/group/{hypervisorGroupId}/affected-count",
+            "method": "POST",
+            "path": "/api/v1/hypervisor/group/{hypervisorGroupId}/affected-count",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+            }
+        },
+        {
+            "id": "admin GET /api/v1/hypervisor/group/{hypervisorGroupId}/grants",
+            "method": "GET",
+            "path": "/api/v1/hypervisor/group/{hypervisorGroupId}/grants",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
             }
         },
         {
@@ -2482,20 +2538,6 @@
             "mcp": {
                 "status": "excluded",
                 "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
-            }
-        },
-        {
-            "id": "admin GET /api/v1/instance/{instanceId}/backups/{backupId}/restore",
-            "method": "GET",
-            "path": "/api/v1/instance/{instanceId}/backups/{backupId}/restore",
-            "surface": "admin",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
-            },
-            "mcp": {
-                "status": "excluded",
-                "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
             }
         },
         {
@@ -3773,6 +3815,20 @@
             }
         },
         {
+            "id": "admin POST /api/v1/kubernetes/cluster/{kubernetesClusterId}/pool/{kubernetesNodePoolId}/rotate",
+            "method": "POST",
+            "path": "/api/v1/kubernetes/cluster/{kubernetesClusterId}/pool/{kubernetesNodePoolId}/rotate",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+            }
+        },
+        {
             "id": "admin POST /api/v1/kubernetes/cluster/{kubernetesClusterId}/pool/{kubernetesNodePoolId}/vm-ref/{vmRefId}/cancel-pending-deletion",
             "method": "POST",
             "path": "/api/v1/kubernetes/cluster/{kubernetesClusterId}/pool/{kubernetesNodePoolId}/vm-ref/{vmRefId}/cancel-pending-deletion",
@@ -4305,48 +4361,6 @@
             }
         },
         {
-            "id": "admin DELETE /api/v1/load-balancer/{loadBalancerId}/certificate/{lbCertificateId}",
-            "method": "DELETE",
-            "path": "/api/v1/load-balancer/{loadBalancerId}/certificate/{lbCertificateId}",
-            "surface": "admin",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
-            },
-            "mcp": {
-                "status": "excluded",
-                "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
-            }
-        },
-        {
-            "id": "admin POST /api/v1/load-balancer/{loadBalancerId}/certificate/{lbCertificateId}/retry",
-            "method": "POST",
-            "path": "/api/v1/load-balancer/{loadBalancerId}/certificate/{lbCertificateId}/retry",
-            "surface": "admin",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
-            },
-            "mcp": {
-                "status": "excluded",
-                "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
-            }
-        },
-        {
-            "id": "admin POST /api/v1/load-balancer/{loadBalancerId}/certificates",
-            "method": "POST",
-            "path": "/api/v1/load-balancer/{loadBalancerId}/certificates",
-            "surface": "admin",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
-            },
-            "mcp": {
-                "status": "excluded",
-                "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
-            }
-        },
-        {
             "id": "admin DELETE /api/v1/load-balancer/{loadBalancerId}/frontend/{lbFrontendId}",
             "method": "DELETE",
             "path": "/api/v1/load-balancer/{loadBalancerId}/frontend/{lbFrontendId}",
@@ -4420,20 +4434,6 @@
             "id": "admin POST /api/v1/load-balancer/{loadBalancerId}/frontends",
             "method": "POST",
             "path": "/api/v1/load-balancer/{loadBalancerId}/frontends",
-            "surface": "admin",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
-            },
-            "mcp": {
-                "status": "excluded",
-                "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
-            }
-        },
-        {
-            "id": "admin POST /api/v1/load-balancer/{loadBalancerId}/le-certificate",
-            "method": "POST",
-            "path": "/api/v1/load-balancer/{loadBalancerId}/le-certificate",
             "surface": "admin",
             "opentofu": {
                 "status": "excluded",
@@ -4554,132 +4554,6 @@
             "mcp": {
                 "status": "excluded",
                 "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
-            }
-        },
-        {
-            "id": "admin GET /api/v1/load-balancer/{loadBalancerId}/waf/events",
-            "method": "GET",
-            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/events",
-            "surface": "admin",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "admin.load_balancer.waf.query_events"
-            }
-        },
-        {
-            "id": "admin POST /api/v1/load-balancer/{loadBalancerId}/waf/events/export",
-            "method": "POST",
-            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/events/export",
-            "surface": "admin",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "admin.load_balancer.waf.export_events"
-            }
-        },
-        {
-            "id": "admin DELETE /api/v1/load-balancer/{loadBalancerId}/waf/policy",
-            "method": "DELETE",
-            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/policy",
-            "surface": "admin",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
-            },
-            "mcp": {
-                "status": "excluded",
-                "reason": "destructive admin op excluded from the D3 safe allowlist"
-            }
-        },
-        {
-            "id": "admin GET /api/v1/load-balancer/{loadBalancerId}/waf/policy",
-            "method": "GET",
-            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/policy",
-            "surface": "admin",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "admin.load_balancer.waf.get_policy"
-            }
-        },
-        {
-            "id": "admin PUT /api/v1/load-balancer/{loadBalancerId}/waf/policy",
-            "method": "PUT",
-            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/policy",
-            "surface": "admin",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "admin.load_balancer.waf.set_policy"
-            }
-        },
-        {
-            "id": "admin DELETE /api/v1/load-balancer/{loadBalancerId}/waf/rule/{lbWafRuleId}",
-            "method": "DELETE",
-            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/rule/{lbWafRuleId}",
-            "surface": "admin",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
-            },
-            "mcp": {
-                "status": "excluded",
-                "reason": "destructive admin op excluded from the D3 safe allowlist"
-            }
-        },
-        {
-            "id": "admin PATCH /api/v1/load-balancer/{loadBalancerId}/waf/rule/{lbWafRuleId}",
-            "method": "PATCH",
-            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/rule/{lbWafRuleId}",
-            "surface": "admin",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "admin.load_balancer.waf.update_rule"
-            }
-        },
-        {
-            "id": "admin GET /api/v1/load-balancer/{loadBalancerId}/waf/rules",
-            "method": "GET",
-            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/rules",
-            "surface": "admin",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "admin.load_balancer.waf.list_rules"
-            }
-        },
-        {
-            "id": "admin POST /api/v1/load-balancer/{loadBalancerId}/waf/rules",
-            "method": "POST",
-            "path": "/api/v1/load-balancer/{loadBalancerId}/waf/rules",
-            "surface": "admin",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "admin.load_balancer.waf.create_rule"
             }
         },
         {
@@ -6293,6 +6167,48 @@
             }
         },
         {
+            "id": "admin GET /api/v1/user/{userId}/hypervisor-groups",
+            "method": "GET",
+            "path": "/api/v1/user/{userId}/hypervisor-groups",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+            }
+        },
+        {
+            "id": "admin DELETE /api/v1/user/{userId}/hypervisor-groups/{hypervisorGroupId}",
+            "method": "DELETE",
+            "path": "/api/v1/user/{userId}/hypervisor-groups/{hypervisorGroupId}",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+            }
+        },
+        {
+            "id": "admin PUT /api/v1/user/{userId}/hypervisor-groups/{hypervisorGroupId}",
+            "method": "PUT",
+            "path": "/api/v1/user/{userId}/hypervisor-groups/{hypervisorGroupId}",
+            "surface": "admin",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+            }
+        },
+        {
             "id": "admin POST /api/v1/user/{userId}/impersonate",
             "method": "POST",
             "path": "/api/v1/user/{userId}/impersonate",
@@ -7606,6 +7522,104 @@
             "mcp": {
                 "status": "covered",
                 "tool": "user.instance_backup_policy.reset_failures"
+            }
+        },
+        {
+            "id": "user DELETE /api/certificate/{user_certificateId}",
+            "method": "DELETE",
+            "path": "/api/certificate/{user_certificateId}",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_certificate"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.certificate.delete"
+            }
+        },
+        {
+            "id": "user GET /api/certificate/{user_certificateId}",
+            "method": "GET",
+            "path": "/api/certificate/{user_certificateId}",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_certificate"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.certificate.get"
+            }
+        },
+        {
+            "id": "user POST /api/certificate/{user_certificateId}/retry",
+            "method": "POST",
+            "path": "/api/certificate/{user_certificateId}/retry",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "operational retry, not declarative"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.certificate.retry"
+            }
+        },
+        {
+            "id": "user GET /api/certificate/{user_certificateId}/usages",
+            "method": "GET",
+            "path": "/api/certificate/{user_certificateId}/usages",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "read-only introspection folded into iaas_certificate's computed status"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.certificate.get"
+            }
+        },
+        {
+            "id": "user GET /api/certificates",
+            "method": "GET",
+            "path": "/api/certificates",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_certificate"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.certificate.list"
+            }
+        },
+        {
+            "id": "user POST /api/certificates",
+            "method": "POST",
+            "path": "/api/certificates",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_certificate"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.certificate.upload"
+            }
+        },
+        {
+            "id": "user POST /api/certificates/letsencrypt",
+            "method": "POST",
+            "path": "/api/certificates/letsencrypt",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "async Let's Encrypt issuance is not a declarative resource; use the panel or the MCP tool"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.certificate.request_letsencrypt"
             }
         },
         {
@@ -9751,6 +9765,20 @@
             }
         },
         {
+            "id": "user POST /api/kubernetes/cluster/{user_clusterId}/pool/{user_poolId}/rotate",
+            "method": "POST",
+            "path": "/api/kubernetes/cluster/{user_clusterId}/pool/{user_poolId}/rotate",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "imperative action, not representable as declarative IaC"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.kubernetes_node_pool.rotate"
+            }
+        },
+        {
             "id": "user GET /api/kubernetes/cluster/{user_clusterId}/pools",
             "method": "GET",
             "path": "/api/kubernetes/cluster/{user_clusterId}/pools",
@@ -10283,48 +10311,6 @@
             }
         },
         {
-            "id": "user DELETE /api/load-balancer/{user_lbId}/certificate/{user_lbCertificateId}",
-            "method": "DELETE",
-            "path": "/api/load-balancer/{user_lbId}/certificate/{user_lbCertificateId}",
-            "surface": "user",
-            "opentofu": {
-                "status": "covered",
-                "type": "iaas_lb_certificate"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "user.load_balancer.certificate_delete"
-            }
-        },
-        {
-            "id": "user POST /api/load-balancer/{user_lbId}/certificate/{user_lbCertificateId}/retry",
-            "method": "POST",
-            "path": "/api/load-balancer/{user_lbId}/certificate/{user_lbCertificateId}/retry",
-            "surface": "user",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "imperative action, not representable as declarative IaC"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "user.load_balancer.certificate_retry"
-            }
-        },
-        {
-            "id": "user POST /api/load-balancer/{user_lbId}/certificates",
-            "method": "POST",
-            "path": "/api/load-balancer/{user_lbId}/certificates",
-            "surface": "user",
-            "opentofu": {
-                "status": "covered",
-                "type": "iaas_lb_certificate"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "user.load_balancer.certificate_create"
-            }
-        },
-        {
             "id": "user DELETE /api/load-balancer/{user_lbId}/frontend/{user_lbFrontendId}",
             "method": "DELETE",
             "path": "/api/load-balancer/{user_lbId}/frontend/{user_lbFrontendId}",
@@ -10409,20 +10395,6 @@
             }
         },
         {
-            "id": "user POST /api/load-balancer/{user_lbId}/le-certificate",
-            "method": "POST",
-            "path": "/api/load-balancer/{user_lbId}/le-certificate",
-            "surface": "user",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "imperative action, not representable as declarative IaC"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "user.load_balancer.le_certificate"
-            }
-        },
-        {
             "id": "user GET /api/load-balancer/{user_lbId}/metrics",
             "method": "GET",
             "path": "/api/load-balancer/{user_lbId}/metrics",
@@ -10493,132 +10465,6 @@
             }
         },
         {
-            "id": "user GET /api/load-balancer/{user_lbId}/waf/events",
-            "method": "GET",
-            "path": "/api/load-balancer/{user_lbId}/waf/events",
-            "surface": "user",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "log/telemetry read; WAF events are runtime data, not declarative IaC"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "user.load_balancer.waf.query_events"
-            }
-        },
-        {
-            "id": "user POST /api/load-balancer/{user_lbId}/waf/events/export",
-            "method": "POST",
-            "path": "/api/load-balancer/{user_lbId}/waf/events/export",
-            "surface": "user",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "imperative export/download action, not representable as declarative IaC"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "user.load_balancer.waf.export_events"
-            }
-        },
-        {
-            "id": "user DELETE /api/load-balancer/{user_lbId}/waf/policy",
-            "method": "DELETE",
-            "path": "/api/load-balancer/{user_lbId}/waf/policy",
-            "surface": "user",
-            "opentofu": {
-                "status": "covered",
-                "type": "iaas_lb_waf_policy"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "user.load_balancer.waf.disable_policy"
-            }
-        },
-        {
-            "id": "user GET /api/load-balancer/{user_lbId}/waf/policy",
-            "method": "GET",
-            "path": "/api/load-balancer/{user_lbId}/waf/policy",
-            "surface": "user",
-            "opentofu": {
-                "status": "covered",
-                "type": "iaas_lb_waf_policy"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "user.load_balancer.waf.get_policy"
-            }
-        },
-        {
-            "id": "user PUT /api/load-balancer/{user_lbId}/waf/policy",
-            "method": "PUT",
-            "path": "/api/load-balancer/{user_lbId}/waf/policy",
-            "surface": "user",
-            "opentofu": {
-                "status": "covered",
-                "type": "iaas_lb_waf_policy"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "user.load_balancer.waf.set_policy"
-            }
-        },
-        {
-            "id": "user DELETE /api/load-balancer/{user_lbId}/waf/rule/{user_lbWafRuleId}",
-            "method": "DELETE",
-            "path": "/api/load-balancer/{user_lbId}/waf/rule/{user_lbWafRuleId}",
-            "surface": "user",
-            "opentofu": {
-                "status": "covered",
-                "type": "iaas_lb_waf_rule"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "user.load_balancer.waf.delete_rule"
-            }
-        },
-        {
-            "id": "user PATCH /api/load-balancer/{user_lbId}/waf/rule/{user_lbWafRuleId}",
-            "method": "PATCH",
-            "path": "/api/load-balancer/{user_lbId}/waf/rule/{user_lbWafRuleId}",
-            "surface": "user",
-            "opentofu": {
-                "status": "covered",
-                "type": "iaas_lb_waf_rule"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "user.load_balancer.waf.update_rule"
-            }
-        },
-        {
-            "id": "user GET /api/load-balancer/{user_lbId}/waf/rules",
-            "method": "GET",
-            "path": "/api/load-balancer/{user_lbId}/waf/rules",
-            "surface": "user",
-            "opentofu": {
-                "status": "excluded",
-                "reason": "collection/search read; the individual rule is modeled by iaas_lb_waf_rule, not the list"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "user.load_balancer.waf.list_rules"
-            }
-        },
-        {
-            "id": "user POST /api/load-balancer/{user_lbId}/waf/rules",
-            "method": "POST",
-            "path": "/api/load-balancer/{user_lbId}/waf/rules",
-            "surface": "user",
-            "opentofu": {
-                "status": "covered",
-                "type": "iaas_lb_waf_rule"
-            },
-            "mcp": {
-                "status": "covered",
-                "tool": "user.load_balancer.waf.create_rule"
-            }
-        },
-        {
             "id": "user GET /api/load-balancers",
             "method": "GET",
             "path": "/api/load-balancers",
@@ -10644,6 +10490,62 @@
             "mcp": {
                 "status": "covered",
                 "tool": "user.load_balancer.create"
+            }
+        },
+        {
+            "id": "user GET /api/metrics",
+            "method": "GET",
+            "path": "/api/metrics",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "scrape/telemetry endpoint, not IaC state; the provider does not model metrics export"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "Prometheus scrape telemetry endpoint, not suited to a tool call; candidate for a later phase"
+            }
+        },
+        {
+            "id": "user GET /api/metrics/databases/{id}",
+            "method": "GET",
+            "path": "/api/metrics/databases/{id}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "scrape/telemetry endpoint, not IaC state; the provider does not model metrics export"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "Prometheus scrape telemetry endpoint, not suited to a tool call; candidate for a later phase"
+            }
+        },
+        {
+            "id": "user GET /api/metrics/instances/{id}",
+            "method": "GET",
+            "path": "/api/metrics/instances/{id}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "scrape/telemetry endpoint, not IaC state; the provider does not model metrics export"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "Prometheus scrape telemetry endpoint, not suited to a tool call; candidate for a later phase"
+            }
+        },
+        {
+            "id": "user GET /api/metrics/load-balancers/{id}",
+            "method": "GET",
+            "path": "/api/metrics/load-balancers/{id}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "scrape/telemetry endpoint, not IaC state; the provider does not model metrics export"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "Prometheus scrape telemetry endpoint, not suited to a tool call; candidate for a later phase"
             }
         },
         {
@@ -12618,6 +12520,90 @@
             "mcp": {
                 "status": "covered",
                 "tool": "user.vpn_gateway.list"
+            }
+        },
+        {
+            "id": "user DELETE /api/webhook-subscription/{user_webhookSubscriptionId}",
+            "method": "DELETE",
+            "path": "/api/webhook-subscription/{user_webhookSubscriptionId}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "outbound event-webhook subscription (account notification plumbing, not declarative infrastructure); candidate for a later phase"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "outbound event-webhook subscription management not in the v1 curated allowlist; candidate for a later phase"
+            }
+        },
+        {
+            "id": "user GET /api/webhook-subscription/{user_webhookSubscriptionId}",
+            "method": "GET",
+            "path": "/api/webhook-subscription/{user_webhookSubscriptionId}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "outbound event-webhook subscription (account notification plumbing, not declarative infrastructure); candidate for a later phase"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "outbound event-webhook subscription management not in the v1 curated allowlist; candidate for a later phase"
+            }
+        },
+        {
+            "id": "user PATCH /api/webhook-subscription/{user_webhookSubscriptionId}",
+            "method": "PATCH",
+            "path": "/api/webhook-subscription/{user_webhookSubscriptionId}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "outbound event-webhook subscription (account notification plumbing, not declarative infrastructure); candidate for a later phase"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "outbound event-webhook subscription management not in the v1 curated allowlist; candidate for a later phase"
+            }
+        },
+        {
+            "id": "user GET /api/webhook-subscription/{user_webhookSubscriptionId}/deliveries",
+            "method": "GET",
+            "path": "/api/webhook-subscription/{user_webhookSubscriptionId}/deliveries",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "outbound event-webhook subscription (account notification plumbing, not declarative infrastructure); candidate for a later phase"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "outbound event-webhook subscription management not in the v1 curated allowlist; candidate for a later phase"
+            }
+        },
+        {
+            "id": "user GET /api/webhook-subscriptions",
+            "method": "GET",
+            "path": "/api/webhook-subscriptions",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "outbound event-webhook subscription (account notification plumbing, not declarative infrastructure); candidate for a later phase"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "outbound event-webhook subscription management not in the v1 curated allowlist; candidate for a later phase"
+            }
+        },
+        {
+            "id": "user POST /api/webhook-subscriptions",
+            "method": "POST",
+            "path": "/api/webhook-subscriptions",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "outbound event-webhook subscription (account notification plumbing, not declarative infrastructure); candidate for a later phase"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "outbound event-webhook subscription management not in the v1 curated allowlist; candidate for a later phase"
             }
         }
     ]
