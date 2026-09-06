@@ -255,6 +255,7 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewDockerDeploymentResource,
 		resources.NewProjectAssignmentResource,
 		resources.NewMicrovmApiKeyResource,
+		resources.NewMicrovmAppResource,
 	}
 }
 
