@@ -16,8 +16,9 @@ func TestAccLBFrontend_basic(t *testing.T) {
 }
 
 // TestUnitLBFrontend_lifecycle drives the full CHILD lifecycle:
-// create (asserts port/protocol body, not bind_port) → read(scan) → import →
-// update(PATCH name) → delete.
+// create (asserts port/protocol body, not bind_port, and idle_timeout) →
+// read(scan) → import → update(PATCH name + explicit idle_timeout clear) →
+// delete.
 func TestUnitLBFrontend_lifecycle(t *testing.T) {
 	ensureTFBinary(t)
 
@@ -31,6 +32,23 @@ func TestUnitLBFrontend_lifecycle(t *testing.T) {
 	var mu sync.Mutex
 	exists := false
 	name := "http"
+	var idleTimeout any
+
+	// frontendObject mirrors the API's embedded frontend shape. The real SHOW
+	// route eager-loads frontends.certificates, so "certificates" is always
+	// present (an empty array when nothing is attached).
+	frontendObject := func() map[string]any {
+		return map[string]any{
+			"id":           frontendID,
+			"name":         name,
+			"port":         80,
+			"protocol":     "http",
+			"mode":         "http",
+			"enabled":      1,
+			"idle_timeout": idleTimeout,
+			"certificates": []any{},
+		}
+	}
 
 	embedded := func() []any {
 		mu.Lock()
@@ -38,16 +56,7 @@ func TestUnitLBFrontend_lifecycle(t *testing.T) {
 		if !exists {
 			return []any{}
 		}
-		return []any{
-			map[string]any{
-				"id":       frontendID,
-				"name":     name,
-				"port":     80,
-				"protocol": "http",
-				"mode":     "http",
-				"enabled":  1,
-			},
-		}
+		return []any{frontendObject()}
 	}
 
 	srv.Handle("GET", "/load-balancer/"+lbID, func(w http.ResponseWriter, r *http.Request) {
@@ -62,13 +71,18 @@ func TestUnitLBFrontend_lifecycle(t *testing.T) {
 	})
 
 	srv.Handle("POST", "/load-balancer/"+lbID+"/frontends", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		mu.Lock()
 		exists = true
+		// Absent key and explicit null both leave the server-side value unset.
+		idleTimeout = body["idle_timeout"]
+		frontend := frontendObject()
 		mu.Unlock()
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success":  true,
 			"message":  "Frontend created.",
-			"frontend": map[string]any{"id": frontendID, "name": name, "port": 80, "protocol": "http", "mode": "http", "enabled": 1},
+			"frontend": frontend,
 		})
 	})
 
@@ -79,11 +93,17 @@ func TestUnitLBFrontend_lifecycle(t *testing.T) {
 		if v, ok := body["name"].(string); ok {
 			name = v
 		}
+		// The provider sends an explicit null to clear idle_timeout; an absent
+		// key leaves it untouched (mirrors the API's has()-style whitelist).
+		if v, ok := body["idle_timeout"]; ok {
+			idleTimeout = v
+		}
+		frontend := frontendObject()
 		mu.Unlock()
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success":  true,
 			"message":  "Frontend updated.",
-			"frontend": map[string]any{"id": frontendID, "name": name, "port": 80, "protocol": "http", "mode": "http", "enabled": 1},
+			"frontend": frontend,
 		})
 	})
 
@@ -102,6 +122,7 @@ resource "iaas_lb_frontend" "test" {
   name             = "http"
   port             = 80
   protocol         = "http"
+  idle_timeout     = 600
 }
 `
 	updateCfg := providerCfg + `
@@ -126,6 +147,7 @@ resource "iaas_lb_frontend" "test" {
 					resource.TestCheckResourceAttr("iaas_lb_frontend.test", "protocol", "http"),
 					resource.TestCheckResourceAttr("iaas_lb_frontend.test", "mode", "http"),
 					resource.TestCheckResourceAttr("iaas_lb_frontend.test", "enabled", "true"),
+					resource.TestCheckResourceAttr("iaas_lb_frontend.test", "idle_timeout", "600"),
 				),
 			},
 			{
@@ -138,6 +160,9 @@ resource "iaas_lb_frontend" "test" {
 				Config: updateCfg,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("iaas_lb_frontend.test", "name", "http-renamed"),
+					// idle_timeout was removed from the config: the update must
+					// clear it, leaving the attribute unset in state.
+					resource.TestCheckNoResourceAttr("iaas_lb_frontend.test", "idle_timeout"),
 				),
 			},
 		},
@@ -157,6 +182,9 @@ resource "iaas_lb_frontend" "test" {
 	if _, present := createBody["bind_port"]; present {
 		t.Errorf("frontend create body must use 'port', not 'bind_port': %v", createBody)
 	}
+	if createBody["idle_timeout"] != float64(600) {
+		t.Errorf("frontend create body idle_timeout = %v; want 600", createBody["idle_timeout"])
+	}
 
 	patches := srv.Requests("PATCH", "/load-balancer/"+lbID+"/frontend/"+frontendID)
 	if len(patches) == 0 {
@@ -168,5 +196,10 @@ resource "iaas_lb_frontend" "test" {
 	}
 	if patchBody["name"] != "http-renamed" {
 		t.Errorf("frontend patch body name = %v; want http-renamed", patchBody["name"])
+	}
+	// Removing idle_timeout from the config must send an EXPLICIT null on
+	// update (the API clears the field only when the key is present).
+	if v, present := patchBody["idle_timeout"]; !present || v != nil {
+		t.Errorf("frontend patch body idle_timeout = %v (present=%v); want explicit null", v, present)
 	}
 }

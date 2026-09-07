@@ -39,6 +39,10 @@ resource "iaas_lb_frontend" "http" {
   # Optional: traffic with no matching routing rule goes to this default backend.
   default_backend_id = iaas_lb_backend.web.id
 
+  # Optional: close idle connections after this many seconds (30-86400).
+  # Omit for the load balancer default (50 s for http/https, 3600 s for tcp).
+  idle_timeout = 3600
+
   # For an https listener, attach one or more account certificates for SNI
   # (first is the default served when the client sends no matching SNI host):
   # protocol        = "https"
@@ -71,6 +75,7 @@ resource "iaas_lb_frontend" "http" {
 - `certificate_ids` (List of String) Ordered list of iaas_certificate UUIDs to attach to this listener for SNI (the first entry is the default certificate served when the client sends no SNI hostname or one that matches none of the attached certificates). Superset of ssl_certificate_id - set this instead to attach more than one certificate to a single https listener. Reflects the listener's attached certificates even when only the legacy ssl_certificate_id was set. Updatable in place.
 - `default_backend_id` (String) Optional UUID of the default backend traffic is sent to when no routing rule matches. Updatable in place.
 - `enabled` (Boolean) Whether the listener is active. Defaults to true. Updatable in place.
+- `idle_timeout` (Number) Idle connection timeout in seconds (30-86400). Omit for the load balancer default: 50 s for http/https listeners, 3600 s for tcp. Updatable in place.
 - `mode` (String) Proxy mode: "http" (default) or "tcp". Updatable in place.
 - `protocol` (String) Listener protocol: "http" (default), "https", "tcp" or "udp". Together with port it must be unique per load balancer. Updatable in place.
 - `ssl_certificate_id` (String) Optional UUID of an iaas_certificate to terminate TLS with (for an https listener). Legacy single-certificate form, kept for backward compatibility - equivalent to certificate_ids with one element. Setting both in the same apply sends certificate_ids; prefer certificate_ids for new configurations, especially SNI (multiple certificates on one listener). Updatable in place.

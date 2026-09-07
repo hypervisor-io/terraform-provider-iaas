@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -39,8 +41,8 @@ type lbFrontendResource struct {
 // lbFrontendModel maps the Terraform state/plan for iaas_lb_frontend.
 //
 // load_balancer_id is in the path (Required + RequiresReplace). name/mode/port/
-// protocol/ssl_certificate_id/certificate_ids/default_backend_id/enabled are
-// all updatable in place (the frontend has a PATCH route).
+// protocol/ssl_certificate_id/certificate_ids/default_backend_id/enabled/
+// idle_timeout are all updatable in place (the frontend has a PATCH route).
 type lbFrontendModel struct {
 	ID               types.String `tfsdk:"id"`
 	LoadBalancerID   types.String `tfsdk:"load_balancer_id"`
@@ -52,6 +54,7 @@ type lbFrontendModel struct {
 	CertificateIDs   types.List   `tfsdk:"certificate_ids"`
 	DefaultBackendID types.String `tfsdk:"default_backend_id"`
 	Enabled          types.Bool   `tfsdk:"enabled"`
+	IdleTimeout      types.Int64  `tfsdk:"idle_timeout"`
 }
 
 // Metadata sets the resource type name → "iaas_lb_frontend".
@@ -146,6 +149,15 @@ func (r *lbFrontendResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed:    true,
 				Description: "Whether the listener is active. Defaults to true. Updatable in place.",
 			},
+			"idle_timeout": schema.Int64Attribute{
+				Optional: true,
+				MarkdownDescription: "Idle connection timeout in seconds (30-86400). Omit for the load " +
+					"balancer default: 50 s for http/https listeners, 3600 s for tcp. " +
+					"Updatable in place.",
+				Validators: []validator.Int64{
+					int64validator.Between(30, 86400),
+				},
+			},
 		},
 	}
 }
@@ -167,7 +179,10 @@ func (r *lbFrontendResource) Configure(_ context.Context, req resource.Configure
 }
 
 // frontendBody builds the wire body from the plan, omitting unset optionals.
-func frontendBody(plan lbFrontendModel) map[string]any {
+// On UPDATE (forUpdate) an unset idle_timeout is sent as an explicit null so
+// removing it from the config clears the stored value; on CREATE it is simply
+// omitted and the load balancer default applies.
+func frontendBody(plan lbFrontendModel, forUpdate bool) map[string]any {
 	body := map[string]any{
 		"name": plan.Name.ValueString(),
 		"port": plan.Port.ValueInt64(),
@@ -197,6 +212,11 @@ func frontendBody(plan lbFrontendModel) map[string]any {
 	if !plan.Enabled.IsNull() && !plan.Enabled.IsUnknown() {
 		body["enabled"] = plan.Enabled.ValueBool()
 	}
+	if !plan.IdleTimeout.IsNull() && !plan.IdleTimeout.IsUnknown() {
+		body["idle_timeout"] = plan.IdleTimeout.ValueInt64()
+	} else if forUpdate {
+		body["idle_timeout"] = nil
+	}
 	return body
 }
 
@@ -209,7 +229,7 @@ func (r *lbFrontendResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	lbID := plan.LoadBalancerID.ValueString()
-	created, err := r.client.CreateLBFrontend(ctx, lbID, frontendBody(plan))
+	created, err := r.client.CreateLBFrontend(ctx, lbID, frontendBody(plan, false))
 	if err != nil {
 		resp.Diagnostics.Append(diagFromErr("Error creating load balancer frontend", err))
 		return
@@ -267,7 +287,7 @@ func (r *lbFrontendResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	lbID := plan.LoadBalancerID.ValueString()
-	if _, err := r.client.UpdateLBFrontend(ctx, lbID, plan.ID.ValueString(), frontendBody(plan)); err != nil {
+	if _, err := r.client.UpdateLBFrontend(ctx, lbID, plan.ID.ValueString(), frontendBody(plan, true)); err != nil {
 		resp.Diagnostics.Append(diagFromErr("Error updating load balancer frontend", err))
 		return
 	}
@@ -334,6 +354,7 @@ func lbFrontendStateFromAPI(ctx context.Context, obj map[string]any, prior lbFro
 		CertificateIDs:   certIDs,
 		DefaultBackendID: optionalStringFromAPI(obj, "default_backend_id", prior.DefaultBackendID),
 		Enabled:          boolFromIntAPI(obj, "enabled", prior.Enabled),
+		IdleTimeout:      optionalInt64FromAPI(obj, "idle_timeout"),
 	}, diags
 }
 
