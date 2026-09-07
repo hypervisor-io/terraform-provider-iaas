@@ -42,7 +42,8 @@ type lbFrontendResource struct {
 //
 // load_balancer_id is in the path (Required + RequiresReplace). name/mode/port/
 // protocol/ssl_certificate_id/certificate_ids/default_backend_id/enabled/
-// idle_timeout are all updatable in place (the frontend has a PATCH route).
+// idle_timeout/ssl_redirect are all updatable in place (the frontend has a
+// PATCH route).
 type lbFrontendModel struct {
 	ID               types.String `tfsdk:"id"`
 	LoadBalancerID   types.String `tfsdk:"load_balancer_id"`
@@ -55,6 +56,7 @@ type lbFrontendModel struct {
 	DefaultBackendID types.String `tfsdk:"default_backend_id"`
 	Enabled          types.Bool   `tfsdk:"enabled"`
 	IdleTimeout      types.Int64  `tfsdk:"idle_timeout"`
+	SslRedirect      types.Bool   `tfsdk:"ssl_redirect"`
 }
 
 // Metadata sets the resource type name → "iaas_lb_frontend".
@@ -158,6 +160,13 @@ func (r *lbFrontendResource) Schema(_ context.Context, _ resource.SchemaRequest,
 					int64validator.Between(30, 86400),
 				},
 			},
+			"ssl_redirect": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "Redirect HTTP to HTTPS with a 301. Only meaningful on an http-mode " +
+					"listener on a port other than 443; ignored elsewhere. Defaults to false. " +
+					"Updatable in place.",
+			},
 		},
 	}
 }
@@ -216,6 +225,9 @@ func frontendBody(plan lbFrontendModel, forUpdate bool) map[string]any {
 		body["idle_timeout"] = plan.IdleTimeout.ValueInt64()
 	} else if forUpdate {
 		body["idle_timeout"] = nil
+	}
+	if !plan.SslRedirect.IsNull() && !plan.SslRedirect.IsUnknown() {
+		body["ssl_redirect"] = plan.SslRedirect.ValueBool()
 	}
 	return body
 }
@@ -355,6 +367,7 @@ func lbFrontendStateFromAPI(ctx context.Context, obj map[string]any, prior lbFro
 		DefaultBackendID: optionalStringFromAPI(obj, "default_backend_id", prior.DefaultBackendID),
 		Enabled:          boolFromIntAPI(obj, "enabled", prior.Enabled),
 		IdleTimeout:      optionalInt64FromAPI(obj, "idle_timeout"),
+		SslRedirect:      boolFromIntAPI(obj, "ssl_redirect", prior.SslRedirect),
 	}, diags
 }
 

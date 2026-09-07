@@ -28,6 +28,10 @@ resource "iaas_lb_frontend" "http" {
   # Omit for the load balancer default (50 s for http/https, 3600 s for tcp).
   idle_timeout = 3600
 
+  # Optional: redirect HTTP to HTTPS with a 301 (only meaningful on an
+  # http-mode listener on a port other than 443). Defaults to false.
+  # ssl_redirect = true
+
   # For an https listener, attach one or more account certificates for SNI
   # (first is the default served when the client sends no matching SNI host):
   # protocol        = "https"
