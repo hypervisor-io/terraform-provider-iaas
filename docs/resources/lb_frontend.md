@@ -43,6 +43,10 @@ resource "iaas_lb_frontend" "http" {
   # Omit for the load balancer default (50 s for http/https, 3600 s for tcp).
   idle_timeout = 3600
 
+  # Optional: redirect HTTP to HTTPS with a 301 (only meaningful on an
+  # http-mode listener on a port other than 443). Defaults to false.
+  # ssl_redirect = true
+
   # For an https listener, attach one or more account certificates for SNI
   # (first is the default served when the client sends no matching SNI host):
   # protocol        = "https"
@@ -79,6 +83,7 @@ resource "iaas_lb_frontend" "http" {
 - `mode` (String) Proxy mode: "http" (default) or "tcp". Updatable in place.
 - `protocol` (String) Listener protocol: "http" (default), "https", "tcp" or "udp". Together with port it must be unique per load balancer. Updatable in place.
 - `ssl_certificate_id` (String) Optional UUID of an iaas_certificate to terminate TLS with (for an https listener). Legacy single-certificate form, kept for backward compatibility - equivalent to certificate_ids with one element. Setting both in the same apply sends certificate_ids; prefer certificate_ids for new configurations, especially SNI (multiple certificates on one listener). Updatable in place.
+- `ssl_redirect` (Boolean) Redirect HTTP to HTTPS with a 301. Only meaningful on an http-mode listener on a port other than 443; ignored elsewhere. Defaults to false. Updatable in place.
 
 ### Read-Only
 
