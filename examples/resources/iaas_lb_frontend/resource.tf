@@ -24,6 +24,10 @@ resource "iaas_lb_frontend" "http" {
   # Optional: traffic with no matching routing rule goes to this default backend.
   default_backend_id = iaas_lb_backend.web.id
 
+  # Optional: close idle connections after this many seconds (30-86400).
+  # Omit for the load balancer default (50 s for http/https, 3600 s for tcp).
+  idle_timeout = 3600
+
   # For an https listener, attach one or more account certificates for SNI
   # (first is the default served when the client sends no matching SNI host):
   # protocol        = "https"
