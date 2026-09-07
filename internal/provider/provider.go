@@ -256,6 +256,7 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewProjectAssignmentResource,
 		resources.NewMicrovmApiKeyResource,
 		resources.NewMicrovmRunnerPoolResource,
+		resources.NewMicrovmAppResource,
 	}
 }
 
