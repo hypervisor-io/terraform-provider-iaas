@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -40,13 +42,16 @@ type lbBackendResource struct {
 // lbBackendModel maps the Terraform state/plan for iaas_lb_backend.
 //
 // load_balancer_id is part of the API path (Required + RequiresReplace). name,
-// algorithm and mode are all updatable in place (the backend has a PATCH route).
+// algorithm, mode, connect_timeout and server_timeout are all updatable in
+// place (the backend has a PATCH route).
 type lbBackendModel struct {
 	ID             types.String `tfsdk:"id"`
 	LoadBalancerID types.String `tfsdk:"load_balancer_id"`
 	Name           types.String `tfsdk:"name"`
 	Algorithm      types.String `tfsdk:"algorithm"`
 	Mode           types.String `tfsdk:"mode"`
+	ConnectTimeout types.Int64  `tfsdk:"connect_timeout"`
+	ServerTimeout  types.Int64  `tfsdk:"server_timeout"`
 }
 
 // Metadata sets the resource type name → "iaas_lb_backend".
@@ -95,6 +100,26 @@ func (r *lbBackendResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Computed:    true,
 				Description: "Proxy mode: \"http\" (default) or \"tcp\". Updatable in place.",
 			},
+			"connect_timeout": schema.Int64Attribute{
+				Optional: true,
+				MarkdownDescription: "Time to wait for a connection to a backend server to establish, " +
+					"in seconds (1-75). Omit for the load balancer default of 5 s. Updatable in place.",
+				Validators: []validator.Int64{
+					int64validator.Between(1, 75),
+				},
+			},
+			"server_timeout": schema.Int64Attribute{
+				Optional: true,
+				MarkdownDescription: "Maximum time a backend server has to respond once a connection is " +
+					"established, in seconds (1-86400). Covers both a slow send and a slow read, since " +
+					"HAProxy has no separate timeouts for the two directions. Omit to derive it from the " +
+					"idle_timeout of the frontend(s) that reference this backend (the pre-existing " +
+					"behaviour); an explicit value here always wins over that derivation. Updatable in " +
+					"place.",
+				Validators: []validator.Int64{
+					int64validator.Between(1, 86400),
+				},
+			},
 		},
 	}
 }
@@ -115,6 +140,34 @@ func (r *lbBackendResource) Configure(_ context.Context, req resource.ConfigureR
 	r.client = c
 }
 
+// backendBody builds the wire body from the plan, omitting unset optionals. On
+// UPDATE (forUpdate) an unset connect_timeout/server_timeout is sent as an
+// explicit null so removing it from the config clears the stored value and
+// reverts to the load balancer default / the idle_timeout-derived value; on
+// CREATE it is simply omitted (mirrors frontendBody's idle_timeout handling).
+func backendBody(plan lbBackendModel, forUpdate bool) map[string]any {
+	body := map[string]any{
+		"name": plan.Name.ValueString(),
+	}
+	if !plan.Algorithm.IsNull() && !plan.Algorithm.IsUnknown() {
+		body["algorithm"] = plan.Algorithm.ValueString()
+	}
+	if !plan.Mode.IsNull() && !plan.Mode.IsUnknown() {
+		body["mode"] = plan.Mode.ValueString()
+	}
+	if !plan.ConnectTimeout.IsNull() && !plan.ConnectTimeout.IsUnknown() {
+		body["connect_timeout"] = plan.ConnectTimeout.ValueInt64()
+	} else if forUpdate {
+		body["connect_timeout"] = nil
+	}
+	if !plan.ServerTimeout.IsNull() && !plan.ServerTimeout.IsUnknown() {
+		body["server_timeout"] = plan.ServerTimeout.ValueInt64()
+	} else if forUpdate {
+		body["server_timeout"] = nil
+	}
+	return body
+}
+
 // Create adds the backend to its parent load balancer. The create is synchronous;
 // the response carries the new backend object with its id. We then read-back by
 // scanning the LB SHOW so state reflects the server-applied defaults.
@@ -125,15 +178,7 @@ func (r *lbBackendResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	body := map[string]any{
-		"name": plan.Name.ValueString(),
-	}
-	if !plan.Algorithm.IsNull() && !plan.Algorithm.IsUnknown() {
-		body["algorithm"] = plan.Algorithm.ValueString()
-	}
-	if !plan.Mode.IsNull() && !plan.Mode.IsUnknown() {
-		body["mode"] = plan.Mode.ValueString()
-	}
+	body := backendBody(plan, false)
 
 	lbID := plan.LoadBalancerID.ValueString()
 	created, err := r.client.CreateLBBackend(ctx, lbID, body)
@@ -179,8 +224,9 @@ func (r *lbBackendResource) Read(ctx context.Context, req resource.ReadRequest, 
 	resp.Diagnostics.Append(resp.State.Set(ctx, lbBackendStateFromAPI(obj, state))...)
 }
 
-// Update patches the mutable backend fields (name, algorithm, mode). The PATCH
-// returns the fresh backend; we read-back by scan for a consistent view.
+// Update patches the mutable backend fields (name, algorithm, mode,
+// connect_timeout, server_timeout). The PATCH returns the fresh backend; we
+// read-back by scan for a consistent view.
 func (r *lbBackendResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan lbBackendModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -188,15 +234,7 @@ func (r *lbBackendResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	body := map[string]any{
-		"name": plan.Name.ValueString(),
-	}
-	if !plan.Algorithm.IsNull() && !plan.Algorithm.IsUnknown() {
-		body["algorithm"] = plan.Algorithm.ValueString()
-	}
-	if !plan.Mode.IsNull() && !plan.Mode.IsUnknown() {
-		body["mode"] = plan.Mode.ValueString()
-	}
+	body := backendBody(plan, true)
 
 	lbID := plan.LoadBalancerID.ValueString()
 	if _, err := r.client.UpdateLBBackend(ctx, lbID, plan.ID.ValueString(), body); err != nil {
@@ -254,5 +292,7 @@ func lbBackendStateFromAPI(obj map[string]any, prior lbBackendModel) lbBackendMo
 		Name:           stringOrPrior(obj, "name", prior.Name),
 		Algorithm:      stringFromAPI(obj, "algorithm", prior.Algorithm),
 		Mode:           stringFromAPI(obj, "mode", prior.Mode),
+		ConnectTimeout: optionalInt64FromAPI(obj, "connect_timeout"),
+		ServerTimeout:  optionalInt64FromAPI(obj, "server_timeout"),
 	}
 }
