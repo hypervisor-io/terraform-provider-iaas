@@ -4,7 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 // ---------------------------------------------------------------------------
@@ -118,6 +120,32 @@ func TestSchema_TokenIsSensitive(t *testing.T) {
 		// Fallback: cast to StringAttribute directly via the framework types.
 		// If the assertion fails the test fails informatively.
 		t.Errorf("token attribute does not implement IsSensitive(); type=%T", tokenAttr)
+	}
+}
+
+func TestProviderRegistersUnifiedMicrovmTypes(t *testing.T) {
+	ctx := context.Background()
+	p := &IaasProvider{}
+	types := map[string]bool{}
+	for _, factory := range p.Resources(ctx) {
+		var resp resource.MetadataResponse
+		factory().Metadata(ctx, resource.MetadataRequest{ProviderTypeName: "iaas"}, &resp)
+		types[resp.TypeName] = true
+	}
+	for _, factory := range p.DataSources(ctx) {
+		var resp datasource.MetadataResponse
+		factory().Metadata(ctx, datasource.MetadataRequest{ProviderTypeName: "iaas"}, &resp)
+		types[resp.TypeName] = true
+	}
+	for _, name := range []string{"iaas_microvm_image", "iaas_microvm", "iaas_microvm_connector", "iaas_microvm_images", "iaas_microvm_catalog"} {
+		if !types[name] {
+			t.Errorf("provider did not register %s", name)
+		}
+	}
+	for _, name := range []string{"iaas_sandbox", "iaas_serverless_app", "iaas_ci_runner_pool", "iaas_microvm_app", "iaas_microvm_runner_pool"} {
+		if types[name] {
+			t.Errorf("provider still registers retired type %s", name)
+		}
 	}
 }
 
