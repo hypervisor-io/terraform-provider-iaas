@@ -21,10 +21,12 @@ func TestAccLBBackend_basic(t *testing.T) {
 // mock:
 //
 //  1. Create - POST /load-balancer/{lbId}/backends; the backend appears in the
-//     LB SHOW embedded backends[]. Asserts the create body (algorithm, not balance).
+//     LB SHOW embedded backends[]. Asserts the create body (algorithm, not
+//     balance; connect_timeout/server_timeout).
 //  2. Read - scans the LB SHOW backends[] for the id.
 //  3. Import - composite id "<lb_id>/<backend_id>".
-//  4. Update - PATCH backend/{id} (rename + algorithm); asserts the PATCH body.
+//  4. Update - PATCH backend/{id} (rename + algorithm + explicit
+//     connect_timeout/server_timeout clear); asserts the PATCH body.
 //  5. Delete - removes the backend from the embedded array.
 func TestUnitLBBackend_lifecycle(t *testing.T) {
 	ensureTFBinary(t)
@@ -40,6 +42,19 @@ func TestUnitLBBackend_lifecycle(t *testing.T) {
 	exists := false
 	name := "web"
 	algorithm := "roundrobin"
+	var connectTimeout any
+	var serverTimeout any
+
+	backendObject := func() map[string]any {
+		return map[string]any{
+			"id":              backendID,
+			"name":            name,
+			"algorithm":       algorithm,
+			"mode":            "http",
+			"connect_timeout": connectTimeout,
+			"server_timeout":  serverTimeout,
+		}
+	}
 
 	embedded := func() []any {
 		mu.Lock()
@@ -47,14 +62,7 @@ func TestUnitLBBackend_lifecycle(t *testing.T) {
 		if !exists {
 			return []any{}
 		}
-		return []any{
-			map[string]any{
-				"id":        backendID,
-				"name":      name,
-				"algorithm": algorithm,
-				"mode":      "http",
-			},
-		}
+		return []any{backendObject()}
 	}
 
 	// Parent LB SHOW - embeds backends[] (the read/scan source).
@@ -71,18 +79,24 @@ func TestUnitLBBackend_lifecycle(t *testing.T) {
 
 	// CREATE backend.
 	srv.Handle("POST", "/load-balancer/"+lbID+"/backends", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		mu.Lock()
 		exists = true
+		// Absent key and explicit null both leave the server-side value unset.
+		connectTimeout = body["connect_timeout"]
+		serverTimeout = body["server_timeout"]
+		backend := backendObject()
 		mu.Unlock()
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
 			"message": "Backend created.",
-			"backend": map[string]any{"id": backendID, "name": name, "algorithm": algorithm, "mode": "http"},
+			"backend": backend,
 			"sync":    map[string]any{"status": "ok"},
 		})
 	})
 
-	// UPDATE backend - reflect the new name/algorithm in the embedded array.
+	// UPDATE backend - reflect the new name/algorithm/timeouts in the embedded array.
 	srv.Handle("PATCH", "/load-balancer/"+lbID+"/backend/"+backendID, func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
@@ -93,11 +107,21 @@ func TestUnitLBBackend_lifecycle(t *testing.T) {
 		if v, ok := body["algorithm"].(string); ok {
 			algorithm = v
 		}
+		// The provider sends an explicit null to clear connect_timeout/
+		// server_timeout; an absent key leaves it untouched (mirrors the
+		// API's has()-style whitelist, same as idle_timeout on the frontend).
+		if v, ok := body["connect_timeout"]; ok {
+			connectTimeout = v
+		}
+		if v, ok := body["server_timeout"]; ok {
+			serverTimeout = v
+		}
+		backend := backendObject()
 		mu.Unlock()
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
 			"message": "Backend updated.",
-			"backend": map[string]any{"id": backendID, "name": name, "algorithm": algorithm, "mode": "http"},
+			"backend": backend,
 		})
 	})
 
@@ -116,6 +140,8 @@ resource "iaas_lb_backend" "test" {
   load_balancer_id = "` + lbID + `"
   name             = "web"
   algorithm        = "roundrobin"
+  connect_timeout  = 10
+  server_timeout   = 900
 }
 `
 	updateCfg := providerCfg + `
@@ -137,6 +163,8 @@ resource "iaas_lb_backend" "test" {
 					resource.TestCheckResourceAttr("iaas_lb_backend.test", "name", "web"),
 					resource.TestCheckResourceAttr("iaas_lb_backend.test", "algorithm", "roundrobin"),
 					resource.TestCheckResourceAttr("iaas_lb_backend.test", "mode", "http"),
+					resource.TestCheckResourceAttr("iaas_lb_backend.test", "connect_timeout", "10"),
+					resource.TestCheckResourceAttr("iaas_lb_backend.test", "server_timeout", "900"),
 				),
 			},
 			{
@@ -150,6 +178,10 @@ resource "iaas_lb_backend" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("iaas_lb_backend.test", "name", "web2"),
 					resource.TestCheckResourceAttr("iaas_lb_backend.test", "algorithm", "leastconn"),
+					// connect_timeout/server_timeout were removed from the config:
+					// the update must clear them, leaving both unset in state.
+					resource.TestCheckNoResourceAttr("iaas_lb_backend.test", "connect_timeout"),
+					resource.TestCheckNoResourceAttr("iaas_lb_backend.test", "server_timeout"),
 				),
 			},
 		},
@@ -175,8 +207,15 @@ resource "iaas_lb_backend" "test" {
 			t.Errorf("backend create body must NOT include %q; got %v", stray, createBody)
 		}
 	}
+	if createBody["connect_timeout"] != float64(10) {
+		t.Errorf("backend create body connect_timeout = %v; want 10", createBody["connect_timeout"])
+	}
+	if createBody["server_timeout"] != float64(900) {
+		t.Errorf("backend create body server_timeout = %v; want 900", createBody["server_timeout"])
+	}
 
-	// Assert the PATCH body carried the rename.
+	// Assert the PATCH body carried the rename and an EXPLICIT null for both
+	// timeouts (the API clears a field only when the key is present).
 	patches := srv.Requests("PATCH", "/load-balancer/"+lbID+"/backend/"+backendID)
 	if len(patches) == 0 {
 		t.Fatal("expected at least one PATCH .../backend/{id}")
@@ -187,5 +226,11 @@ resource "iaas_lb_backend" "test" {
 	}
 	if patchBody["name"] != "web2" || patchBody["algorithm"] != "leastconn" {
 		t.Errorf("backend patch body = %v; want name=web2 algorithm=leastconn", patchBody)
+	}
+	if v, present := patchBody["connect_timeout"]; !present || v != nil {
+		t.Errorf("backend patch body connect_timeout = %v (present=%v); want explicit null", v, present)
+	}
+	if v, present := patchBody["server_timeout"]; !present || v != nil {
+		t.Errorf("backend patch body server_timeout = %v (present=%v); want explicit null", v, present)
 	}
 }

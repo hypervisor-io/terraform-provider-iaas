@@ -18,6 +18,17 @@ resource "iaas_lb_backend" "web" {
 
   # Proxy mode: "http" (default) or "tcp". Updatable in place.
   mode = "http"
+
+  # Optional: time to wait for a backend server connection to establish, in
+  # seconds (1-75). Omit for the load balancer default of 5 s.
+  connect_timeout = 10
+
+  # Optional: max time a backend server has to respond once connected, in
+  # seconds (1-86400). Covers both a slow send and a slow read (HAProxy has
+  # no separate read/send timeout). Omit to derive it from the idle_timeout
+  # of the frontend(s) referencing this backend; an explicit value here
+  # always wins over that derivation.
+  server_timeout = 900
 }
 
 # Add target servers to the backend with iaas_lb_target.

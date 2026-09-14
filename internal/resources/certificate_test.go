@@ -127,13 +127,16 @@ func TestUnitCertificate_lifecycle(t *testing.T) {
 
 	providerCfg := acctest.ProviderConfig(srv.Endpoint())
 
-	createCfg := providerCfg + `
+	// %q renders the PEMs as quoted strings with \n escapes: HCL forbids
+	// literal newlines inside quoted strings (same approach as the LIVE
+	// TestAccCertificate_basic config above).
+	createCfg := providerCfg + fmt.Sprintf(`
 resource "iaas_certificate" "test" {
   name        = "example"
-  certificate = "` + certPEM + `"
-  private_key = "` + keyPEM + `"
+  certificate = %q
+  private_key = %q
 }
-`
+`, certPEM, keyPEM)
 
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: acctest.Factories,
