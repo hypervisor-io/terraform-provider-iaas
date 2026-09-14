@@ -93,6 +93,9 @@ copy the UUID from the panel URL/API.
 | `iaas_s3_bucket` | `TestAccS3Bucket_basic` | `IAAS_TEST_S3_PLAN_ID`, `IAAS_TEST_S3_SERVER_ID` | an enabled S3 plan + an S3 server |
 | `iaas_kubernetes_cluster` | `TestAccKubernetesCluster_basic` | `IAAS_TEST_K8S_HG_ID`, `IAAS_TEST_K8S_VPC_ID`, `IAAS_TEST_K8S_CP_SUBNET_ID`, `IAAS_TEST_K8S_WORKER_SUBNET_ID`, `IAAS_TEST_K8S_VERSION_ID`, `IAAS_TEST_K8S_CP_PLAN_ID`, `IAAS_TEST_K8S_WORKER_PLAN_ID`, `IAAS_TEST_K8S_CP_LB_PLAN_ID` | k8s-eligible region/HG, VPC, cp+worker subnets, k8s version, cp+worker instance plans, cp LB plan (use `iaas_kubernetes_{region,version,plan}` data sources) |
 | `iaas_kubernetes_node_pool` | `TestAccKubernetesNodePool_basic` | `IAAS_TEST_K8S_CLUSTER_ID`, `IAAS_TEST_K8S_WORKER_PLAN_ID` | an active cluster + a worker instance plan |
+| `iaas_microvm_image` | `TestAccMicrovmImage_basic` | `IAAS_TEST_MICROVM_HG_ID` | a MicroVM-enabled location with a healthy builder |
+| `iaas_microvm` | `TestAccMicrovm_basic` | `IAAS_TEST_MICROVM_HG_ID`, `IAAS_TEST_MICROVM_IMAGE_ID` | a MicroVM-enabled location + a ready image visible to the account |
+| `iaas_microvm_connector` | `TestAccMicrovmConnector_basic` | `IAAS_TEST_MICROVM_GITHUB_SOURCE_ID` | an installed owned GitHub App source |
 | `iaas_location` (DS) | `TestAccLocation_basic` | `IAAS_TEST_LOCATION_NAME` | slug or display name of a location |
 | `iaas_plan` (DS) | `TestAccPlan_basic` | `IAAS_TEST_PLAN_LOCATION_ID`, `IAAS_TEST_PLAN_NAME` | a location UUID + a plan name in it |
 | `iaas_image` (DS) | `TestAccImage_basic` | `IAAS_TEST_IMAGE_NAME` | name of an available image (e.g. `Ubuntu 24.04`) |
@@ -103,6 +106,8 @@ copy the UUID from the panel URL/API.
 | `iaas_kubernetes_kubeconfig` (DS) | `TestAccKubernetesKubeconfig_basic` | `IAAS_TEST_K8S_CLUSTER_ID` | UUID of a **running** cluster |
 | `iaas_kubernetes_autoscaler_manifest` (DS) | `TestAccKubernetesAutoscalerManifest_basic` | `IAAS_TEST_K8S_CLUSTER_ID` | UUID of a running cluster with worker autoscaling enabled |
 | `iaas_vpn_peer_config` (DS) | `TestAccVpnPeerConfig_basic` | `IAAS_TEST_VPN_GATEWAY_ID`, `IAAS_TEST_VPN_PEER_ID` | active gateway + a `road_warrior` peer on it |
+| `iaas_microvm_images` (DS) | `TestAccMicrovmImages_basic` | none | lists ready images visible to the account |
+| `iaas_microvm_catalog` (DS) | `TestAccMicrovmCatalog_basic` | none | reads the unified placement catalog |
 
 -> The remaining resources (`iaas_ssh_key`, `iaas_vpc`, `iaas_vpc_subnet`,
 `iaas_project`, `iaas_security_group`, `iaas_ip_set`, `iaas_s3_access_key`,

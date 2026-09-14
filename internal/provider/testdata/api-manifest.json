@@ -7189,6 +7189,202 @@
             }
         },
         {
+            "id": "e2b GET /sandboxes",
+            "method": "GET",
+            "path": "/sandboxes",
+            "surface": "e2b",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            }
+        },
+        {
+            "id": "e2b POST /sandboxes",
+            "method": "POST",
+            "path": "/sandboxes",
+            "surface": "e2b",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            }
+        },
+        {
+            "id": "e2b DELETE /sandboxes/{sandboxID}",
+            "method": "DELETE",
+            "path": "/sandboxes/{sandboxID}",
+            "surface": "e2b",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            }
+        },
+        {
+            "id": "e2b GET /sandboxes/{sandboxID}",
+            "method": "GET",
+            "path": "/sandboxes/{sandboxID}",
+            "surface": "e2b",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            }
+        },
+        {
+            "id": "e2b POST /sandboxes/{sandboxID}/connect",
+            "method": "POST",
+            "path": "/sandboxes/{sandboxID}/connect",
+            "surface": "e2b",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            }
+        },
+        {
+            "id": "e2b GET /sandboxes/{sandboxID}/logs",
+            "method": "GET",
+            "path": "/sandboxes/{sandboxID}/logs",
+            "surface": "e2b",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            }
+        },
+        {
+            "id": "e2b GET /sandboxes/{sandboxID}/metrics",
+            "method": "GET",
+            "path": "/sandboxes/{sandboxID}/metrics",
+            "surface": "e2b",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            }
+        },
+        {
+            "id": "e2b POST /sandboxes/{sandboxID}/pause",
+            "method": "POST",
+            "path": "/sandboxes/{sandboxID}/pause",
+            "surface": "e2b",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            }
+        },
+        {
+            "id": "e2b POST /sandboxes/{sandboxID}/resume",
+            "method": "POST",
+            "path": "/sandboxes/{sandboxID}/resume",
+            "surface": "e2b",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            }
+        },
+        {
+            "id": "e2b POST /sandboxes/{sandboxID}/timeout",
+            "method": "POST",
+            "path": "/sandboxes/{sandboxID}/timeout",
+            "surface": "e2b",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            }
+        },
+        {
+            "id": "e2b GET /templates",
+            "method": "GET",
+            "path": "/templates",
+            "surface": "e2b",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            }
+        },
+        {
+            "id": "e2b POST /templates",
+            "method": "POST",
+            "path": "/templates",
+            "surface": "e2b",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            }
+        },
+        {
+            "id": "e2b POST /templates/{templateID}/builds/{buildID}",
+            "method": "POST",
+            "path": "/templates/{templateID}/builds/{buildID}",
+            "surface": "e2b",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            }
+        },
+        {
+            "id": "e2b GET /templates/{templateID}/builds/{buildID}/status",
+            "method": "GET",
+            "path": "/templates/{templateID}/builds/{buildID}/status",
+            "surface": "e2b",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "E2B wire-compat surface; covered by the E2B SDKs"
+            }
+        },
+        {
             "id": "user POST /api/ai/conversation",
             "method": "POST",
             "path": "/api/ai/conversation",
@@ -10546,6 +10742,874 @@
             "mcp": {
                 "status": "excluded",
                 "reason": "Prometheus scrape telemetry endpoint, not suited to a tool call; candidate for a later phase"
+            }
+        },
+        {
+            "id": "user DELETE /api/microvm/api-key/{user_microvmApiKeyId}",
+            "method": "DELETE",
+            "path": "/api/microvm/api-key/{user_microvmApiKeyId}",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm_api_key"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.api_key.delete"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/api-keys",
+            "method": "GET",
+            "path": "/api/microvm/api-keys",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm_api_key"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.api_key.list"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/api-keys",
+            "method": "POST",
+            "path": "/api/microvm/api-keys",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm_api_key"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.api_key.create"
+            }
+        },
+        {
+            "id": "user DELETE /api/microvm/app/{user_serverlessApp}",
+            "method": "DELETE",
+            "path": "/api/microvm/app/{user_serverlessApp}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy fragmented app endpoint; declarative lifecycle moved to iaas_microvm on the unified MicroVM API"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.app.delete"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/app/{user_serverlessApp}",
+            "method": "GET",
+            "path": "/api/microvm/app/{user_serverlessApp}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy fragmented app endpoint; declarative lifecycle moved to iaas_microvm on the unified MicroVM API"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.app.get"
+            }
+        },
+        {
+            "id": "user PATCH /api/microvm/app/{user_serverlessApp}",
+            "method": "PATCH",
+            "path": "/api/microvm/app/{user_serverlessApp}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy fragmented app endpoint; declarative lifecycle moved to iaas_microvm on the unified MicroVM API"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "settings update has no v1 MCP tool (MV2-27 scope); agents use set_env/deploy, operators the panel"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/app/{user_serverlessApp}/deploy",
+            "method": "POST",
+            "path": "/api/microvm/app/{user_serverlessApp}/deploy",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy fragmented app endpoint; declarative lifecycle moved to iaas_microvm on the unified MicroVM API"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.app.deploy"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/app/{user_serverlessApp}/domain",
+            "method": "POST",
+            "path": "/api/microvm/app/{user_serverlessApp}/domain",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy fragmented app endpoint; custom domains are managed by iaas_microvm on the unified MicroVM API"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "not in the v1 MCP user.microvm.app.* allowlist (MV2-27 scope); reachable through the panel/API"
+            }
+        },
+        {
+            "id": "user DELETE /api/microvm/app/{user_serverlessApp}/domain/{user_appDomain}",
+            "method": "DELETE",
+            "path": "/api/microvm/app/{user_serverlessApp}/domain/{user_appDomain}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy fragmented app endpoint; custom domains are managed by iaas_microvm on the unified MicroVM API"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "not in the v1 MCP user.microvm.app.* allowlist (MV2-27 scope); reachable through the panel/API"
+            }
+        },
+        {
+            "id": "user PUT /api/microvm/app/{user_serverlessApp}/env",
+            "method": "PUT",
+            "path": "/api/microvm/app/{user_serverlessApp}/env",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy fragmented app endpoint; environment variables are managed by iaas_microvm on the unified MicroVM API"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.app.set_env"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/app/{user_serverlessApp}/logs",
+            "method": "GET",
+            "path": "/api/microvm/app/{user_serverlessApp}/logs",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "log tail is a read-only stream, not IaC state"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "not in the v1 MCP user.microvm.app.* allowlist (MV2-27 scope); reachable through the panel/API"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/app/{user_serverlessApp}/rollback",
+            "method": "POST",
+            "path": "/api/microvm/app/{user_serverlessApp}/rollback",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy fragmented app endpoint; imperative rollback is not declarative IaC state"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.app.rollback"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/app/{user_serverlessApp}/start",
+            "method": "POST",
+            "path": "/api/microvm/app/{user_serverlessApp}/start",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy fragmented app endpoint; imperative start is not declarative IaC state"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.app.start"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/app/{user_serverlessApp}/stop",
+            "method": "POST",
+            "path": "/api/microvm/app/{user_serverlessApp}/stop",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy fragmented app endpoint; imperative stop is not declarative IaC state"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.app.stop"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/apps",
+            "method": "GET",
+            "path": "/api/microvm/apps",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy fragmented app endpoint; declarative lifecycle moved to iaas_microvm on the unified MicroVM API"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.app.list"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/apps",
+            "method": "POST",
+            "path": "/api/microvm/apps",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy fragmented app endpoint; declarative lifecycle moved to iaas_microvm on the unified MicroVM API"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.app.create"
+            }
+        },
+        {
+            "id": "user DELETE /api/microvm/connector/{user_microvmConnector}",
+            "method": "DELETE",
+            "path": "/api/microvm/connector/{user_microvmConnector}",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm_connector"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-3): MCP tool coverage for connectors lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user PUT /api/microvm/connector/{user_microvmConnector}",
+            "method": "PUT",
+            "path": "/api/microvm/connector/{user_microvmConnector}",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm_connector"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-3): MCP tool coverage for connectors lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/connectors",
+            "method": "GET",
+            "path": "/api/microvm/connectors",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm_connector"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-3): MCP tool coverage for connectors lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/connectors/github",
+            "method": "POST",
+            "path": "/api/microvm/connectors/github",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm_connector"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-3): MCP tool coverage for connectors lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/connectors/github/connect",
+            "method": "GET",
+            "path": "/api/microvm/connectors/github/connect",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "interactive GitHub install redirect, not declarative Terraform state"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "interactive GitHub install redirect requires a browser session and is not an agent tool"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/connectors/gitlab",
+            "method": "POST",
+            "path": "/api/microvm/connectors/gitlab",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm_connector"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-3): MCP tool coverage for connectors lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/connectors/jobs",
+            "method": "GET",
+            "path": "/api/microvm/connectors/jobs",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "read-only connector job history, no declarative Terraform state"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-3): MCP tool coverage for connectors lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user DELETE /api/microvm/image/{user_microvmImage}",
+            "method": "DELETE",
+            "path": "/api/microvm/image/{user_microvmImage}",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm_image"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-1): MCP tool coverage for images lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/image/{user_microvmImage}",
+            "method": "GET",
+            "path": "/api/microvm/image/{user_microvmImage}",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm_image"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-1): MCP tool coverage for images lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/image/{user_microvmImage}/build",
+            "method": "POST",
+            "path": "/api/microvm/image/{user_microvmImage}/build",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-1): imperative build action, not declarative Terraform state; candidate for MVU2-8"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-1): MCP tool coverage for images lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/images",
+            "method": "GET",
+            "path": "/api/microvm/images",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm_images"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-1): MCP tool coverage for images lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/images",
+            "method": "POST",
+            "path": "/api/microvm/images",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm_image"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-1): MCP tool coverage for images lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/vms",
+            "method": "GET",
+            "path": "/api/microvm/vms",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/vms",
+            "method": "POST",
+            "path": "/api/microvm/vms",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/vm/{user_microvm}",
+            "method": "GET",
+            "path": "/api/microvm/vm/{user_microvm}",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user DELETE /api/microvm/vm/{user_microvm}",
+            "method": "DELETE",
+            "path": "/api/microvm/vm/{user_microvm}",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/vm/{user_microvm}/logs",
+            "method": "GET",
+            "path": "/api/microvm/vm/{user_microvm}/logs",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): imperative action, not declarative Terraform state; candidate for MVU2-8"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/vm/{user_microvm}/metrics",
+            "method": "GET",
+            "path": "/api/microvm/vm/{user_microvm}/metrics",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): imperative action, not declarative Terraform state; candidate for MVU2-8"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/vm/{user_microvm}/pause",
+            "method": "POST",
+            "path": "/api/microvm/vm/{user_microvm}/pause",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): imperative action, not declarative Terraform state; candidate for MVU2-8"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/vm/{user_microvm}/resume",
+            "method": "POST",
+            "path": "/api/microvm/vm/{user_microvm}/resume",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): imperative action, not declarative Terraform state; candidate for MVU2-8"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/vm/{user_microvm}/stop",
+            "method": "POST",
+            "path": "/api/microvm/vm/{user_microvm}/stop",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): imperative action, not declarative Terraform state; candidate for MVU2-8"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/vm/{user_microvm}/start",
+            "method": "POST",
+            "path": "/api/microvm/vm/{user_microvm}/start",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): imperative action, not declarative Terraform state; candidate for MVU2-8"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/vm/{user_microvm}/kill",
+            "method": "POST",
+            "path": "/api/microvm/vm/{user_microvm}/kill",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): imperative action, not declarative Terraform state; candidate for MVU2-8"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/vm/{user_microvm}/timeout",
+            "method": "POST",
+            "path": "/api/microvm/vm/{user_microvm}/timeout",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): imperative action, not declarative Terraform state; candidate for MVU2-8"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/vm/{user_microvm}/deploy",
+            "method": "POST",
+            "path": "/api/microvm/vm/{user_microvm}/deploy",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): imperative action, not declarative Terraform state; candidate for MVU2-8"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/vm/{user_microvm}/rollback",
+            "method": "POST",
+            "path": "/api/microvm/vm/{user_microvm}/rollback",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): imperative action, not declarative Terraform state; candidate for MVU2-8"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user PUT /api/microvm/vm/{user_microvm}/env",
+            "method": "PUT",
+            "path": "/api/microvm/vm/{user_microvm}/env",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/vm/{user_microvm}/domain",
+            "method": "POST",
+            "path": "/api/microvm/vm/{user_microvm}/domain",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user DELETE /api/microvm/vm/{user_microvm}/domain/{user_microvmDomain}",
+            "method": "DELETE",
+            "path": "/api/microvm/vm/{user_microvm}/domain/{user_microvmDomain}",
+            "surface": "user",
+            "opentofu": {
+                "status": "covered",
+                "type": "iaas_microvm"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "unified microvm surface (MVU2-2): MCP tool coverage for microvms lands in MVU2-9, gated by the MVU2-7 tri-sync task"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/runners/jobs",
+            "method": "GET",
+            "path": "/api/microvm/runners/jobs",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "read-only CI job history, no IaC state; client parity via ListRunnerJobs/GetRunnerJob"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.runner.job.list"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/runners/jobs/{user_ciRunnerJobId}",
+            "method": "GET",
+            "path": "/api/microvm/runners/jobs/{user_ciRunnerJobId}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "read-only CI job history, no IaC state; client parity via ListRunnerJobs/GetRunnerJob"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "user.microvm.runner.job.list returns the rows; no per-job tool in v1"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/runners/pools",
+            "method": "GET",
+            "path": "/api/microvm/runners/pools",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy endpoint-specific connector route; declarative lifecycle moved to iaas_microvm_connector"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.runner.pool.list"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/runners/pools/github",
+            "method": "POST",
+            "path": "/api/microvm/runners/pools/github",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy endpoint-specific connector route; GitHub connectors are created and managed through the unified MicroVM API"
+            },
+            "mcp": {
+                "status": "excluded",
+                "reason": "GitHub pools are created by the panel install flow and managed through the unified MicroVM API"
+            }
+        },
+        {
+            "id": "user PUT /api/microvm/runners/pools/github/{user_ciRunnerPoolId}",
+            "method": "PUT",
+            "path": "/api/microvm/runners/pools/github/{user_ciRunnerPoolId}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy endpoint-specific connector route; declarative lifecycle moved to iaas_microvm_connector"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.runner.pool.update"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/runners/pools/gitlab",
+            "method": "POST",
+            "path": "/api/microvm/runners/pools/gitlab",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy endpoint-specific connector route; declarative lifecycle moved to iaas_microvm_connector"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.runner.pool.create_gitlab"
+            }
+        },
+        {
+            "id": "user PUT /api/microvm/runners/pools/gitlab/{user_ciRunnerPoolId}",
+            "method": "PUT",
+            "path": "/api/microvm/runners/pools/gitlab/{user_ciRunnerPoolId}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy endpoint-specific connector route; declarative lifecycle moved to iaas_microvm_connector"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.runner.pool.update"
+            }
+        },
+        {
+            "id": "user DELETE /api/microvm/runners/pools/{user_ciRunnerPoolId}",
+            "method": "DELETE",
+            "path": "/api/microvm/runners/pools/{user_ciRunnerPoolId}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "legacy endpoint-specific connector route; declarative lifecycle moved to iaas_microvm_connector"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.runner.pool.delete"
+            }
+        },
+        {
+            "id": "user DELETE /api/microvm/sandbox/{user_sandboxId}",
+            "method": "DELETE",
+            "path": "/api/microvm/sandbox/{user_sandboxId}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "sandbox lifecycle is ephemeral and API-key-driven, not declarative Terraform state; see docs/resources/microvm_api_key.md"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.sandbox.kill"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/sandbox/{user_sandboxId}",
+            "method": "GET",
+            "path": "/api/microvm/sandbox/{user_sandboxId}",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "sandbox lifecycle is ephemeral and API-key-driven, not declarative Terraform state; see docs/resources/microvm_api_key.md"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.sandbox.get"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/sandbox/{user_sandboxId}/logs",
+            "method": "GET",
+            "path": "/api/microvm/sandbox/{user_sandboxId}/logs",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "sandbox lifecycle is ephemeral and API-key-driven, not declarative Terraform state; see docs/resources/microvm_api_key.md"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.sandbox.logs"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/sandbox/{user_sandboxId}/metrics",
+            "method": "GET",
+            "path": "/api/microvm/sandbox/{user_sandboxId}/metrics",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "sandbox lifecycle is ephemeral and API-key-driven, not declarative Terraform state; see docs/resources/microvm_api_key.md"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.sandbox.metrics"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/sandbox/{user_sandboxId}/pause",
+            "method": "POST",
+            "path": "/api/microvm/sandbox/{user_sandboxId}/pause",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "sandbox lifecycle is ephemeral and API-key-driven, not declarative Terraform state; see docs/resources/microvm_api_key.md"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.sandbox.pause"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/sandbox/{user_sandboxId}/resume",
+            "method": "POST",
+            "path": "/api/microvm/sandbox/{user_sandboxId}/resume",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "sandbox lifecycle is ephemeral and API-key-driven, not declarative Terraform state; see docs/resources/microvm_api_key.md"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.sandbox.resume"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/sandbox/{user_sandboxId}/timeout",
+            "method": "POST",
+            "path": "/api/microvm/sandbox/{user_sandboxId}/timeout",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "sandbox lifecycle is ephemeral and API-key-driven, not declarative Terraform state; see docs/resources/microvm_api_key.md"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.sandbox.set_timeout"
+            }
+        },
+        {
+            "id": "user GET /api/microvm/sandboxes",
+            "method": "GET",
+            "path": "/api/microvm/sandboxes",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "sandbox lifecycle is ephemeral and API-key-driven, not declarative Terraform state; see docs/resources/microvm_api_key.md"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.sandbox.list"
+            }
+        },
+        {
+            "id": "user POST /api/microvm/sandboxes",
+            "method": "POST",
+            "path": "/api/microvm/sandboxes",
+            "surface": "user",
+            "opentofu": {
+                "status": "excluded",
+                "reason": "sandbox lifecycle is ephemeral and API-key-driven, not declarative Terraform state; see docs/resources/microvm_api_key.md"
+            },
+            "mcp": {
+                "status": "covered",
+                "tool": "user.microvm.sandbox.create"
             }
         },
         {

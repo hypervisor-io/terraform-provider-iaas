@@ -22,8 +22,8 @@ go test ./internal/resources/... ./internal/datasources/... -run TestAcc -count=
 
 ## Coverage
 
-One `TestAcc*` per registered resource (**35**) and per data source (**10**) =
-**45** acceptance tests. The data-source acc tests live in
+One `TestAcc*` per acceptance-covered resource (**42**) and per data source (**12**) =
+**54** acceptance tests. The data-source acc tests live in
 `internal/datasources/acc_test.go`.
 
 ## Prerequisites (summary)
@@ -53,7 +53,8 @@ In brief: `IAAS_TEST_HG_ID`, `IAAS_TEST_VOLUME_PLAN_ID`, `IAAS_TEST_VOLUME_ID`,
 `IAAS_TEST_VPNGW_PLAN_ID`, `IAAS_TEST_VPN_GATEWAY_ID`, `IAAS_TEST_VPN_PEER_ID`,
 `IAAS_TEST_DB_PLAN_ID`, `IAAS_TEST_DB_VPC_ID`, `IAAS_TEST_DB_VPC_SUBNET_ID`,
 `IAAS_TEST_DB_PRIMARY_ID`, `IAAS_TEST_DB_REPLICA_PLAN_ID`, `IAAS_TEST_S3_PLAN_ID`,
-`IAAS_TEST_S3_SERVER_ID`, the `IAAS_TEST_K8S_*` set
+`IAAS_TEST_S3_SERVER_ID`, `IAAS_TEST_MICROVM_HG_ID`,
+`IAAS_TEST_MICROVM_IMAGE_ID`, `IAAS_TEST_MICROVM_GITHUB_SOURCE_ID`, the `IAAS_TEST_K8S_*` set
 (`HG_ID`/`VPC_ID`/`CP_SUBNET_ID`/`WORKER_SUBNET_ID`/`VERSION_ID`/`CP_PLAN_ID`/`WORKER_PLAN_ID`/`CP_LB_PLAN_ID`/`CLUSTER_ID`),
 and the data-source filters `IAAS_TEST_LOCATION_NAME`, `IAAS_TEST_PLAN_LOCATION_ID`,
 `IAAS_TEST_PLAN_NAME`, `IAAS_TEST_IMAGE_NAME`, `IAAS_TEST_ISO_NAME`,

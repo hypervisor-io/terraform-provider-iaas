@@ -301,3 +301,28 @@ data "iaas_vpn_peer_config" "test" {
 		},
 	})
 }
+
+func TestAccMicrovmImages_basic(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{{
+			Config: `data "iaas_microvm_images" "test" { status = "ready" }`,
+			Check:  resource.TestCheckResourceAttrSet("data.iaas_microvm_images.test", "images.#"),
+		}},
+	})
+}
+
+func TestAccMicrovmCatalog_basic(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{{
+			Config: `data "iaas_microvm_catalog" "test" {}`,
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttrSet("data.iaas_microvm_catalog.test", "locations.#"),
+				resource.TestCheckResourceAttrSet("data.iaas_microvm_catalog.test", "limits.max_lifetime_seconds"),
+			),
+		}},
+	})
+}
