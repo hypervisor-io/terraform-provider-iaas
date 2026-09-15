@@ -139,7 +139,7 @@ func (c *Client) AdminGetHypervisorGroupHypervisors(ctx context.Context, id stri
 	return c.doList(ctx, "GET", "/v1/hypervisor/group/"+url.PathEscape(id)+"/hypervisors", nil)
 }
 
-// ── hypervisor storages / backup storages / backup plans ─────────────────────
+// ── hypervisor storages / backup storages ────────────────────────────────────
 
 func (c *Client) AdminListHypervisorStorages(ctx context.Context) ([]map[string]any, error) {
 	return c.doList(ctx, "GET", "/v1/hypervisor/storages", nil)
@@ -155,14 +155,6 @@ func (c *Client) AdminListBackupStorages(ctx context.Context) ([]map[string]any,
 
 func (c *Client) AdminGetBackupStorage(ctx context.Context, id string) (map[string]any, error) {
 	return c.adminGet(ctx, "/v1/hypervisor/backup-storage/"+url.PathEscape(id))
-}
-
-func (c *Client) AdminListBackupPlans(ctx context.Context) ([]map[string]any, error) {
-	return c.doList(ctx, "GET", "/v1/hypervisor/backup-plans", nil)
-}
-
-func (c *Client) AdminGetBackupPlan(ctx context.Context, id string) (map[string]any, error) {
-	return c.adminGet(ctx, "/v1/hypervisor/backup-plan/"+url.PathEscape(id))
 }
 
 // ── network: subnets, ips, vpcs ──────────────────────────────────────────────
