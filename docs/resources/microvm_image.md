@@ -14,15 +14,29 @@ Builds and manages a reusable MicroVM image from a Dockerfile, OCI image, or Git
 
 ```terraform
 resource "iaas_microvm_image" "tools" {
-  name                = "tools"
-  description         = "Reusable build tools"
-  source_kind         = "oci"
-  source_image        = "ghcr.io/example/tools:1.0"
-  hypervisor_group_id = "00000000-0000-0000-0000-000000000000"
+  name         = "tools"
+  description  = "Reusable build tools"
+  source_kind  = "oci"
+  source_image = "ghcr.io/example/tools:1.0"
+  location_id  = "00000000-0000-0000-0000-000000000000"
 
   env = {
     MODE = "production"
   }
+}
+
+# A Dockerfile build must name a catalog base image (C6): the builder
+# overlays the OCI rootfs on a copy of the base and re-injects init/
+# guest-net/envd/vcagent/sshd.
+resource "iaas_microvm_image" "app" {
+  name          = "app"
+  source_kind   = "dockerfile"
+  dockerfile    = <<-EOT
+    FROM base
+    RUN apt-get update && apt-get install -y curl
+  EOT
+  base_image_id = "22222222-2222-2222-2222-222222222222"
+  location_id   = "00000000-0000-0000-0000-000000000000"
 }
 ```
 
@@ -31,19 +45,20 @@ resource "iaas_microvm_image" "tools" {
 
 ### Required
 
-- `hypervisor_group_id` (String) Location UUID where the image build runs.
 - `name` (String) Account-unique image name.
 - `source_kind` (String) Image source: dockerfile, oci, or git.
 
 ### Optional
 
-- `base_image_id` (String) Optional platform or account image used as the build base.
+- `base_image_id` (String) Platform or account image used as the build base (C6). Required when source_kind = dockerfile; the base must be ready and carry features.envd or features.vcagent.
 - `build_hooks` (String) Build ready and validation hooks as a JSON object.
 - `description` (String) Optional image description.
 - `dockerfile` (String) Dockerfile contents. Required for source_kind = dockerfile.
 - `env` (Map of String, Sensitive) Write-only image-level environment defaults.
 - `git_source_id` (String) Owned Git source UUID used to authenticate a Git build.
+- `hypervisor_group_id` (String, Deprecated) Location UUID where the image build runs. Changing this forces a new resource.
 - `lifecycle_hooks` (String) Lifecycle hook defaults as a JSON object.
+- `location_id` (String) Location UUID where the image build runs. Canonical replacement for hypervisor_group_id; exactly one of the two must be set. Changing this forces a new resource.
 - `registry_password` (String, Sensitive) Write-only registry password used while building an OCI image.
 - `registry_username` (String) Registry username used while building an OCI image.
 - `source_branch` (String) Git branch. The server default applies when omitted.
@@ -52,10 +67,17 @@ resource "iaas_microvm_image" "tools" {
 
 ### Read-Only
 
+- `arch` (String) CPU architecture, e.g. "x86_64" (C5).
 - `current_build_status` (String) Status of the current image version.
 - `current_version` (Number) Current image version number.
 - `current_version_id` (String) UUID of the current image version.
 - `error_message` (String) Most recent build error, when present.
+- `features` (Map of Boolean) Baked-in capability flags: sshd, envd, vcagent (C5).
 - `id` (String) UUID assigned to the image.
+- `os_codename` (String) OS codename, e.g. "trixie" (C5).
+- `os_family` (String) OS family: debian, rhel, or amazon (C5).
+- `os_id` (String) Catalog OS id, e.g. "debian-13" (C5). Empty for an image without OS metadata.
+- `os_name` (String) Human OS name, e.g. "Debian" (C5).
+- `os_version` (String) OS version, e.g. "13" (C5).
 - `status` (String) Current image status: pending, building, ready, or error.
 - `template_name` (String) Daemon-side template name.

@@ -42,10 +42,12 @@ type microvmResource struct {
 type microvmModel struct {
 	ID                  types.String `tfsdk:"id"`
 	HypervisorGroupID   types.String `tfsdk:"hypervisor_group_id"`
+	LocationID          types.String `tfsdk:"location_id"`
 	ImageID             types.String `tfsdk:"image_id"`
 	ImageVersionID      types.String `tfsdk:"image_version_id"`
 	PlanID              types.String `tfsdk:"plan_id"`
 	Name                types.String `tfsdk:"name"`
+	SshKeyIDs           types.List   `tfsdk:"ssh_key_ids"`
 	Ingress             types.Object `tfsdk:"ingress"`
 	Network             types.List   `tfsdk:"network"`
 	MaxLifetimeSeconds  types.Int64  `tfsdk:"max_lifetime_seconds"`
@@ -62,6 +64,7 @@ type microvmModel struct {
 	TimeoutAt           types.String `tfsdk:"timeout_at"`
 	CurrentRunStatus    types.String `tfsdk:"current_run_status"`
 	CurrentRunStartedAt types.String `tfsdk:"current_run_started_at"`
+	Ssh                 types.String `tfsdk:"ssh"`
 	Interfaces          types.List   `tfsdk:"interfaces"`
 }
 
@@ -85,14 +88,21 @@ type microvmNetworkModel struct {
 	Kind             types.String `tfsdk:"kind"`
 	SubnetID         types.String `tfsdk:"subnet_id"`
 	VPCSubnetID      types.String `tfsdk:"vpc_subnet_id"`
+	StaticIpID       types.String `tfsdk:"static_ip_id"`
 	SecurityGroupIDs types.List   `tfsdk:"security_group_ids"`
 	RateMbit         types.Int64  `tfsdk:"rate_mbit"`
 }
 
+var microvmStaticIpAttrTypes = map[string]attr.Type{
+	"id": types.StringType,
+	"ip": types.StringType,
+}
+
 var microvmInterfaceAttrTypes = map[string]attr.Type{
-	"kind": types.StringType,
-	"ipv4": types.StringType,
-	"ipv6": types.StringType,
+	"kind":      types.StringType,
+	"ipv4":      types.StringType,
+	"ipv6":      types.StringType,
+	"static_ip": types.ObjectType{AttrTypes: microvmStaticIpAttrTypes},
 }
 
 func (r *microvmResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -104,12 +114,40 @@ func (r *microvmResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 	resp.Schema = schema.Schema{
 		Description: "Creates and manages a MicroVM from a reusable image. Placement, image, ingress, network, and runtime policy changes replace the MicroVM; environment variables and custom domains update in place.",
 		Attributes: map[string]schema.Attribute{
-			"id":                  schema.StringAttribute{Computed: true, Description: "UUID assigned to the MicroVM.", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"hypervisor_group_id": schema.StringAttribute{Required: true, Description: "Location UUID used for placement.", PlanModifiers: replaceString},
-			"image_id":            schema.StringAttribute{Required: true, Description: "Ready platform or account image UUID.", PlanModifiers: replaceString},
-			"image_version_id":    schema.StringAttribute{Optional: true, Description: "Ready version UUID. The current image version is used when omitted.", PlanModifiers: replaceString},
-			"plan_id":             schema.StringAttribute{Optional: true, Description: "Plan UUID. The first enabled location plan is used when omitted.", PlanModifiers: replaceString},
-			"name":                schema.StringAttribute{Required: true, Description: "Account-unique lowercase name used in generated hostnames.", PlanModifiers: replaceString},
+			"id": schema.StringAttribute{Computed: true, Description: "UUID assigned to the MicroVM.", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"hypervisor_group_id": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				DeprecationMessage: "Use location_id instead. hypervisor_group_id is deprecated " +
+					"and will be removed in the next release.",
+				Description: "Location UUID used for placement. Changing this forces a new resource.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+			},
+			"location_id": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "Location UUID used for placement. Canonical replacement for " +
+					"hypervisor_group_id; exactly one of the two must be set. Changing this forces a new resource.",
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(path.MatchRoot("hypervisor_group_id")),
+				},
+				PlanModifiers: []planmodifier.String{
+					locationIDFromAliasModifier{},
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+			},
+			"image_id":         schema.StringAttribute{Required: true, Description: "Ready platform or account image UUID.", PlanModifiers: replaceString},
+			"image_version_id": schema.StringAttribute{Optional: true, Description: "Ready version UUID. The current image version is used when omitted.", PlanModifiers: replaceString},
+			"plan_id":          schema.StringAttribute{Optional: true, Description: "Plan UUID. The first enabled location plan is used when omitted.", PlanModifiers: replaceString},
+			"name":             schema.StringAttribute{Required: true, Description: "Account-unique lowercase name used in generated hostnames.", PlanModifiers: replaceString},
+			"ssh_key_ids": schema.ListAttribute{
+				Optional:      true,
+				ElementType:   types.StringType,
+				Description:   "Account SSH key UUIDs installed to /root/.ssh/authorized_keys and every non-system user's authorized_keys (C3). Changing this forces a new resource; the daemon writes keys once, at first boot.",
+				PlanModifiers: []planmodifier.List{listplanmodifier.RequiresReplace()},
+			},
 			"ingress": schema.SingleNestedAttribute{
 				Optional:      true,
 				Description:   "HTTP and shell ingress settings.",
@@ -134,12 +172,16 @@ func (r *microvmResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			},
 			"network": schema.ListNestedAttribute{
 				Optional:      true,
-				Description:   "Ordered isolated, public, and VPC network interfaces. An isolated interface is created when omitted.",
+				Description:   "Ordered public and VPC network interfaces (there is no isolated kind - C1). The account's default network (iaas_microvm_settings) is used when omitted; a create with neither is a 422.",
 				PlanModifiers: []planmodifier.List{listplanmodifier.RequiresReplace()},
 				NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
-					"kind":               schema.StringAttribute{Required: true, Validators: []validator.String{stringvalidator.OneOf("isolated", "public", "vpc")}},
-					"subnet_id":          schema.StringAttribute{Optional: true, Description: "Public subnet UUID for kind = public."},
-					"vpc_subnet_id":      schema.StringAttribute{Optional: true, Description: "Owned VPC subnet UUID for kind = vpc."},
+					"kind":          schema.StringAttribute{Required: true, Validators: []validator.String{stringvalidator.OneOf("public", "vpc")}},
+					"subnet_id":     schema.StringAttribute{Optional: true, Description: "Public subnet UUID for kind = public. Optional - the platform auto-assigns a subnet with free capacity in the microVM's location when omitted (C8.1)."},
+					"vpc_subnet_id": schema.StringAttribute{Optional: true, Description: "Owned VPC subnet UUID. Required for kind = vpc."},
+					"static_ip_id": schema.StringAttribute{
+						Optional:    true,
+						Description: "kind = public only: one of the account's allocated static IPs in this microVM's location. Distinct across every network entry in the same create (C8.3).",
+					},
 					"security_group_ids": schema.ListAttribute{Optional: true, ElementType: types.StringType},
 					"rate_mbit":          schema.Int64Attribute{Optional: true, Description: "Optional interface rate limit in Mbit/s."},
 				}},
@@ -158,6 +200,7 @@ func (r *microvmResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			"timeout_at":             schema.StringAttribute{Computed: true, Description: "Current maximum-lifetime deadline."},
 			"current_run_status":     schema.StringAttribute{Computed: true, Description: "Status of the current run."},
 			"current_run_started_at": schema.StringAttribute{Computed: true, Description: "Start timestamp of the current run."},
+			"ssh":                    schema.StringAttribute{Computed: true, Description: "SSH command for the default-route interface (C3), e.g. \"ssh root@203.0.113.10\"."},
 			"interfaces": schema.ListNestedAttribute{
 				Computed:    true,
 				Description: "Allocated interface addresses.",
@@ -165,6 +208,14 @@ func (r *microvmResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 					"kind": schema.StringAttribute{Computed: true},
 					"ipv4": schema.StringAttribute{Computed: true},
 					"ipv6": schema.StringAttribute{Computed: true},
+					"static_ip": schema.SingleNestedAttribute{
+						Computed:    true,
+						Description: "The owner's static IP mapped to this interface, when kind = public and one was requested (C8.3/C8.6).",
+						Attributes: map[string]schema.Attribute{
+							"id": schema.StringAttribute{Computed: true},
+							"ip": schema.StringAttribute{Computed: true},
+						},
+					},
 				}},
 			},
 		},
@@ -290,9 +341,9 @@ func (r *microvmResource) refresh(ctx context.Context, id string, prior microvmM
 func microvmCreateBody(ctx context.Context, plan microvmModel) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := map[string]any{
-		"hypervisor_group_id": plan.HypervisorGroupID.ValueString(),
-		"image_id":            plan.ImageID.ValueString(),
-		"name":                plan.Name.ValueString(),
+		"location_id": effectiveLocationID(plan.LocationID, plan.HypervisorGroupID),
+		"image_id":    plan.ImageID.ValueString(),
+		"name":        plan.Name.ValueString(),
 	}
 	putOptionalString(body, "image_version_id", plan.ImageVersionID)
 	putOptionalString(body, "plan_id", plan.PlanID)
@@ -301,6 +352,12 @@ func microvmCreateBody(ctx context.Context, plan microvmModel) (map[string]any, 
 	putOptionalInt64(body, "idle_timeout_seconds", plan.IdleTimeoutSeconds)
 	putOptionalBool(body, "always_on", plan.AlwaysOn)
 	putOptionalBool(body, "secure", plan.Secure)
+
+	if !plan.SshKeyIDs.IsNull() && !plan.SshKeyIDs.IsUnknown() {
+		var ids []string
+		diags.Append(plan.SshKeyIDs.ElementsAs(ctx, &ids, false)...)
+		body["ssh_key_ids"] = ids
+	}
 
 	if !plan.Ingress.IsNull() && !plan.Ingress.IsUnknown() {
 		var ingress microvmIngressModel
@@ -317,6 +374,7 @@ func microvmCreateBody(ctx context.Context, plan microvmModel) (map[string]any, 
 			item := map[string]any{"kind": entry.Kind.ValueString()}
 			putOptionalString(item, "subnet_id", entry.SubnetID)
 			putOptionalString(item, "vpc_subnet_id", entry.VPCSubnetID)
+			putOptionalString(item, "static_ip_id", entry.StaticIpID)
 			putOptionalInt64(item, "rate_mbit", entry.RateMbit)
 			if !entry.SecurityGroupIDs.IsNull() && !entry.SecurityGroupIDs.IsUnknown() {
 				var ids []string
@@ -433,7 +491,8 @@ func microvmEnvelopeParts(envelope map[string]any) (map[string]any, []map[string
 func microvmStateFromAPI(ctx context.Context, obj map[string]any, domains []map[string]any, prior microvmModel, diags *diag.Diagnostics) microvmModel {
 	state := prior
 	state.ID = stringFromAPI(obj, "id", prior.ID)
-	state.HypervisorGroupID = stringFromAPI(obj, "hypervisor_group_id", prior.HypervisorGroupID)
+	state.HypervisorGroupID = hypervisorGroupIDFromAPI(obj, prior.HypervisorGroupID)
+	state.LocationID = locationIDFromAPI(obj, prior.LocationID)
 	state.ImageID = stringFromAPI(obj, "image_id", prior.ImageID)
 	state.ImageVersionID = optionalStringFromAPI(obj, "image_version_id", prior.ImageVersionID)
 	state.PlanID = optionalStringFromAPI(obj, "plan_id", prior.PlanID)
@@ -442,6 +501,7 @@ func microvmStateFromAPI(ctx context.Context, obj map[string]any, domains []map[
 	state.Fqdn = optionalStringFromAPI(obj, "fqdn", prior.Fqdn)
 	state.E2bID = stringFromAPI(obj, "e2b_sandbox_id", prior.E2bID)
 	state.TimeoutAt = optionalStringFromAPI(obj, "timeout_at", prior.TimeoutAt)
+	state.Ssh = optionalStringFromAPI(obj, "ssh", prior.Ssh)
 	if run, ok := obj["current_run"].(map[string]any); ok {
 		state.CurrentRunStatus = stringFromAPI(run, "status", prior.CurrentRunStatus)
 		state.CurrentRunStartedAt = optionalStringFromAPI(run, "started_at", prior.CurrentRunStartedAt)
@@ -476,10 +536,13 @@ func microvmInterfacesFromAPI(raw any) (types.List, diag.Diagnostics) {
 		if !ok {
 			continue
 		}
+		staticIP, staticIPDiags := microvmStaticIpFromAPI(item["static_ip"])
+		diags.Append(staticIPDiags...)
 		value, itemDiags := types.ObjectValue(microvmInterfaceAttrTypes, map[string]attr.Value{
-			"kind": nullableStringAttr(item["kind"]),
-			"ipv4": nullableStringAttr(item["ipv4"]),
-			"ipv6": nullableStringAttr(item["ipv6"]),
+			"kind":      nullableStringAttr(item["kind"]),
+			"ipv4":      nullableStringAttr(item["ipv4"]),
+			"ipv6":      nullableStringAttr(item["ipv6"]),
+			"static_ip": staticIP,
 		})
 		diags.Append(itemDiags...)
 		values = append(values, value)
@@ -487,6 +550,21 @@ func microvmInterfacesFromAPI(raw any) (types.List, diag.Diagnostics) {
 	list, listDiags := types.ListValue(objectType, values)
 	diags.Append(listDiags...)
 	return list, diags
+}
+
+// microvmStaticIpFromAPI reads an interface's static_ip sub-object ({id, ip}
+// | null, C8.6). A missing/non-object/nil value is a null object, matching
+// the "no static IP mapped to this interface" case for a plain public or vpc
+// entry.
+func microvmStaticIpFromAPI(raw any) (types.Object, diag.Diagnostics) {
+	obj, ok := raw.(map[string]any)
+	if !ok {
+		return types.ObjectNull(microvmStaticIpAttrTypes), nil
+	}
+	return types.ObjectValue(microvmStaticIpAttrTypes, map[string]attr.Value{
+		"id": nullableStringAttr(obj["id"]),
+		"ip": nullableStringAttr(obj["ip"]),
+	})
 }
 
 func nullableStringAttr(raw any) types.String {

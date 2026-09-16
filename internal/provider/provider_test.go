@@ -137,7 +137,7 @@ func TestProviderRegistersUnifiedMicrovmTypes(t *testing.T) {
 		factory().Metadata(ctx, datasource.MetadataRequest{ProviderTypeName: "iaas"}, &resp)
 		types[resp.TypeName] = true
 	}
-	for _, name := range []string{"iaas_microvm_image", "iaas_microvm", "iaas_microvm_connector", "iaas_microvm_images", "iaas_microvm_catalog"} {
+	for _, name := range []string{"iaas_microvm_image", "iaas_microvm", "iaas_microvm_connector", "iaas_microvm_settings", "iaas_microvm_images", "iaas_microvm_catalog"} {
 		if !types[name] {
 			t.Errorf("provider did not register %s", name)
 		}

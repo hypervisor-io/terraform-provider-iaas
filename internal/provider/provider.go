@@ -258,6 +258,7 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewMicrovmImageResource,
 		resources.NewMicrovmResource,
 		resources.NewMicrovmConnectorResource,
+		resources.NewMicrovmSettingsResource,
 	}
 }
 

@@ -41,7 +41,10 @@ resource "iaas_microvm" "test" {
   hypervisor_group_id = %q
   image_id            = %q
 
-  network = [{ kind = "isolated" }]
+  // C1: isolated is retired - public/vpc only. A bare public entry with no
+  // subnet_id lets the platform auto-assign a subnet with free capacity
+  // (C8.1).
+  network = [{ kind = "public" }]
 }
 `, groupID, imageID)
 	resource.Test(t, resource.TestCase{

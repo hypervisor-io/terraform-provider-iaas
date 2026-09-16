@@ -14,10 +14,14 @@ Creates and manages a MicroVM from a reusable image. Placement, image, ingress, 
 
 ```terraform
 resource "iaas_microvm" "worker" {
-  name                = "worker"
-  hypervisor_group_id = "00000000-0000-0000-0000-000000000000"
-  image_id            = "00000000-0000-0000-0000-000000000000"
-  plan_id             = "00000000-0000-0000-0000-000000000000"
+  name        = "worker"
+  location_id = "00000000-0000-0000-0000-000000000000"
+  image_id    = "00000000-0000-0000-0000-000000000000"
+  plan_id     = "00000000-0000-0000-0000-000000000000"
+
+  # Account SSH keys installed to /root/.ssh/authorized_keys and every
+  # non-system user's authorized_keys.
+  ssh_key_ids = ["11111111-1111-1111-1111-111111111111"]
 
   ingress = {
     http = {
@@ -27,8 +31,11 @@ resource "iaas_microvm" "worker" {
     }
   }
 
+  # There is no isolated kind - every microVM carries at least one public or
+  # vpc interface. A public entry with no subnet_id lets the platform
+  # auto-assign a subnet with free capacity in this location.
   network = [{
-    kind = "isolated"
+    kind = "public"
   }]
 
   env = {
@@ -42,7 +49,6 @@ resource "iaas_microvm" "worker" {
 
 ### Required
 
-- `hypervisor_group_id` (String) Location UUID used for placement.
 - `image_id` (String) Ready platform or account image UUID.
 - `name` (String) Account-unique lowercase name used in generated hostnames.
 
@@ -51,15 +57,18 @@ resource "iaas_microvm" "worker" {
 - `always_on` (Boolean) Keep the MicroVM running and restart it after failure.
 - `domains` (Set of String) Custom hostnames reconciled through the domain endpoints.
 - `env` (Map of String, Sensitive) Write-only environment variables, replaceable in place.
+- `hypervisor_group_id` (String, Deprecated) Location UUID used for placement. Changing this forces a new resource.
 - `idle_timeout_seconds` (Number) Inactivity interval before pause. Null disables idle pause.
 - `image_version_id` (String) Ready version UUID. The current image version is used when omitted.
 - `ingress` (Attributes) HTTP and shell ingress settings. (see [below for nested schema](#nestedatt--ingress))
 - `lifecycle_hooks` (String) Lifecycle hook overrides as a JSON object.
+- `location_id` (String) Location UUID used for placement. Canonical replacement for hypervisor_group_id; exactly one of the two must be set. Changing this forces a new resource.
 - `max_lifetime_seconds` (Number) Maximum lifetime, capped server-side at 28800 seconds.
-- `network` (Attributes List) Ordered isolated, public, and VPC network interfaces. An isolated interface is created when omitted. (see [below for nested schema](#nestedatt--network))
+- `network` (Attributes List) Ordered public and VPC network interfaces (there is no isolated kind - C1). The account's default network (iaas_microvm_settings) is used when omitted; a create with neither is a 422. (see [below for nested schema](#nestedatt--network))
 - `on_timeout` (String) Timeout action: pause or kill.
 - `plan_id` (String) Plan UUID. The first enabled location plan is used when omitted.
 - `secure` (Boolean) Require an access token for shell ingress.
+- `ssh_key_ids` (List of String) Account SSH key UUIDs installed to /root/.ssh/authorized_keys and every non-system user's authorized_keys (C3). Changing this forces a new resource; the daemon writes keys once, at first boot.
 
 ### Read-Only
 
@@ -69,6 +78,7 @@ resource "iaas_microvm" "worker" {
 - `fqdn` (String) Generated HTTP hostname, when HTTP ingress is enabled.
 - `id` (String) UUID assigned to the MicroVM.
 - `interfaces` (Attributes List) Allocated interface addresses. (see [below for nested schema](#nestedatt--interfaces))
+- `ssh` (String) SSH command for the default-route interface (C3), e.g. "ssh root@203.0.113.10".
 - `state` (String) Current lifecycle state.
 - `timeout_at` (String) Current maximum-lifetime deadline.
 
@@ -111,8 +121,9 @@ Optional:
 
 - `rate_mbit` (Number) Optional interface rate limit in Mbit/s.
 - `security_group_ids` (List of String)
-- `subnet_id` (String) Public subnet UUID for kind = public.
-- `vpc_subnet_id` (String) Owned VPC subnet UUID for kind = vpc.
+- `static_ip_id` (String) kind = public only: one of the account's allocated static IPs in this microVM's location. Distinct across every network entry in the same create (C8.3).
+- `subnet_id` (String) Public subnet UUID for kind = public. Optional - the platform auto-assigns a subnet with free capacity in the microVM's location when omitted (C8.1).
+- `vpc_subnet_id` (String) Owned VPC subnet UUID. Required for kind = vpc.
 
 
 <a id="nestedatt--interfaces"></a>
@@ -123,3 +134,12 @@ Read-Only:
 - `ipv4` (String)
 - `ipv6` (String)
 - `kind` (String)
+- `static_ip` (Attributes) The owner's static IP mapped to this interface, when kind = public and one was requested (C8.3/C8.6). (see [below for nested schema](#nestedatt--interfaces--static_ip))
+
+<a id="nestedatt--interfaces--static_ip"></a>
+### Nested Schema for `interfaces.static_ip`
+
+Read-Only:
+
+- `id` (String)
+- `ip` (String)
