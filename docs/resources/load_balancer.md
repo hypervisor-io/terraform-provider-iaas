@@ -93,7 +93,8 @@ output "lb_status" {
 
 ### Optional
 
-- `hypervisor_group_id` (String) UUID of the location (hypervisor group) to deploy into. Required for public mode (no VPC); in VPC mode it is derived from the VPC and returned by the API. Immutable; changing it forces a new resource.
+- `hypervisor_group_id` (String, Deprecated) UUID of the location (hypervisor group) to deploy into. Required for public mode (no VPC); in VPC mode it is derived from the VPC and returned by the API. Immutable; changing it forces a new resource.
+- `location_id` (String) UUID of the location (hypervisor group) to deploy into. Required for public mode (no VPC); in VPC mode it is derived from the VPC and returned by the API. Immutable; changing it forces a new resource. Canonical replacement for hypervisor_group_id; the two are mutually exclusive.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `vpc_id` (String) Optional UUID of a VPC to deploy the load balancer into (VPC mode). When set, vpc_subnet_id is required and hypervisor_group_id is derived from the VPC. Omit for public mode (supply hypervisor_group_id instead). Changing it forces a new resource.
 - `vpc_subnet_id` (String) UUID of the VPC subnet to place the load balancer in (required when vpc_id is set). WRITE-ONLY: not returned by the API on read, so this value is echoed from configuration and never refreshed. Changing it forces a new resource.

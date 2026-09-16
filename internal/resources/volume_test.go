@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"sync"
 	"testing"
 
@@ -276,8 +277,8 @@ resource "iaas_volume" "test" {
 	if createBody["volume_plan_id"] != planID {
 		t.Errorf("create body volume_plan_id = %v; want %q", createBody["volume_plan_id"], planID)
 	}
-	if createBody["hypervisor_group_id"] != groupID {
-		t.Errorf("create body hypervisor_group_id = %v; want %q", createBody["hypervisor_group_id"], groupID)
+	if createBody["location_id"] != groupID {
+		t.Errorf("create body location_id = %v; want %q", createBody["location_id"], groupID)
 	}
 	for _, stray := range []string{"id", "status", "size", "dev", "deployed", "path"} {
 		if _, present := createBody[stray]; present {
@@ -310,4 +311,31 @@ resource "iaas_volume" "test" {
 	if attachBody["instance_id"] != instanceID {
 		t.Errorf("attach body instance_id = %v; want %q", attachBody["instance_id"], instanceID)
 	}
+}
+
+// TestUnitVolume_locationIDBothSetErrors proves that configuring both location_id
+// and the deprecated hypervisor_group_id (the decoy case for spec 17 C4) is a
+// validation error naming the conflict, rather than silently picking a winner.
+func TestUnitVolume_locationIDBothSetErrors(t *testing.T) {
+	ensureTFBinary(t)
+	srv := acctest.NewMockServer(t)
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+resource "iaas_volume" "test" {
+  name                = "decoy"
+  volume_plan_id      = "55555555-5555-5555-5555-555555555555"
+  location_id         = "33333333-3333-3333-3333-333333333333"
+  hypervisor_group_id = "44444444-4444-4444-4444-444444444444"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config:      cfg,
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+			},
+		},
+	})
 }

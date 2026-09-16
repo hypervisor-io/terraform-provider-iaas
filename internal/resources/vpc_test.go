@@ -3,6 +3,7 @@ package resources_test
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -144,8 +145,10 @@ resource "iaas_vpc" "test" {
 		},
 	})
 
-	// Assert the create request sent name/cidr/hypervisor_group_id (+description)
-	// and NOT a stray field (e.g. no id, no vni_number client-side).
+	// Assert the create request sent name/cidr/location_id (+description) - the
+	// client sends the canonical location_id key (spec 17 C1/C4) even when the
+	// config used the deprecated hypervisor_group_id alias - and NOT a stray
+	// field (e.g. no id, no vni_number client-side).
 	creates := srv.Requests("POST", "/vpcs")
 	if len(creates) == 0 {
 		t.Fatal("expected at least one POST /vpcs")
@@ -160,8 +163,8 @@ resource "iaas_vpc" "test" {
 	if createBody["cidr"] != cidr {
 		t.Errorf("create body cidr = %v; want %q", createBody["cidr"], cidr)
 	}
-	if createBody["hypervisor_group_id"] != groupID {
-		t.Errorf("create body hypervisor_group_id = %v; want %q", createBody["hypervisor_group_id"], groupID)
+	if createBody["location_id"] != groupID {
+		t.Errorf("create body location_id = %v; want %q", createBody["location_id"], groupID)
 	}
 	if createBody["description"] != desc {
 		t.Errorf("create body description = %v; want %q", createBody["description"], desc)
@@ -176,15 +179,205 @@ resource "iaas_vpc" "test" {
 
 // vpcObject builds a serialized vpc object matching the API SHOW/CREATE shape,
 // including the appended vni_number and the nested subnets array the resource
-// is expected to ignore.
+// is expected to ignore. An empty description is omitted so an unset optional
+// description round-trips as null (no spurious "" diff).
 func vpcObject(id, name, cidr, groupID, desc string, vni int) map[string]any {
-	return map[string]any{
+	obj := map[string]any{
 		"id":                  id,
 		"name":                name,
 		"cidr":                cidr,
 		"hypervisor_group_id": groupID,
-		"description":         desc,
 		"vni_number":          vni,
 		"subnets":             []any{},
 	}
+	if desc != "" {
+		obj["description"] = desc
+	}
+	return obj
+}
+
+// ---------------------------------------------------------------------------
+// location_id (LOC-3 / contract C4) coverage.
+//
+// The VPC resource is the representative formerly-REQUIRED resource: the
+// canonical location_id replaces hypervisor_group_id, the old key stays
+// accepted as a deprecated alias for one release, the two are mutually
+// exclusive (ExactlyOneOf), and omitting both when the placement is required
+// yields a validation error naming location_id.
+// ---------------------------------------------------------------------------
+
+// TestUnitVPCLocationID_canonicalAccepted proves a config using only
+// location_id plans and applies, sends that value as the API location_id, and
+// stores it in state under both location_id and the deprecated
+// hypervisor_group_id.
+func TestUnitVPCLocationID_canonicalAccepted(t *testing.T) {
+	ensureTFBinary(t)
+	srv := acctest.NewMockServer(t)
+
+	const (
+		vpcID   = "22222222-2222-2222-2222-222222222222"
+		groupID = "33333333-3333-3333-3333-333333333333"
+		name    = "prod"
+		cidr    = "10.0.0.0/24"
+		vni     = 4097
+	)
+
+	srv.Handle("POST", "/vpcs", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"message": "VPC created",
+			"vpc":     vpcObject(vpcID, name, cidr, groupID, "", vni),
+		})
+	})
+	srv.Handle("GET", "/vpc/"+vpcID, func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"vpc":     vpcObject(vpcID, name, cidr, groupID, "", vni),
+		})
+	})
+	srv.Handle("DELETE", "/vpc/"+vpcID, func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "VPC deleted"})
+	})
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+resource "iaas_vpc" "test" {
+  name        = "` + name + `"
+  cidr        = "` + cidr + `"
+  location_id = "` + groupID + `"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("iaas_vpc.test", "id", vpcID),
+					resource.TestCheckResourceAttr("iaas_vpc.test", "location_id", groupID),
+					resource.TestCheckResourceAttr("iaas_vpc.test", "hypervisor_group_id", groupID),
+				),
+			},
+		},
+	})
+
+	creates := srv.Requests("POST", "/vpcs")
+	if len(creates) == 0 {
+		t.Fatal("expected at least one POST /vpcs")
+	}
+	var createBody map[string]any
+	if err := json.Unmarshal(creates[0].Body, &createBody); err != nil {
+		t.Fatalf("decoding create body: %v", err)
+	}
+	if createBody["location_id"] != groupID {
+		t.Errorf("create body location_id = %v; want %q", createBody["location_id"], groupID)
+	}
+}
+
+// TestUnitVPCLocationID_legacyAliasStillWorks proves a config using only the
+// deprecated hypervisor_group_id still plans and applies unchanged during the
+// one-release overlap.
+func TestUnitVPCLocationID_legacyAliasStillWorks(t *testing.T) {
+	ensureTFBinary(t)
+	srv := acctest.NewMockServer(t)
+
+	const (
+		vpcID   = "22222222-2222-2222-2222-222222222222"
+		groupID = "33333333-3333-3333-3333-333333333333"
+		name    = "prod"
+		cidr    = "10.0.0.0/24"
+		vni     = 4097
+	)
+
+	srv.Handle("POST", "/vpcs", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"message": "VPC created",
+			"vpc":     vpcObject(vpcID, name, cidr, groupID, "", vni),
+		})
+	})
+	srv.Handle("GET", "/vpc/"+vpcID, func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"vpc":     vpcObject(vpcID, name, cidr, groupID, "", vni),
+		})
+	})
+	srv.Handle("DELETE", "/vpc/"+vpcID, func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "VPC deleted"})
+	})
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+resource "iaas_vpc" "test" {
+  name                = "` + name + `"
+  cidr                = "` + cidr + `"
+  hypervisor_group_id = "` + groupID + `"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("iaas_vpc.test", "id", vpcID),
+					resource.TestCheckResourceAttr("iaas_vpc.test", "hypervisor_group_id", groupID),
+					resource.TestCheckResourceAttr("iaas_vpc.test", "location_id", groupID),
+				),
+			},
+		},
+	})
+}
+
+// TestUnitVPCLocationID_bothSetErrors proves that configuring both location_id
+// and the deprecated hypervisor_group_id (the decoy case for spec 17 C4) is a
+// validation error naming the conflict, rather than silently picking a winner
+// - no HTTP call should ever be made.
+func TestUnitVPCLocationID_bothSetErrors(t *testing.T) {
+	ensureTFBinary(t)
+	srv := acctest.NewMockServer(t)
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+resource "iaas_vpc" "test" {
+  name                = "prod"
+  cidr                = "10.0.0.0/24"
+  location_id         = "33333333-3333-3333-3333-333333333333"
+  hypervisor_group_id = "44444444-4444-4444-4444-444444444444"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config:      cfg,
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+			},
+		},
+	})
+}
+
+// TestUnitVPCLocationID_bothUnsetErrors proves that omitting both location_id
+// and hypervisor_group_id on a formerly-Required placement errors with a
+// message naming location_id.
+func TestUnitVPCLocationID_bothUnsetErrors(t *testing.T) {
+	ensureTFBinary(t)
+	srv := acctest.NewMockServer(t)
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+resource "iaas_vpc" "test" {
+  name = "prod"
+  cidr = "10.0.0.0/24"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config:      cfg,
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+			},
+		},
+	})
 }

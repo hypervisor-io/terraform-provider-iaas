@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -19,6 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -126,6 +128,7 @@ type kubernetesClusterModel struct {
 	// Immutable topology inputs (RequiresReplace).
 	Slug                 types.String `tfsdk:"slug"`
 	HypervisorGroupID    types.String `tfsdk:"hypervisor_group_id"`
+	LocationID           types.String `tfsdk:"location_id"`
 	VPCID                types.String `tfsdk:"vpc_id"`
 	CPVPCSubnetID        types.String `tfsdk:"cp_vpc_subnet_id"`
 	WorkerVPCSubnetID    types.String `tfsdk:"worker_vpc_subnet_id"`
@@ -214,11 +217,28 @@ func (r *kubernetesClusterResource) Schema(ctx context.Context, _ resource.Schem
 				},
 			},
 			"hypervisor_group_id": schema.StringAttribute{
-				Required: true,
+				Optional: true,
+				Computed: true,
+				DeprecationMessage: "Use location_id instead. hypervisor_group_id is deprecated " +
+					"and will be removed in the next release.",
 				Description: "UUID of the region (hypervisor group). Must have Kubernetes + VPC + Load " +
 					"Balancer features enabled. Immutable; changing it forces a new resource.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+			},
+			"location_id": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "UUID of the region (hypervisor group). Must have Kubernetes + VPC + Load " +
+					"Balancer features enabled. Immutable; changing it forces a new resource. Canonical " +
+					"replacement for hypervisor_group_id; exactly one of the two must be set.",
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(path.MatchRoot("hypervisor_group_id")),
+				},
+				PlanModifiers: []planmodifier.String{
+					locationIDFromAliasModifier{},
+					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
 			},
 			"vpc_id": schema.StringAttribute{
@@ -490,7 +510,7 @@ func (r *kubernetesClusterResource) Create(ctx context.Context, req resource.Cre
 	body := map[string]any{
 		"name":                    plan.Name.ValueString(),
 		"slug":                    plan.Slug.ValueString(),
-		"hypervisor_group_id":     plan.HypervisorGroupID.ValueString(),
+		"location_id":             effectiveLocationID(plan.LocationID, plan.HypervisorGroupID),
 		"vpc_id":                  plan.VPCID.ValueString(),
 		"cp_vpc_subnet_id":        plan.CPVPCSubnetID.ValueString(),
 		"worker_vpc_subnet_id":    plan.WorkerVPCSubnetID.ValueString(),
@@ -860,7 +880,8 @@ func kubernetesClusterStateFromAPI(obj map[string]any, prior kubernetesClusterMo
 
 		// Immutable topology inputs - authoritative value is the plan; SHOW echoes them.
 		Slug:                stringOrPrior(obj, "slug", prior.Slug),
-		HypervisorGroupID:   stringOrPrior(obj, "hypervisor_group_id", prior.HypervisorGroupID),
+		HypervisorGroupID:   hypervisorGroupIDFromAPI(obj, prior.HypervisorGroupID),
+		LocationID:          locationIDFromAPI(obj, prior.LocationID),
 		VPCID:               stringOrPrior(obj, "vpc_id", prior.VPCID),
 		CPVPCSubnetID:       stringOrPrior(obj, "cp_vpc_subnet_id", prior.CPVPCSubnetID),
 		WorkerVPCSubnetID:   stringOrPrior(obj, "worker_vpc_subnet_id", prior.WorkerVPCSubnetID),

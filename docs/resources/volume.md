@@ -68,13 +68,14 @@ output "volume_device" {
 
 ### Required
 
-- `hypervisor_group_id` (String) UUID of the hypervisor group the volume is provisioned in. Immutable; a volume cannot move groups, so changing this forces a new resource.
 - `name` (String) Display name for the volume. Immutable (there is no update endpoint for it); changing it forces a new resource.
 - `volume_plan_id` (String) UUID of the volume plan, which determines the size and IO limits. Sizing is PLAN-BASED (not a free-form size_gb): to resize, select a plan with the desired capacity. Resizing in place is supported by the API's resize endpoint (same storage class and datastore type required), so changing this is NOT a replace - the resource issues a resize. A cross-class/cross-type change is rejected by the API.
 
 ### Optional
 
+- `hypervisor_group_id` (String, Deprecated) UUID of the hypervisor group the volume is provisioned in. Immutable; a volume cannot move groups, so changing this forces a new resource.
 - `instance_id` (String) Optional UUID of an instance to attach the volume to. Attaching and detaching are done IN PLACE via the attach/detach endpoints, so this is NOT a replace: setting it attaches the volume, clearing it detaches it, and changing it detaches then re-attaches. The instance must be in the same hypervisor group as the volume.
+- `location_id` (String) UUID of the location (hypervisor group) the volume is provisioned in. Immutable; a volume cannot move locations, so changing this forces a new resource. Canonical replacement for hypervisor_group_id; exactly one of the two must be set.
 - `project_id` (String) Optional UUID of a project to organise the volume under. Immutable (no update endpoint); changing it forces a new resource.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -12,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -59,6 +61,7 @@ type autoscalingGroupModel struct {
 	ID                types.String `tfsdk:"id"`
 	Name              types.String `tfsdk:"name"`
 	HypervisorGroupID types.String `tfsdk:"hypervisor_group_id"`
+	LocationID        types.String `tfsdk:"location_id"`
 	PlanID            types.String `tfsdk:"plan_id"`
 	ImageID           types.String `tfsdk:"image_id"`
 
@@ -117,12 +120,30 @@ func (r *autoscalingGroupResource) Schema(ctx context.Context, _ resource.Schema
 				Description: "Friendly label for the group. Maximum 255 characters. Updatable in place.",
 			},
 			"hypervisor_group_id": schema.StringAttribute{
-				Required: true,
+				Optional: true,
+				Computed: true,
+				DeprecationMessage: "Use location_id instead. hypervisor_group_id is deprecated " +
+					"and will be removed in the next release.",
 				Description: "UUID of the hypervisor group new instances are launched into. The group " +
 					"must have autoscaling enabled. Part of the launch placement; changing it forces a " +
 					"new resource.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+			},
+			"location_id": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "UUID of the location (hypervisor group) new instances are launched into. " +
+					"The location must have autoscaling enabled. Part of the launch placement; changing " +
+					"it forces a new resource. Canonical replacement for hypervisor_group_id; exactly " +
+					"one of the two must be set.",
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(path.MatchRoot("hypervisor_group_id")),
+				},
+				PlanModifiers: []planmodifier.String{
+					locationIDFromAliasModifier{},
+					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
 			},
 			"plan_id": schema.StringAttribute{
@@ -265,10 +286,10 @@ func (r *autoscalingGroupResource) Create(ctx context.Context, req resource.Crea
 	}
 
 	body := map[string]any{
-		"name":                plan.Name.ValueString(),
-		"hypervisor_group_id": plan.HypervisorGroupID.ValueString(),
-		"plan_id":             plan.PlanID.ValueString(),
-		"image_id":            plan.ImageID.ValueString(),
+		"name":        plan.Name.ValueString(),
+		"location_id": effectiveLocationID(plan.LocationID, plan.HypervisorGroupID),
+		"plan_id":     plan.PlanID.ValueString(),
+		"image_id":    plan.ImageID.ValueString(),
 	}
 	if !plan.VPCID.IsNull() && !plan.VPCID.IsUnknown() {
 		body["vpc_id"] = plan.VPCID.ValueString()
@@ -479,7 +500,8 @@ func autoscalingGroupStateFromAPI(obj map[string]any, prior autoscalingGroupMode
 		// Placement / launch template - preserve plan for the RequiresReplace ones
 		// (SHOW echoes them but config is authoritative); plan_id/image_id are
 		// mutable, so refresh from the API.
-		HypervisorGroupID: stringOrPrior(obj, "hypervisor_group_id", prior.HypervisorGroupID),
+		HypervisorGroupID: hypervisorGroupIDFromAPI(obj, prior.HypervisorGroupID),
+		LocationID:        locationIDFromAPI(obj, prior.LocationID),
 		PlanID:            stringFromAPI(obj, "plan_id", prior.PlanID),
 		ImageID:           stringFromAPI(obj, "image_id", prior.ImageID),
 		VPCID:             optionalStringFromAPI(obj, "vpc_id", prior.VPCID),

@@ -34,12 +34,13 @@ resource "iaas_vpc" "example" {
 ### Required
 
 - `cidr` (String) CIDR block for the VPC (e.g. 10.0.0.0/24). Must fall within an RFC1918 private range, enforced server-side. Changing this forces a new resource.
-- `hypervisor_group_id` (String) UUID of the hypervisor group (VPC-enabled location) the VPC is created in. Discover valid ids via the panel's VPC locations endpoint. Changing this forces a new resource.
 - `name` (String) Name of the VPC. Maximum 16 characters; only lowercase letters and digits are allowed (regex ^[a-z0-9]+$ - no spaces, dots, or dashes). Validated server-side. Changing this forces a new resource.
 
 ### Optional
 
 - `description` (String) Optional free-text description of the VPC. The API has no update endpoint, so changing this forces a new resource.
+- `hypervisor_group_id` (String, Deprecated) UUID of the hypervisor group (VPC-enabled location) the VPC is created in. Discover valid ids via the panel's VPC locations endpoint. Changing this forces a new resource.
+- `location_id` (String) UUID of the hypervisor group (VPC-enabled location) the VPC is created in. Canonical replacement for hypervisor_group_id; exactly one of the two must be set. Changing this forces a new resource.
 
 ### Read-Only
 

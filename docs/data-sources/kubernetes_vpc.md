@@ -33,7 +33,8 @@ data "iaas_kubernetes_vpc" "prod" {
 
 ### Optional
 
-- `hypervisor_group_id` (String) Optional region (hypervisor group) UUID to constrain the search - use to disambiguate identically-named VPCs across regions.
+- `hypervisor_group_id` (String, Deprecated) Optional region (hypervisor group) UUID to constrain the search - use to disambiguate identically-named VPCs across regions.
+- `location_id` (String) Optional region (hypervisor group) UUID to constrain the search, used to disambiguate identically-named VPCs across regions. Canonical replacement for hypervisor_group_id; the two are mutually exclusive.
 
 ### Read-Only
 

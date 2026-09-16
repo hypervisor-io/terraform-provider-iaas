@@ -23,7 +23,7 @@ import (
 //	    → RAW top-level JSON array [{id,name,cpu_cores,ram,storage,bandwidth,…}]
 //	    (NO price on the row) → doList.
 //
-//	GET /images/search?search=<q>&hypervisor_group_id=<hg>
+//	GET /images/search?search=<q>&location_id=<hg>
 //	    → Select2 GROUPED envelope {results:[{text,children:[{id,text,distro}]}]}
 //	    → custom decodeSelect2 (NOT doList): the items live in results[].children[].
 //
@@ -57,13 +57,14 @@ func (c *Client) ListPlans(ctx context.Context, locationID, planGroupID string) 
 // results[].children[] (or the bare results[] when a result has no children)
 // into a flat []map carrying each child's id, text/name, and distro.
 //
-// hypervisorGroupID is optional: when "" it is omitted from the query so the
-// controller searches across all groups the token can see.
+// hypervisorGroupID (sent to the API as location_id - see spec 17 C1/C4) is
+// optional: when "" it is omitted from the query so the controller searches
+// across all groups the token can see.
 func (c *Client) SearchImages(ctx context.Context, query, hypervisorGroupID string) ([]map[string]any, error) {
 	q := url.Values{}
 	q.Set("search", query)
 	if hypervisorGroupID != "" {
-		q.Set("hypervisor_group_id", hypervisorGroupID)
+		q.Set("location_id", hypervisorGroupID)
 	}
 	path := "/images/search?" + q.Encode()
 

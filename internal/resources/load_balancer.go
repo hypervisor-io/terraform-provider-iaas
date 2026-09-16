@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -64,6 +66,7 @@ type loadBalancerModel struct {
 	VPCID             types.String `tfsdk:"vpc_id"`
 	VPCSubnetID       types.String `tfsdk:"vpc_subnet_id"`
 	HypervisorGroupID types.String `tfsdk:"hypervisor_group_id"`
+	LocationID        types.String `tfsdk:"location_id"`
 
 	// Computed read-only.
 	Status     types.String `tfsdk:"status"`
@@ -137,6 +140,8 @@ func (r *loadBalancerResource) Schema(ctx context.Context, _ resource.SchemaRequ
 			"hypervisor_group_id": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
+				DeprecationMessage: "Use location_id instead. hypervisor_group_id is deprecated " +
+					"and will be removed in the next release.",
 				Description: "UUID of the location (hypervisor group) to deploy into. Required for public " +
 					"mode (no VPC); in VPC mode it is derived from the VPC and returned by the API. " +
 					"Immutable; changing it forces a new resource.",
@@ -145,6 +150,22 @@ func (r *loadBalancerResource) Schema(ctx context.Context, _ resource.SchemaRequ
 					// replace, but the server-derived value (VPC mode) settling into
 					// this Computed field does not. UseStateForUnknown keeps the
 					// derived value stable across plans.
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"location_id": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "UUID of the location (hypervisor group) to deploy into. Required for public " +
+					"mode (no VPC); in VPC mode it is derived from the VPC and returned by the API. " +
+					"Immutable; changing it forces a new resource. Canonical replacement for " +
+					"hypervisor_group_id; the two are mutually exclusive.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("hypervisor_group_id")),
+				},
+				PlanModifiers: []planmodifier.String{
+					locationIDFromAliasModifier{},
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -243,11 +264,11 @@ func (r *loadBalancerResource) Create(ctx context.Context, req resource.CreateRe
 	if !plan.VPCSubnetID.IsNull() && !plan.VPCSubnetID.IsUnknown() && plan.VPCSubnetID.ValueString() != "" {
 		body["vpc_subnet_id"] = plan.VPCSubnetID.ValueString()
 	}
-	// hypervisor_group_id is Optional+Computed: only send it when the user
-	// configured it (it is known/non-empty in the plan). In VPC mode it is
-	// derived by the server, so the plan value is unknown and must be omitted.
-	if !plan.HypervisorGroupID.IsNull() && !plan.HypervisorGroupID.IsUnknown() && plan.HypervisorGroupID.ValueString() != "" {
-		body["hypervisor_group_id"] = plan.HypervisorGroupID.ValueString()
+	// location_id is Optional+Computed: only send it when the user configured
+	// it (it is known/non-empty in the plan). In VPC mode it is derived by the
+	// server, so the plan value is unknown and must be omitted.
+	if hg := effectiveLocationID(plan.LocationID, plan.HypervisorGroupID); hg != "" {
+		body["location_id"] = hg
 	}
 
 	created, err := r.client.CreateLoadBalancer(ctx, body)
@@ -417,7 +438,8 @@ func loadBalancerStateFromAPI(obj map[string]any, prior loadBalancerModel) loadB
 		// WRITE-ONLY create input - never in SHOW; preserve prior verbatim.
 		VPCSubnetID: prior.VPCSubnetID,
 
-		HypervisorGroupID: stringFromAPI(obj, "hypervisor_group_id", prior.HypervisorGroupID),
+		HypervisorGroupID: hypervisorGroupIDFromAPI(obj, prior.HypervisorGroupID),
+		LocationID:        locationIDFromAPI(obj, prior.LocationID),
 
 		// Computed read-only.
 		Status:     stringFromAPI(obj, "status", prior.Status),

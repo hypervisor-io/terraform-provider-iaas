@@ -35,7 +35,8 @@ output "image_id" {
 
 ### Optional
 
-- `hypervisor_group_id` (String) Optional hypervisor group (location) UUID to scope the search to images available at that location.
+- `hypervisor_group_id` (String, Deprecated) Optional hypervisor group (location) UUID to scope the search to images available at that location.
+- `location_id` (String) Optional location (hypervisor group) UUID to scope the search to images available at that location. Canonical replacement for hypervisor_group_id; the two are mutually exclusive.
 
 ### Read-Only
 

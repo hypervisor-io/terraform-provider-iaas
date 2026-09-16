@@ -55,8 +55,12 @@ output "static_ip_status" {
 
 ### Required
 
-- `hypervisor_group_id` (String) UUID of the hypervisor group (location) the IP belongs to. Static IPs must be enabled for this location (static_ip_enabled = true). Changing this forces a new resource.
 - `ip_id` (String) UUID of the underlying IP address to reserve. Must be a free, non-reserved public IPv4 from the chosen location's available pool. Obtain eligible ids from the /static-ips/available endpoint or the panel UI. Changing this forces a new resource.
+
+### Optional
+
+- `hypervisor_group_id` (String, Deprecated) UUID of the hypervisor group (location) the IP belongs to. Static IPs must be enabled for this location (static_ip_enabled = true). Changing this forces a new resource.
+- `location_id` (String) UUID of the location (hypervisor group) the IP belongs to. Static IPs must be enabled for this location (static_ip_enabled = true). Canonical replacement for hypervisor_group_id; exactly one of the two must be set. Changing this forces a new resource.
 
 ### Read-Only
 

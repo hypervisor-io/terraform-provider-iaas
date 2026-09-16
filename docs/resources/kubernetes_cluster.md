@@ -117,7 +117,6 @@ output "k8s_api_endpoint" {
 - `cp_lb_plan_id` (String) UUID of the load balancer plan used for the CP load balancer. Immutable; changing it forces a new resource.
 - `cp_vpc_subnet_id` (String) UUID of the PRIVATE VPC subnet the control plane lives in. Must belong to the chosen VPC. Immutable; changing it forces a new resource.
 - `endpoint_mode` (String) API server exposure: "private" (VPC-internal only) or "public_and_private" (also reachable from the internet via the CP LB). Immutable; changing it forces a new resource.
-- `hypervisor_group_id` (String) UUID of the region (hypervisor group). Must have Kubernetes + VPC + Load Balancer features enabled. Immutable; changing it forces a new resource.
 - `kubernetes_version_id` (String) UUID of an active supported Kubernetes version - the WORKER baseline (the control plane's own current version is tracked separately, read-only, as cp_kubernetes_version_id/cp_kubernetes_version). Updatable in place (T7/id-G8): changing this drives a staged in-place upgrade - control plane first (if it isn't already at the target), then workers, then (if upgrade_ccm) a CCM redeploy - rather than replacing the cluster. The target must be an active version, forward-only, same major, and no more than 1 minor ahead of the current baseline (server-enforced).
 - `name` (String) Display name (3-50 chars). Updatable in place (PATCH).
 - `slug` (String) URL-safe slug (lowercase letters, digits, hyphens; max 63), unique within the account. Immutable; changing it forces a new resource.
@@ -128,7 +127,9 @@ output "k8s_api_endpoint" {
 ### Optional
 
 - `description` (String) Free-form description (max 500 chars). Updatable in place (PATCH).
+- `hypervisor_group_id` (String, Deprecated) UUID of the region (hypervisor group). Must have Kubernetes + VPC + Load Balancer features enabled. Immutable; changing it forces a new resource.
 - `lb_ha_enabled` (Boolean) Run the CP load balancer in HA mode (requires control_node_count=3 and an HA-capable region). Immutable; changing it forces a new resource.
+- `location_id` (String) UUID of the region (hypervisor group). Must have Kubernetes + VPC + Load Balancer features enabled. Immutable; changing it forces a new resource. Canonical replacement for hypervisor_group_id; exactly one of the two must be set.
 - `pod_cidr` (String) Pod network CIDR (defaults to 10.244.0.0/16). Immutable; changing it forces a new resource.
 - `pod_security_admission_default` (String) Default PodSecurity Admission level: "privileged", "baseline", or "restricted" (defaults to baseline). Immutable; changing it forces a new resource.
 - `project_id` (String) Optional project UUID to organize the cluster under. Updatable in place (PATCH).
