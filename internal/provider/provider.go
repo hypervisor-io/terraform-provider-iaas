@@ -254,6 +254,10 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewInstanceVpcAttachmentResource,
 		resources.NewDockerDeploymentResource,
 		resources.NewProjectAssignmentResource,
+		resources.NewMicrovmApiKeyResource,
+		resources.NewMicrovmImageResource,
+		resources.NewMicrovmResource,
+		resources.NewMicrovmConnectorResource,
 	}
 }
 
@@ -278,5 +282,7 @@ func (p *IaasProvider) DataSources(_ context.Context) []func() datasource.DataSo
 		datasources.NewKubernetesPlanDataSource,
 		datasources.NewKubernetesVPCDataSource,
 		datasources.NewKubernetesSubnetDataSource,
+		datasources.NewMicrovmImagesDataSource,
+		datasources.NewMicrovmCatalogDataSource,
 	}
 }
