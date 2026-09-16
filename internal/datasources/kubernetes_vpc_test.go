@@ -53,8 +53,10 @@ func TestUnitKubernetesVPC_lookupByNameAndHypervisorGroupID(t *testing.T) {
 		if got := r.URL.Query().Get("search"); got != "prod-vpc" {
 			t.Errorf("query[search] = %q; want %q (the name filter must be forwarded)", got, "prod-vpc")
 		}
-		if got := r.URL.Query().Get("hypervisor_group_id"); got != "hg-1" {
-			t.Errorf("query[hypervisor_group_id] = %q; want %q", got, "hg-1")
+		// The deprecated hypervisor_group_id input is still forwarded to the API
+		// as location_id (spec 17 C1: the client sends location_id).
+		if got := r.URL.Query().Get("location_id"); got != "hg-1" {
+			t.Errorf("query[location_id] = %q; want %q", got, "hg-1")
 		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(k8sVpcsBody))
@@ -75,6 +77,66 @@ data "iaas_kubernetes_vpc" "t" {
 					resource.TestCheckResourceAttr("data.iaas_kubernetes_vpc.t", "id", "vpc-1"),
 					resource.TestCheckResourceAttr("data.iaas_kubernetes_vpc.t", "cidr", "10.0.0.0/16"),
 				),
+			},
+		},
+	})
+}
+
+// TestUnitKubernetesVPC_lookupByNameAndLocationID proves the canonical
+// location_id input scopes the search identically to the deprecated alias.
+func TestUnitKubernetesVPC_lookupByNameAndLocationID(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+	srv.Handle("GET", "/kubernetes/search/vpcs", func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("location_id"); got != "hg-1" {
+			t.Errorf("query[location_id] = %q; want %q", got, "hg-1")
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(k8sVpcsBody))
+	})
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+data "iaas_kubernetes_vpc" "t" {
+  name        = "prod-vpc"
+  location_id = "hg-1"
+}
+`
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.iaas_kubernetes_vpc.t", "id", "vpc-1"),
+					resource.TestCheckResourceAttr("data.iaas_kubernetes_vpc.t", "location_id", "hg-1"),
+				),
+			},
+		},
+	})
+}
+
+// TestUnitKubernetesVPC_bothSetErrors proves that configuring both location_id
+// and the deprecated hypervisor_group_id (the decoy case for spec 17 C4) fails
+// validation naming the conflict instead of silently picking a winner.
+func TestUnitKubernetesVPC_bothSetErrors(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+data "iaas_kubernetes_vpc" "t" {
+  name                = "prod-vpc"
+  location_id         = "hg-1"
+  hypervisor_group_id = "hg-2"
+}
+`
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config:      cfg,
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
 			},
 		},
 	})

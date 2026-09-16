@@ -25,7 +25,7 @@ func NewKubernetesRegionDataSource() datasource.DataSource {
 
 // kubernetesRegionDataSource resolves the UUID of a hypervisor group eligible to
 // host a Kubernetes cluster (kubernetes_enabled AND vpc_enabled AND lb_enabled)
-// by its name or slug, for use as hypervisor_group_id when creating a cluster.
+// by its name or slug, for use as location_id when creating a cluster.
 // Unlike the generic iaas_location data source, this one returns ONLY
 // k8s-eligible regions, so a match guarantees the region can host a cluster.
 type kubernetesRegionDataSource struct {
@@ -47,7 +47,7 @@ func (d *kubernetesRegionDataSource) Metadata(_ context.Context, req datasource.
 func (d *kubernetesRegionDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Looks up a region (hypervisor group) eligible to host a Kubernetes cluster " +
-			"by its display name or slug, resolving the `id` you pass as `hypervisor_group_id` " +
+			"by its display name or slug, resolving the `id` you pass as `location_id` " +
 			"on an `iaas_kubernetes_cluster`. Only regions with Kubernetes, VPC, AND Load " +
 			"Balancer features enabled are returned, so a match guarantees the region can host " +
 			"a cluster. Matches the region display name or its slug; exactly one region must " +
@@ -60,7 +60,7 @@ func (d *kubernetesRegionDataSource) Schema(_ context.Context, _ datasource.Sche
 			},
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "UUID of the matched region (use as `hypervisor_group_id`).",
+				Description: "UUID of the matched region (use as `location_id`).",
 			},
 			"slug": schema.StringAttribute{
 				Computed:    true,

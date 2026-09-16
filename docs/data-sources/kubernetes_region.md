@@ -3,12 +3,12 @@
 page_title: "iaas_kubernetes_region Data Source - iaas"
 subcategory: ""
 description: |-
-  Looks up a region (hypervisor group) eligible to host a Kubernetes cluster by its display name or slug, resolving the id you pass as hypervisor_group_id on an iaas_kubernetes_cluster. Only regions with Kubernetes, VPC, AND Load Balancer features enabled are returned, so a match guarantees the region can host a cluster. Matches the region display name or its slug; exactly one region must match.
+  Looks up a region (hypervisor group) eligible to host a Kubernetes cluster by its display name or slug, resolving the id you pass as location_id on an iaas_kubernetes_cluster. Only regions with Kubernetes, VPC, AND Load Balancer features enabled are returned, so a match guarantees the region can host a cluster. Matches the region display name or its slug; exactly one region must match.
 ---
 
 # iaas_kubernetes_region (Data Source)
 
-Looks up a region (hypervisor group) eligible to host a Kubernetes cluster by its display name or slug, resolving the `id` you pass as `hypervisor_group_id` on an `iaas_kubernetes_cluster`. Only regions with Kubernetes, VPC, AND Load Balancer features enabled are returned, so a match guarantees the region can host a cluster. Matches the region display name or its slug; exactly one region must match.
+Looks up a region (hypervisor group) eligible to host a Kubernetes cluster by its display name or slug, resolving the `id` you pass as `location_id` on an `iaas_kubernetes_cluster`. Only regions with Kubernetes, VPC, AND Load Balancer features enabled are returned, so a match guarantees the region can host a cluster. Matches the region display name or its slug; exactly one region must match.
 
 ## Example Usage
 
@@ -36,5 +36,5 @@ output "hypervisor_group_id" {
 
 ### Read-Only
 
-- `id` (String) UUID of the matched region (use as `hypervisor_group_id`).
+- `id` (String) UUID of the matched region (use as `location_id`).
 - `slug` (String) Slug of the matched region.

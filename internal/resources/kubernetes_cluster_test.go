@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"sync"
 	"testing"
 
@@ -288,7 +289,7 @@ resource "iaas_kubernetes_cluster" "test" {
 	for k, want := range map[string]any{
 		"name":                    "prod",
 		"slug":                    "prod",
-		"hypervisor_group_id":     hgID,
+		"location_id":             hgID,
 		"vpc_id":                  vpcID,
 		"cp_vpc_subnet_id":        cpSubID,
 		"worker_vpc_subnet_id":    wkSubID,
@@ -340,4 +341,40 @@ resource "iaas_kubernetes_cluster" "test" {
 	if got := dels[0].Header.Get("Idempotency-Key"); got == "" {
 		t.Error("expected delete request to carry a non-empty Idempotency-Key header")
 	}
+}
+
+// TestUnitKubernetesCluster_locationIDBothSetErrors proves that configuring both location_id
+// and the deprecated hypervisor_group_id (the decoy case for spec 17 C4) is a
+// validation error naming the conflict, rather than silently picking a winner.
+func TestUnitKubernetesCluster_locationIDBothSetErrors(t *testing.T) {
+	ensureTFBinary(t)
+	srv := acctest.NewMockServer(t)
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+resource "iaas_kubernetes_cluster" "test" {
+  name                    = "decoy"
+  slug                    = "decoy"
+  location_id             = "33333333-3333-3333-3333-333333333333"
+  hypervisor_group_id     = "44444444-4444-4444-4444-444444444444"
+  vpc_id                  = "55555555-5555-5555-5555-555555555555"
+  cp_vpc_subnet_id        = "66666666-6666-6666-6666-666666666666"
+  worker_vpc_subnet_id    = "77777777-7777-7777-7777-777777777777"
+  kubernetes_version_id   = "88888888-8888-8888-8888-888888888888"
+  control_node_count      = 1
+  endpoint_mode           = "public_and_private"
+  cp_instance_plan_id     = "99999999-9999-9999-9999-999999999999"
+  cp_lb_plan_id           = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+  worker_instance_plan_id = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config:      cfg,
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+			},
+		},
+	})
 }

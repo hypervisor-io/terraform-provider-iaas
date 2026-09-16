@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -48,6 +50,7 @@ type vpcModel struct {
 	Name              types.String `tfsdk:"name"`
 	Cidr              types.String `tfsdk:"cidr"`
 	HypervisorGroupID types.String `tfsdk:"hypervisor_group_id"`
+	LocationID        types.String `tfsdk:"location_id"`
 	Description       types.String `tfsdk:"description"`
 	VniNumber         types.Int64  `tfsdk:"vni_number"`
 }
@@ -93,12 +96,29 @@ func (r *vpcResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 				},
 			},
 			"hypervisor_group_id": schema.StringAttribute{
-				Required: true,
+				Optional: true,
+				Computed: true,
+				DeprecationMessage: "Use location_id instead. hypervisor_group_id is deprecated " +
+					"and will be removed in the next release.",
 				Description: "UUID of the hypervisor group (VPC-enabled location) the VPC is " +
 					"created in. Discover valid ids via the panel's VPC locations endpoint. " +
 					"Changing this forces a new resource.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+			},
+			"location_id": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "UUID of the hypervisor group (VPC-enabled location) the VPC is " +
+					"created in. Canonical replacement for hypervisor_group_id; exactly one of the " +
+					"two must be set. Changing this forces a new resource.",
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(path.MatchRoot("hypervisor_group_id")),
+				},
+				PlanModifiers: []planmodifier.String{
+					locationIDFromAliasModifier{},
+					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
 			},
 			"description": schema.StringAttribute{
@@ -156,9 +176,9 @@ func (r *vpcResource) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 
 	body := map[string]any{
-		"name":                plan.Name.ValueString(),
-		"cidr":                plan.Cidr.ValueString(),
-		"hypervisor_group_id": plan.HypervisorGroupID.ValueString(),
+		"name":        plan.Name.ValueString(),
+		"cidr":        plan.Cidr.ValueString(),
+		"location_id": effectiveLocationID(plan.LocationID, plan.HypervisorGroupID),
 	}
 	// Only send description when the user set it (omit, don't send null).
 	if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
@@ -245,7 +265,8 @@ func vpcStateFromAPI(obj map[string]any, prior vpcModel) vpcModel {
 		ID:                stringFromAPI(obj, "id", prior.ID),
 		Name:              stringFromAPI(obj, "name", prior.Name),
 		Cidr:              stringFromAPI(obj, "cidr", prior.Cidr),
-		HypervisorGroupID: stringFromAPI(obj, "hypervisor_group_id", prior.HypervisorGroupID),
+		HypervisorGroupID: hypervisorGroupIDFromAPI(obj, prior.HypervisorGroupID),
+		LocationID:        locationIDFromAPI(obj, prior.LocationID),
 		Description:       optionalStringFromAPI(obj, "description", prior.Description),
 		VniNumber:         int64FromAPI(obj, "vni_number", prior.VniNumber),
 	}

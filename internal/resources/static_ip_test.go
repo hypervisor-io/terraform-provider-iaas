@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -161,8 +162,9 @@ resource "iaas_static_ip" "test" {
 		},
 	})
 
-	// Assert the allocate request sent ip_id and hypervisor_group_id (required fields)
-	// and NOT stray server-only fields (id, address, status).
+	// Assert the allocate request sent ip_id and location_id (the client sends
+	// the canonical location_id key, spec 17 C1/C4) and NOT stray server-only
+	// fields (id, address, status).
 	allocates := srv.Requests("POST", "/static-ips/allocate")
 	if len(allocates) == 0 {
 		t.Fatal("expected at least one POST /static-ips/allocate")
@@ -174,8 +176,8 @@ resource "iaas_static_ip" "test" {
 	if createBody["ip_id"] != ipID {
 		t.Errorf("allocate body ip_id = %v; want %q", createBody["ip_id"], ipID)
 	}
-	if createBody["hypervisor_group_id"] != groupID {
-		t.Errorf("allocate body hypervisor_group_id = %v; want %q", createBody["hypervisor_group_id"], groupID)
+	if createBody["location_id"] != groupID {
+		t.Errorf("allocate body location_id = %v; want %q", createBody["location_id"], groupID)
 	}
 	// The resource must not leak computed/server-only fields into the allocate body.
 	for _, stray := range []string{"id", "address", "status", "hypervisor_group_name"} {
@@ -203,4 +205,30 @@ func staticIPObject(id, ipID, groupID, address, subnetID, groupName, status stri
 			"name": groupName,
 		},
 	}
+}
+
+// TestUnitStaticIP_locationIDBothSetErrors proves that configuring both location_id
+// and the deprecated hypervisor_group_id (the decoy case for spec 17 C4) is a
+// validation error naming the conflict, rather than silently picking a winner.
+func TestUnitStaticIP_locationIDBothSetErrors(t *testing.T) {
+	ensureTFBinary(t)
+	srv := acctest.NewMockServer(t)
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+resource "iaas_static_ip" "test" {
+  ip_id               = "55555555-5555-5555-5555-555555555555"
+  location_id         = "33333333-3333-3333-3333-333333333333"
+  hypervisor_group_id = "44444444-4444-4444-4444-444444444444"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config:      cfg,
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+			},
+		},
+	})
 }

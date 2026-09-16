@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"sync"
 	"testing"
 
@@ -499,4 +500,35 @@ resource "iaas_managed_database" "test" {
 	if dels := srv.Requests("DELETE", itemPath); len(dels) != 1 {
 		t.Fatalf("expected exactly 1 DELETE %s, got %d", itemPath, len(dels))
 	}
+}
+
+// TestUnitManagedDatabase_locationIDBothSetErrors proves that configuring both location_id
+// and the deprecated hypervisor_group_id (the decoy case for spec 17 C4) is a
+// validation error naming the conflict, rather than silently picking a winner.
+func TestUnitManagedDatabase_locationIDBothSetErrors(t *testing.T) {
+	ensureTFBinary(t)
+	srv := acctest.NewMockServer(t)
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+resource "iaas_managed_database" "test" {
+  name                = "decoy"
+  engine              = "mysql"
+  engine_version      = "8.0"
+  db_plan_id          = "55555555-5555-5555-5555-555555555555"
+  vpc_id              = "66666666-6666-6666-6666-666666666666"
+  vpc_subnet_id       = "77777777-7777-7777-7777-777777777777"
+  location_id         = "33333333-3333-3333-3333-333333333333"
+  hypervisor_group_id = "44444444-4444-4444-4444-444444444444"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config:      cfg,
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+			},
+		},
+	})
 }

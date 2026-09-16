@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -63,6 +65,7 @@ type staticIPModel struct {
 	ID                  types.String `tfsdk:"id"`
 	IpID                types.String `tfsdk:"ip_id"`
 	HypervisorGroupID   types.String `tfsdk:"hypervisor_group_id"`
+	LocationID          types.String `tfsdk:"location_id"`
 	Address             types.String `tfsdk:"address"`
 	Status              types.String `tfsdk:"status"`
 	HypervisorGroupName types.String `tfsdk:"hypervisor_group_name"`
@@ -112,12 +115,30 @@ func (r *staticIPResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				},
 			},
 			"hypervisor_group_id": schema.StringAttribute{
-				Required: true,
+				Optional: true,
+				Computed: true,
+				DeprecationMessage: "Use location_id instead. hypervisor_group_id is deprecated " +
+					"and will be removed in the next release.",
 				Description: "UUID of the hypervisor group (location) the IP belongs to. " +
 					"Static IPs must be enabled for this location (static_ip_enabled = true). " +
 					"Changing this forces a new resource.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+			},
+			"location_id": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "UUID of the location (hypervisor group) the IP belongs to. " +
+					"Static IPs must be enabled for this location (static_ip_enabled = true). " +
+					"Canonical replacement for hypervisor_group_id; exactly one of the two must be " +
+					"set. Changing this forces a new resource.",
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(path.MatchRoot("hypervisor_group_id")),
+				},
+				PlanModifiers: []planmodifier.String{
+					locationIDFromAliasModifier{},
+					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
 			},
 			"address": schema.StringAttribute{
@@ -184,8 +205,8 @@ func (r *staticIPResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	body := map[string]any{
-		"ip_id":               plan.IpID.ValueString(),
-		"hypervisor_group_id": plan.HypervisorGroupID.ValueString(),
+		"ip_id":       plan.IpID.ValueString(),
+		"location_id": effectiveLocationID(plan.LocationID, plan.HypervisorGroupID),
 	}
 
 	obj, err := r.client.AllocateStaticIP(ctx, body)
@@ -278,7 +299,8 @@ func staticIPStateFromAPI(obj map[string]any, prior staticIPModel) staticIPModel
 	return staticIPModel{
 		ID:                  stringFromAPI(obj, "id", prior.ID),
 		IpID:                stringFromAPI(obj, "ip_id", prior.IpID),
-		HypervisorGroupID:   stringFromAPI(obj, "hypervisor_group_id", prior.HypervisorGroupID),
+		HypervisorGroupID:   hypervisorGroupIDFromAPI(obj, prior.HypervisorGroupID),
+		LocationID:          locationIDFromAPI(obj, prior.LocationID),
 		Address:             nestedStringFromAPI(obj, "ip", "ip", prior.Address),
 		Status:              stringFromAPI(obj, "status", prior.Status),
 		HypervisorGroupName: nestedStringFromAPI(obj, "hypervisor_group", "name", prior.HypervisorGroupName),

@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -33,10 +36,12 @@ type imageDataSource struct {
 }
 
 // imageModel maps the data-source state. name is the input filter,
-// hypervisor_group_id an optional search scope; the rest are computed.
+// location_id an optional search scope (hypervisor_group_id accepted as a
+// deprecated alias); the rest are computed.
 type imageModel struct {
 	Name              types.String `tfsdk:"name"`
 	HypervisorGroupID types.String `tfsdk:"hypervisor_group_id"`
+	LocationID        types.String `tfsdk:"location_id"`
 	ID                types.String `tfsdk:"id"`
 	Distro            types.String `tfsdk:"distro"`
 }
@@ -58,8 +63,19 @@ func (d *imageDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 			},
 			"hypervisor_group_id": schema.StringAttribute{
 				Optional: true,
+				DeprecationMessage: "Use location_id instead. hypervisor_group_id is deprecated " +
+					"and will be removed in the next release.",
 				Description: "Optional hypervisor group (location) UUID to scope the search to " +
 					"images available at that location.",
+			},
+			"location_id": schema.StringAttribute{
+				Optional: true,
+				Description: "Optional location (hypervisor group) UUID to scope the search to " +
+					"images available at that location. Canonical replacement for " +
+					"hypervisor_group_id; the two are mutually exclusive.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("hypervisor_group_id")),
+				},
 			},
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -94,7 +110,7 @@ func (d *imageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 
 	name := cfg.Name.ValueString()
 
-	images, err := d.client.SearchImages(ctx, name, cfg.HypervisorGroupID.ValueString())
+	images, err := d.client.SearchImages(ctx, name, effectiveLocationID(cfg.LocationID, cfg.HypervisorGroupID))
 	if err != nil {
 		resp.Diagnostics.Append(tfdiag.FromErr("Error searching images", err))
 		return

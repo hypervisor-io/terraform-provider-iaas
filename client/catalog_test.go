@@ -101,7 +101,7 @@ func TestListPlans_Success(t *testing.T) {
 }
 
 // TestSearchImages_Success verifies GET /images/search:
-//   - sends search + hypervisor_group_id query params
+//   - sends search + location_id query params
 //   - decodes the Select2 grouped envelope {results:[{text,children:[...]}]}
 //   - flattens results[].children[] into a flat []map carrying id/text/distro.
 func TestSearchImages_Success(t *testing.T) {
@@ -109,7 +109,7 @@ func TestSearchImages_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		gotSearch = r.URL.Query().Get("search")
-		gotHG = r.URL.Query().Get("hypervisor_group_id")
+		gotHG = r.URL.Query().Get("location_id")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"results":[{"text":"Ubuntu","children":[{"id":"img1","text":"Ubuntu 22.04","distro":"ubuntu"},{"id":"img2","text":"Ubuntu 24.04","distro":"ubuntu"}]},{"text":"Debian","children":[{"id":"img3","text":"Debian 12","distro":"debian"}]}]}`))
 	}))
@@ -127,7 +127,7 @@ func TestSearchImages_Success(t *testing.T) {
 		t.Errorf("search query = %q; want Ubuntu", gotSearch)
 	}
 	if gotHG != "hg9" {
-		t.Errorf("hypervisor_group_id query = %q; want hg9", gotHG)
+		t.Errorf("location_id query = %q; want hg9", gotHG)
 	}
 	// All three children flattened.
 	if len(items) != 3 {
@@ -142,11 +142,11 @@ func TestSearchImages_Success(t *testing.T) {
 }
 
 // TestSearchImages_OmitsHypervisorGroupWhenEmpty verifies that when
-// hypervisorGroupID is "", no hypervisor_group_id query param is sent.
+// hypervisorGroupID is "", no location_id query param is sent.
 func TestSearchImages_OmitsHypervisorGroupWhenEmpty(t *testing.T) {
 	var hadHG bool
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, hadHG = r.URL.Query()["hypervisor_group_id"]
+		_, hadHG = r.URL.Query()["location_id"]
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"results":[]}`))
 	}))
@@ -157,7 +157,7 @@ func TestSearchImages_OmitsHypervisorGroupWhenEmpty(t *testing.T) {
 		t.Fatalf("SearchImages returned error: %v", err)
 	}
 	if hadHG {
-		t.Error("hypervisor_group_id must NOT be sent when caller passes empty string")
+		t.Error("location_id must NOT be sent when caller passes empty string")
 	}
 }
 

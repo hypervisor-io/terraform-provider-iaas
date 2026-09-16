@@ -68,7 +68,6 @@ resource "iaas_autoscaling_group" "api" {
 
 ### Required
 
-- `hypervisor_group_id` (String) UUID of the hypervisor group new instances are launched into. The group must have autoscaling enabled. Part of the launch placement; changing it forces a new resource.
 - `image_id` (String) UUID of the OS image used for every new instance. Updatable in place (applies to future instances).
 - `name` (String) Friendly label for the group. Maximum 255 characters. Updatable in place.
 - `plan_id` (String) UUID of the instance plan used for every new instance. Updatable in place (applies to future instances).
@@ -76,8 +75,10 @@ resource "iaas_autoscaling_group" "api" {
 ### Optional
 
 - `cloud_init` (String) Optional cloud-init user-data applied to every new instance. Updatable in place (applies to future instances). The API stores it encrypted; it is echoed from configuration and not refreshed from the server on read.
+- `hypervisor_group_id` (String, Deprecated) UUID of the hypervisor group new instances are launched into. The group must have autoscaling enabled. Part of the launch placement; changing it forces a new resource.
 - `lb_backend_id` (String) Optional UUID of the load balancer backend new instances register with. Must be set together with load_balancer_id. Changing it forces a new resource.
 - `load_balancer_id` (String) Optional UUID of a load balancer for auto-registration of new instances. Must be set together with lb_backend_id. Changing it forces a new resource.
+- `location_id` (String) UUID of the location (hypervisor group) new instances are launched into. The location must have autoscaling enabled. Part of the launch placement; changing it forces a new resource. Canonical replacement for hypervisor_group_id; exactly one of the two must be set.
 - `max_instances` (Number) Maximum number of instances the group may scale to. Defaults to 5. Updatable in place; lowering it below current_count scales down immediately.
 - `min_instances` (Number) Minimum number of instances kept running. Defaults to 1. Updatable in place; raising it scales up immediately, lowering it is enforced by the evaluator.
 - `paused` (Boolean) Whether the group is paused. When true the evaluator does not scale the group. Toggling this calls the dedicated pause/resume endpoints (it is NOT sent in the create/update body). Mirrors the server status (paused ⇒ true). Defaults to false (active) on create.

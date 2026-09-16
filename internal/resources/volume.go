@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -57,6 +59,7 @@ type volumeModel struct {
 	Name              types.String `tfsdk:"name"`
 	VolumePlanID      types.String `tfsdk:"volume_plan_id"`
 	HypervisorGroupID types.String `tfsdk:"hypervisor_group_id"`
+	LocationID        types.String `tfsdk:"location_id"`
 	ProjectID         types.String `tfsdk:"project_id"`
 	InstanceID        types.String `tfsdk:"instance_id"`
 
@@ -113,11 +116,28 @@ func (r *volumeResource) Schema(ctx context.Context, _ resource.SchemaRequest, r
 				// via the resize endpoint (Update → ResizeVolume).
 			},
 			"hypervisor_group_id": schema.StringAttribute{
-				Required: true,
+				Optional: true,
+				Computed: true,
+				DeprecationMessage: "Use location_id instead. hypervisor_group_id is deprecated " +
+					"and will be removed in the next release.",
 				Description: "UUID of the hypervisor group the volume is provisioned in. Immutable; " +
 					"a volume cannot move groups, so changing this forces a new resource.",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+			},
+			"location_id": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "UUID of the location (hypervisor group) the volume is provisioned in. " +
+					"Immutable; a volume cannot move locations, so changing this forces a new resource. " +
+					"Canonical replacement for hypervisor_group_id; exactly one of the two must be set.",
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(path.MatchRoot("hypervisor_group_id")),
+				},
+				PlanModifiers: []planmodifier.String{
+					locationIDFromAliasModifier{},
+					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
 			},
 			"project_id": schema.StringAttribute{
@@ -224,9 +244,9 @@ func (r *volumeResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	body := map[string]any{
-		"name":                plan.Name.ValueString(),
-		"volume_plan_id":      plan.VolumePlanID.ValueString(),
-		"hypervisor_group_id": plan.HypervisorGroupID.ValueString(),
+		"name":           plan.Name.ValueString(),
+		"volume_plan_id": plan.VolumePlanID.ValueString(),
+		"location_id":    effectiveLocationID(plan.LocationID, plan.HypervisorGroupID),
 	}
 	if !plan.ProjectID.IsNull() && !plan.ProjectID.IsUnknown() {
 		body["project_id"] = plan.ProjectID.ValueString()
@@ -420,7 +440,8 @@ func volumeStateFromAPI(obj map[string]any, prior volumeModel) volumeModel {
 		ID:                stringFromAPI(obj, "id", prior.ID),
 		Name:              stringOrPrior(obj, "name", prior.Name),
 		VolumePlanID:      stringOrPrior(obj, "volume_plan_id", prior.VolumePlanID),
-		HypervisorGroupID: stringOrPrior(obj, "hypervisor_group_id", prior.HypervisorGroupID),
+		HypervisorGroupID: hypervisorGroupIDFromAPI(obj, prior.HypervisorGroupID),
+		LocationID:        locationIDFromAPI(obj, prior.LocationID),
 		ProjectID:         optionalStringFromAPI(obj, "project_id", prior.ProjectID),
 		InstanceID:        optionalStringFromAPI(obj, "instance_id", prior.InstanceID),
 

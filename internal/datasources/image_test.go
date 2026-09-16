@@ -87,3 +87,102 @@ data "iaas_image" "t" {
 		},
 	})
 }
+
+// TestUnitImage_locationIDAccepted - the canonical location_id input scopes the
+// search: the client forwards it as the location_id query param.
+func TestUnitImage_locationIDAccepted(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+	srv.Handle("GET", "/images/search", func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("location_id"); got != "hg-loc" {
+			t.Errorf("query[location_id] = %q; want %q", got, "hg-loc")
+		}
+		writeJSON(w, http.StatusOK, imageSearchEnvelope())
+	})
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+data "iaas_image" "t" {
+  name        = "Ubuntu 24.04"
+  location_id = "hg-loc"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.iaas_image.t", "id", "img-2404"),
+					resource.TestCheckResourceAttr("data.iaas_image.t", "distro", "ubuntu"),
+					resource.TestCheckResourceAttr("data.iaas_image.t", "location_id", "hg-loc"),
+				),
+			},
+		},
+	})
+}
+
+// TestUnitImage_legacyHypervisorGroupIDAlias - the deprecated
+// hypervisor_group_id input still scopes the search during the overlap (the
+// client still forwards it as location_id, per spec 17 C1).
+func TestUnitImage_legacyHypervisorGroupIDAlias(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+	srv.Handle("GET", "/images/search", func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("location_id"); got != "hg-legacy" {
+			t.Errorf("query[location_id] = %q; want %q", got, "hg-legacy")
+		}
+		writeJSON(w, http.StatusOK, imageSearchEnvelope())
+	})
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+data "iaas_image" "t" {
+  name                = "Ubuntu 24.04"
+  hypervisor_group_id = "hg-legacy"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.iaas_image.t", "id", "img-2404"),
+					resource.TestCheckResourceAttr("data.iaas_image.t", "hypervisor_group_id", "hg-legacy"),
+				),
+			},
+		},
+	})
+}
+
+// TestUnitImage_bothSetErrors proves that configuring both location_id and the
+// deprecated hypervisor_group_id (the decoy case for spec 17 C4) fails
+// validation with a message naming the conflict, rather than silently picking
+// a winner - this is a search filter data source, so no HTTP call should ever
+// be made.
+func TestUnitImage_bothSetErrors(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+data "iaas_image" "t" {
+  name                = "Ubuntu 24.04"
+  location_id         = "hg-loc"
+  hypervisor_group_id = "hg-legacy"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config:      cfg,
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+			},
+		},
+	})
+}

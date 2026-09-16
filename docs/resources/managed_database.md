@@ -87,7 +87,8 @@ output "db_last_error" {
 
 ### Optional
 
-- `hypervisor_group_id` (String) Optional UUID of the location (hypervisor group). When omitted it is derived from the VPC and returned by the API. Immutable; changing it forces a new resource.
+- `hypervisor_group_id` (String, Deprecated) Optional UUID of the location (hypervisor group). When omitted it is derived from the VPC and returned by the API. Immutable; changing it forces a new resource.
+- `location_id` (String) Optional UUID of the location (hypervisor group). When omitted it is derived from the VPC and returned by the API. Immutable; changing it forces a new resource. Canonical replacement for hypervisor_group_id; the two are mutually exclusive.
 - `reset_password` (String) Write-only trigger token for rotating the admin password. On create it is echoed into state and (if set) the password is reset once after deploy; on update, changing this value re-runs the reset-password action and refreshes the (sensitive) password attribute. Its actual value is arbitrary - use a timestamp or version string to force a rotation. Not returned by the API.
 - `resync_replicas` (String) Write-only trigger token (T9): changing this value invokes the resync-replicas action (POST /database/{id}/resync-replicas), which resyncs every eligible replica of this PRIMARY database from the current primary snapshot. Only meaningful on a primary that already has one or more iaas_db_replica children and is "active" - a rejection (not a primary, not active, no eligible replicas) surfaces as an error. Its actual value is arbitrary - use a timestamp or version string to force a resync. Not returned by the API.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))

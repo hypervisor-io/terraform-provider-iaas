@@ -132,14 +132,15 @@ func (c *Client) SearchK8sLoadBalancerPlans(ctx context.Context, query string) (
 }
 
 // SearchK8sVpcs lists VPCs the account owner can attach a Kubernetes cluster to,
-// optionally constrained to one region (hypervisorGroupID) and/or filtered by a
-// name/CIDR substring (query). Both filters are optional; pass "" to omit. Each
-// FLAT Select2 row carries id, text ("name (cidr)"), name, cidr,
-// hypervisor_group_id, has_nat_gateway and nat_public_ip.
+// optionally constrained to one region (hypervisorGroupID, sent to the API as
+// location_id - see spec 17 C1/C4) and/or filtered by a name/CIDR substring
+// (query). Both filters are optional; pass "" to omit. Each FLAT Select2 row
+// carries id, text ("name (cidr)"), name, cidr, hypervisor_group_id,
+// has_nat_gateway and nat_public_ip.
 func (c *Client) SearchK8sVpcs(ctx context.Context, hypervisorGroupID, query string) ([]map[string]any, error) {
 	extra := url.Values{}
 	if hypervisorGroupID != "" {
-		extra.Set("hypervisor_group_id", hypervisorGroupID)
+		extra.Set("location_id", hypervisorGroupID)
 	}
 	return c.searchK8sSelect2(ctx, "/kubernetes/search/vpcs", query, extra)
 }

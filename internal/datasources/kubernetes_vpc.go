@@ -3,8 +3,11 @@ package datasources
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -33,6 +36,7 @@ type kubernetesVPCDataSource struct {
 type kubernetesVPCModel struct {
 	Name              types.String `tfsdk:"name"`
 	HypervisorGroupID types.String `tfsdk:"hypervisor_group_id"`
+	LocationID        types.String `tfsdk:"location_id"`
 	ID                types.String `tfsdk:"id"`
 	CIDR              types.String `tfsdk:"cidr"`
 	HasNATGateway     types.Bool   `tfsdk:"has_nat_gateway"`
@@ -56,8 +60,19 @@ func (d *kubernetesVPCDataSource) Schema(_ context.Context, _ datasource.SchemaR
 			},
 			"hypervisor_group_id": schema.StringAttribute{
 				Optional: true,
+				DeprecationMessage: "Use location_id instead. hypervisor_group_id is deprecated " +
+					"and will be removed in the next release.",
 				Description: "Optional region (hypervisor group) UUID to constrain the search - use to " +
 					"disambiguate identically-named VPCs across regions.",
+			},
+			"location_id": schema.StringAttribute{
+				Optional: true,
+				Description: "Optional region (hypervisor group) UUID to constrain the search, used to " +
+					"disambiguate identically-named VPCs across regions. Canonical replacement for " +
+					"hypervisor_group_id; the two are mutually exclusive.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("hypervisor_group_id")),
+				},
 			},
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -97,7 +112,7 @@ func (d *kubernetesVPCDataSource) Read(ctx context.Context, req datasource.ReadR
 
 	name := cfg.Name.ValueString()
 
-	vpcs, err := d.client.SearchK8sVpcs(ctx, cfg.HypervisorGroupID.ValueString(), name)
+	vpcs, err := d.client.SearchK8sVpcs(ctx, effectiveLocationID(cfg.LocationID, cfg.HypervisorGroupID), name)
 	if err != nil {
 		resp.Diagnostics.Append(tfdiag.FromErr("Error searching Kubernetes VPCs", err))
 		return

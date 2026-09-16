@@ -3,6 +3,7 @@ package resources_test
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"sync"
 	"testing"
 
@@ -69,7 +70,8 @@ func (s *asgMockServer) applyCreate(body map[string]any) {
 	if v, ok := body["name"].(string); ok {
 		s.name = v
 	}
-	if v, ok := body["hypervisor_group_id"].(string); ok {
+	// The client sends the canonical location_id key (spec 17 C1/C4).
+	if v, ok := body["location_id"].(string); ok {
 		s.hgID = v
 	}
 	if v, ok := body["plan_id"].(string); ok {
@@ -303,8 +305,8 @@ resource "iaas_autoscaling_group" "test" {
 	if createBody["name"] != "web-asg" {
 		t.Errorf("create body[name] = %v; want web-asg", createBody["name"])
 	}
-	if createBody["hypervisor_group_id"] != hgID {
-		t.Errorf("create body[hypervisor_group_id] = %v; want %s", createBody["hypervisor_group_id"], hgID)
+	if createBody["location_id"] != hgID {
+		t.Errorf("create body[location_id] = %v; want %s", createBody["location_id"], hgID)
 	}
 	if createBody["min_instances"] != float64(2) {
 		t.Errorf("create body[min_instances] = %v; want 2", createBody["min_instances"])
@@ -352,4 +354,32 @@ resource "iaas_autoscaling_group" "test" {
 	if len(deletes) < 1 {
 		t.Errorf("expected at least 1 DELETE /scaling-group/%s; got %d", groupID, len(deletes))
 	}
+}
+
+// TestUnitAutoscalingGroup_locationIDBothSetErrors proves that configuring both location_id
+// and the deprecated hypervisor_group_id (the decoy case for spec 17 C4) is a
+// validation error naming the conflict, rather than silently picking a winner.
+func TestUnitAutoscalingGroup_locationIDBothSetErrors(t *testing.T) {
+	ensureTFBinary(t)
+	srv := acctest.NewMockServer(t)
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+resource "iaas_autoscaling_group" "test" {
+  name                = "decoy"
+  plan_id             = "55555555-5555-5555-5555-555555555555"
+  image_id            = "66666666-6666-6666-6666-666666666666"
+  location_id         = "33333333-3333-3333-3333-333333333333"
+  hypervisor_group_id = "44444444-4444-4444-4444-444444444444"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config:      cfg,
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+			},
+		},
+	})
 }

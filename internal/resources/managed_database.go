@@ -6,12 +6,14 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -83,6 +85,7 @@ type managedDatabaseModel struct {
 	VPCID             types.String `tfsdk:"vpc_id"`
 	VPCSubnetID       types.String `tfsdk:"vpc_subnet_id"`
 	HypervisorGroupID types.String `tfsdk:"hypervisor_group_id"`
+	LocationID        types.String `tfsdk:"location_id"`
 
 	// Action triggers (write-only): changing either re-runs the corresponding
 	// action. ResetPassword → reset-password; ResyncReplicas (T9) →
@@ -189,12 +192,29 @@ func (r *managedDatabaseResource) Schema(ctx context.Context, _ resource.SchemaR
 			"hypervisor_group_id": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
+				DeprecationMessage: "Use location_id instead. hypervisor_group_id is deprecated " +
+					"and will be removed in the next release.",
 				Description: "Optional UUID of the location (hypervisor group). When omitted it is derived " +
 					"from the VPC and returned by the API. Immutable; changing it forces a new resource.",
 				PlanModifiers: []planmodifier.String{
 					// RequiresReplaceIfConfigured: a user-supplied change forces a replace,
 					// but the server-derived value settling into this Computed field does
 					// not. UseStateForUnknown keeps the derived value stable across plans.
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"location_id": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "Optional UUID of the location (hypervisor group). When omitted it is derived " +
+					"from the VPC and returned by the API. Immutable; changing it forces a new resource. " +
+					"Canonical replacement for hypervisor_group_id; the two are mutually exclusive.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("hypervisor_group_id")),
+				},
+				PlanModifiers: []planmodifier.String{
+					locationIDFromAliasModifier{},
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -343,8 +363,8 @@ func (r *managedDatabaseResource) Create(ctx context.Context, req resource.Creat
 		"vpc_id":         plan.VPCID.ValueString(),
 		"vpc_subnet_id":  plan.VPCSubnetID.ValueString(),
 	}
-	if !plan.HypervisorGroupID.IsNull() && !plan.HypervisorGroupID.IsUnknown() && plan.HypervisorGroupID.ValueString() != "" {
-		body["hypervisor_group_id"] = plan.HypervisorGroupID.ValueString()
+	if hg := effectiveLocationID(plan.LocationID, plan.HypervisorGroupID); hg != "" {
+		body["location_id"] = hg
 	}
 
 	created, err := r.client.CreateManagedDatabase(ctx, body)
@@ -630,7 +650,8 @@ func managedDatabaseStateFromAPI(obj map[string]any, prior managedDatabaseModel)
 
 		// vpc_subnet_id IS returned by SHOW; preserve prior when absent.
 		VPCSubnetID:       optionalStringFromAPI(obj, "vpc_subnet_id", prior.VPCSubnetID),
-		HypervisorGroupID: optionalStringFromAPI(obj, "hypervisor_group_id", prior.HypervisorGroupID),
+		HypervisorGroupID: hypervisorGroupIDFromAPI(obj, prior.HypervisorGroupID),
+		LocationID:        locationIDOptionalFromAPI(obj, prior.LocationID),
 
 		// Write-only triggers - never in SHOW; preserve prior verbatim.
 		ResetPassword:  prior.ResetPassword,
