@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added / Changed
 
+- `iaas_certificate`'s `name`, `certificate`, `private_key` and `chain` attributes are no
+  longer `RequiresReplace`. Changing any of them now rotates the certificate material IN
+  PLACE via `PUT /certificate/{id}`, preserving the resource's `id` (and therefore every
+  `iaas_lb_frontend`'s `certificate_ids`/`ssl_certificate_id` reference to it) instead of
+  destroying and recreating the resource. The computed `domain`/`san_domains`/`expires_at`/
+  `fingerprint_sha256`/`status` attributes now refresh on every such update. A certificate
+  issued via Let's Encrypt cannot be rotated this way (it renews automatically); attempting
+  to change one now fails with a dedicated, actionable error instead of the previous
+  destroy/recreate behavior. Every load balancer that references the certificate is
+  best-effort re-synced server-side; a failed re-sync for an individual load balancer
+  surfaces as a Terraform warning, never an error (the certificate itself is already
+  updated by that point).
+
 - MicroVM v3 network/SSH/catalog contract (spec `/spec/microvm/v3`):
   - `iaas_microvm` gains `ssh_key_ids` (list of account SSH key UUIDs, installed to
     every user's `authorized_keys` at first boot - changing it forces a new
