@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -160,6 +161,153 @@ func TestCreateCertificate_Success(t *testing.T) {
 	}
 	if gotBody["private_key"] == nil {
 		t.Errorf("body[private_key] missing; want the PEM key to be sent")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// UpdateCertificate
+// ---------------------------------------------------------------------------
+
+// TestUpdateCertificate_Success verifies PUT /certificate/{id} (singular -
+// same convention as GET/RETRY/DELETE, NOT the plural /certificates/{id})
+// sends the body, unwraps the "certificate" object, and separately returns
+// "resync" as a slice of maps.
+func TestUpdateCertificate_Success(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"certificate":{"id":"cert-uuid-1","name":"renamed","domain":"rotated.test","san_domains":["www.rotated.test"],"type":"manual","status":"active","fingerprint_sha256":"11:22:33"},"resync":[{"id":"lb-uuid-1","name":"web-lb","success":true},{"id":"lb-uuid-2","name":"api-lb","success":false,"error":"connection refused"}]}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	body := map[string]any{
+		"name":        "renamed",
+		"certificate": "-----BEGIN CERTIFICATE-----\nnew\n-----END CERTIFICATE-----",
+		"private_key": "-----BEGIN PRIVATE KEY-----\nnew\n-----END PRIVATE KEY-----",
+	}
+	cert, resync, err := c.UpdateCertificate(context.Background(), "cert-uuid-1", body)
+	if err != nil {
+		t.Fatalf("UpdateCertificate returned error: %v", err)
+	}
+	if gotMethod != http.MethodPut {
+		t.Errorf("method = %s; want PUT", gotMethod)
+	}
+	if gotPath != "/api/certificate/cert-uuid-1" {
+		t.Errorf("path = %s; want /api/certificate/cert-uuid-1", gotPath)
+	}
+	if gotBody["name"] != "renamed" {
+		t.Errorf("body[name] = %v; want renamed", gotBody["name"])
+	}
+	if cert["domain"] != "rotated.test" {
+		t.Errorf("cert[domain] = %v; want rotated.test", cert["domain"])
+	}
+	if cert["id"] != "cert-uuid-1" {
+		t.Errorf("cert[id] = %v; want cert-uuid-1 (id must not change on rotation)", cert["id"])
+	}
+	if len(resync) != 2 {
+		t.Fatalf("len(resync) = %d; want 2", len(resync))
+	}
+	if resync[0]["success"] != true {
+		t.Errorf("resync[0][success] = %v; want true", resync[0]["success"])
+	}
+	if resync[1]["success"] != false || resync[1]["error"] != "connection refused" {
+		t.Errorf("resync[1] = %v; want success:false error:\"connection refused\"", resync[1])
+	}
+}
+
+// TestUpdateCertificate_LetsEncryptRejected verifies a 422 response for a
+// Let's Encrypt-issued certificate. The real endpoint (Master 5167436db)
+// carries NO machine-readable "code" field - just {success:false,message} -
+// so this pins the exact message text CertificateService::replace() throws,
+// which internal/resources/certificate.go's Update matches on
+// (case-insensitively) to build its dedicated diagnostic.
+func TestUpdateCertificate_LetsEncryptRejected(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"success":false,"message":"Only a manually uploaded certificate can be replaced — Let's Encrypt certificates renew automatically."}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	_, _, err := c.UpdateCertificate(context.Background(), "cert-uuid-1", map[string]any{
+		"name":        "x",
+		"certificate": "cert",
+		"private_key": "key",
+	})
+	if err == nil {
+		t.Fatal("UpdateCertificate: expected error for a Let's Encrypt certificate, got nil")
+	}
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *APIError; got %T", err)
+	}
+	if apiErr.Status != http.StatusUnprocessableEntity {
+		t.Errorf("Status = %d; want 422", apiErr.Status)
+	}
+	if !contains(apiErr.Message, "Let's Encrypt") {
+		t.Errorf("Message = %q; want it to mention Let's Encrypt", apiErr.Message)
+	}
+}
+
+// TestUpdateCertificate_KeyMismatchFailure verifies a 422 for a mismatched
+// key/certificate pair surfaces Message normally (no "code" field on this
+// endpoint at all - every 422 reason is message-only).
+func TestUpdateCertificate_KeyMismatchFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"success":false,"message":"The private key does not match the certificate."}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	_, _, err := c.UpdateCertificate(context.Background(), "cert-uuid-1", map[string]any{
+		"name":        "x",
+		"certificate": "cert",
+		"private_key": "key",
+	})
+	if err == nil {
+		t.Fatal("UpdateCertificate: expected error for a mismatched key, got nil")
+	}
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *APIError; got %T", err)
+	}
+	if !contains(apiErr.Error(), "does not match") {
+		t.Errorf("Error() = %q; want it to contain %q", apiErr.Error(), "does not match")
+	}
+}
+
+// TestUpdateCertificate_EmptyID verifies the empty-id guard.
+func TestUpdateCertificate_EmptyID(t *testing.T) {
+	c := New("http://localhost/api", "tok", 10*time.Second, false)
+	_, _, err := c.UpdateCertificate(context.Background(), "", map[string]any{"name": "x"})
+	if err == nil {
+		t.Fatal("UpdateCertificate: expected error for empty id, got nil")
+	}
+}
+
+// TestUpdateCertificate_MissingCertificateObject verifies a malformed 200
+// response (no "certificate" key) surfaces a clear error rather than a nil
+// map silently propagating into the resource layer.
+func TestUpdateCertificate_MissingCertificateObject(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"message":"ok"}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	_, _, err := c.UpdateCertificate(context.Background(), "cert-uuid-1", map[string]any{"name": "x"})
+	if err == nil {
+		t.Fatal("UpdateCertificate: expected error for a response missing \"certificate\", got nil")
+	}
+	if !contains(err.Error(), "certificate") {
+		t.Errorf("error = %q; want it to mention the missing \"certificate\" key", err.Error())
 	}
 }
 

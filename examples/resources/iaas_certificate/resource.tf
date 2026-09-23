@@ -4,10 +4,14 @@
 # balancer - it belongs to the account and can be attached to any of the
 # account's load balancer frontends via ssl_certificate_id.
 #
-# There is no update endpoint, so changing name, certificate, private_key or
-# chain forces a new resource (rotation). private_key and chain are
-# write-only and sensitive: the API never returns them, so they are taken
-# from configuration and never refreshed from the server.
+# Changing name, certificate, private_key or chain rotates the certificate
+# material IN PLACE (PUT /certificate/{id}) - it does NOT force a new
+# resource, so the id (and every frontend that references it) is preserved.
+# private_key and chain are write-only and sensitive: the API never returns
+# them (on create OR update), so they are taken from configuration and never
+# refreshed from the server. A certificate issued via Let's Encrypt cannot be
+# rotated this way (it renews automatically) - changing one fails with a
+# clear error.
 #
 # Let's Encrypt issuance is asynchronous (ACME) and is NOT modelled as a
 # resource in v1 - use the panel or the MCP server's
@@ -37,8 +41,8 @@ resource "iaas_certificate" "example" {
 #     ssl_certificate_id = iaas_certificate.example.id
 #   }
 
-# Computed attributes: domain, SAN domains, fingerprint and status refresh on
-# every plan; changing any configured field forces a new resource.
+# Computed attributes: domain, SAN domains, fingerprint and status refresh
+# whenever certificate/private_key/chain rotate in place (no replacement).
 output "certificate_domain" {
   value = iaas_certificate.example.domain
 }

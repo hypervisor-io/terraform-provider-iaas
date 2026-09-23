@@ -7749,6 +7749,20 @@
       }
     },
     {
+      "id": "user PUT /api/certificate/{user_certificateId}",
+      "method": "PUT",
+      "path": "/api/certificate/{user_certificateId}",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "type": "iaas_certificate"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.certificate.replace"
+      }
+    },
+    {
       "id": "user POST /api/certificate/{user_certificateId}/retry",
       "method": "POST",
       "path": "/api/certificate/{user_certificateId}/retry",
@@ -10974,12 +10988,12 @@
       "path": "/api/microvm/settings",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "microVM v3 account default-network setting (MV7-2): account settings read; candidate for MV7-13 (an iaas_microvm_settings resource)"
+        "status": "covered",
+        "type": "iaas_microvm_settings"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "microVM v3 account default-network setting (MV7-2): account settings read; candidate for MV7-14 (a user.microvm.settings tool)"
+        "status": "covered",
+        "tool": "user.microvm.settings.get"
       }
     },
     {
@@ -10988,12 +11002,12 @@
       "path": "/api/microvm/settings",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "microVM v3 account default-network setting (MV7-2): account settings update; candidate for MV7-13 (an iaas_microvm_settings resource)"
+        "status": "covered",
+        "type": "iaas_microvm_settings"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "microVM v3 account default-network setting (MV7-2): account settings update; candidate for MV7-14 (a user.microvm.settings tool)"
+        "status": "covered",
+        "tool": "user.microvm.settings.set"
       }
     },
     {

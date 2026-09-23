@@ -3,12 +3,12 @@
 page_title: "iaas_certificate Resource - iaas"
 subcategory: ""
 description: |-
-  Manages an account-level SSL/TLS certificate (manual PEM upload). Unlike iaas_lb_certificate, an iaas_certificate is NOT a child of a load balancer - it belongs to the account and can be attached to any of the account's load balancer frontends via ssl_certificate_id. There is no update endpoint, so changing name, certificate, private_key or chain forces the resource to be replaced (rotation). private_key and chain are write-only and sensitive: the API never returns them, so they are taken from configuration and never refreshed. Let's Encrypt issuance is asynchronous (ACME) and is NOT modelled as a resource in v1 - use the panel or the MCP server's user.certificate.request_letsencrypt tool.
+  Manages an account-level SSL/TLS certificate (manual PEM upload). Unlike iaas_lb_certificate, an iaas_certificate is NOT a child of a load balancer - it belongs to the account and can be attached to any of the account's load balancer frontends via ssl_certificate_id. Changing name, certificate, private_key or chain updates the certificate material IN PLACE (PUT /certificate/{id}) rather than replacing the resource, so its id - and every frontend's reference to it - is preserved. private_key and chain are write-only and sensitive: the API never returns them (on create OR update), so they are taken from configuration and never refreshed. A certificate issued via Let's Encrypt cannot be updated this way (it renews automatically); attempting to change one fails with a clear error. Let's Encrypt issuance is asynchronous (ACME) and is NOT modelled as a resource in v1 - use the panel or the MCP server's user.certificate.request_letsencrypt tool.
 ---
 
 # iaas_certificate (Resource)
 
-Manages an account-level SSL/TLS certificate (manual PEM upload). Unlike iaas_lb_certificate, an iaas_certificate is NOT a child of a load balancer - it belongs to the account and can be attached to any of the account's load balancer frontends via ssl_certificate_id. There is no update endpoint, so changing name, certificate, private_key or chain forces the resource to be replaced (rotation). private_key and chain are write-only and sensitive: the API never returns them, so they are taken from configuration and never refreshed. Let's Encrypt issuance is asynchronous (ACME) and is NOT modelled as a resource in v1 - use the panel or the MCP server's user.certificate.request_letsencrypt tool.
+Manages an account-level SSL/TLS certificate (manual PEM upload). Unlike iaas_lb_certificate, an iaas_certificate is NOT a child of a load balancer - it belongs to the account and can be attached to any of the account's load balancer frontends via ssl_certificate_id. Changing name, certificate, private_key or chain updates the certificate material IN PLACE (PUT /certificate/{id}) rather than replacing the resource, so its id - and every frontend's reference to it - is preserved. private_key and chain are write-only and sensitive: the API never returns them (on create OR update), so they are taken from configuration and never refreshed. A certificate issued via Let's Encrypt cannot be updated this way (it renews automatically); attempting to change one fails with a clear error. Let's Encrypt issuance is asynchronous (ACME) and is NOT modelled as a resource in v1 - use the panel or the MCP server's user.certificate.request_letsencrypt tool.
 
 ## Example Usage
 
@@ -19,10 +19,14 @@ Manages an account-level SSL/TLS certificate (manual PEM upload). Unlike iaas_lb
 # balancer - it belongs to the account and can be attached to any of the
 # account's load balancer frontends via ssl_certificate_id.
 #
-# There is no update endpoint, so changing name, certificate, private_key or
-# chain forces a new resource (rotation). private_key and chain are
-# write-only and sensitive: the API never returns them, so they are taken
-# from configuration and never refreshed from the server.
+# Changing name, certificate, private_key or chain rotates the certificate
+# material IN PLACE (PUT /certificate/{id}) - it does NOT force a new
+# resource, so the id (and every frontend that references it) is preserved.
+# private_key and chain are write-only and sensitive: the API never returns
+# them (on create OR update), so they are taken from configuration and never
+# refreshed from the server. A certificate issued via Let's Encrypt cannot be
+# rotated this way (it renews automatically) - changing one fails with a
+# clear error.
 #
 # Let's Encrypt issuance is asynchronous (ACME) and is NOT modelled as a
 # resource in v1 - use the panel or the MCP server's
@@ -52,8 +56,8 @@ resource "iaas_certificate" "example" {
 #     ssl_certificate_id = iaas_certificate.example.id
 #   }
 
-# Computed attributes: domain, SAN domains, fingerprint and status refresh on
-# every plan; changing any configured field forces a new resource.
+# Computed attributes: domain, SAN domains, fingerprint and status refresh
+# whenever certificate/private_key/chain rotate in place (no replacement).
 output "certificate_domain" {
   value = iaas_certificate.example.domain
 }
@@ -80,19 +84,19 @@ output "certificate_status" {
 
 ### Required
 
-- `certificate` (String) PEM-encoded certificate ("-----BEGIN CERTIFICATE-----..."). Immutable; changing it forces a new resource (rotation).
-- `name` (String) Display name for the certificate. Immutable (no certificate update endpoint); changing it forces a new resource.
-- `private_key` (String, Sensitive) PEM-encoded private key. WRITE-ONLY and SENSITIVE: it is never returned by the API, so it is taken from configuration and never refreshed from the server. Immutable; changing it forces a new resource.
+- `certificate` (String) PEM-encoded certificate ("-----BEGIN CERTIFICATE-----..."). Updating it rotates the certificate material in place via PUT /certificate/{id} - it does not force a new resource. Rejected with a clear error for a Let's Encrypt-issued certificate.
+- `name` (String) Display name for the certificate. Updating it sends a PUT to rename/rotate in place - it does not force a new resource.
+- `private_key` (String, Sensitive) PEM-encoded private key. WRITE-ONLY and SENSITIVE: it is never returned by the API, so it is taken from configuration and never refreshed from the server. Updating it rotates the certificate material in place - it does not force a new resource.
 
 ### Optional
 
-- `chain` (String, Sensitive) Optional PEM-encoded intermediate certificate chain. WRITE-ONLY: not returned by the API. Immutable; changing it forces a new resource.
+- `chain` (String, Sensitive) Optional PEM-encoded intermediate certificate chain. WRITE-ONLY: not returned by the API. Updating it rotates the certificate material in place - it does not force a new resource.
 
 ### Read-Only
 
-- `domain` (String) Primary common-name domain extracted from the uploaded certificate. Server-assigned at upload time.
-- `expires_at` (String) Certificate expiry timestamp (ISO 8601), parsed from the uploaded PEM.
-- `fingerprint_sha256` (String) SHA-256 fingerprint of the certificate, for out-of-band verification.
-- `id` (String) UUID of the certificate, assigned by the API.
-- `san_domains` (List of String) Subject Alternative Name domains covered by the certificate, in addition to domain. Server-assigned at upload time.
-- `status` (String) Certificate status. One of: `active`, `pending`, `failed`, `expiring`, `expired`.
+- `domain` (String) Primary common-name domain extracted from the uploaded certificate. Server-computed; re-derived whenever the certificate material is updated.
+- `expires_at` (String) Certificate expiry timestamp (ISO 8601), parsed from the uploaded PEM. Server-computed; re-derived whenever the certificate material is updated.
+- `fingerprint_sha256` (String) SHA-256 fingerprint of the certificate, for out-of-band verification. Server-computed; re-derived whenever the certificate material is updated.
+- `id` (String) UUID of the certificate, assigned by the API. Stable across an update (rotation does not change it).
+- `san_domains` (List of String) Subject Alternative Name domains covered by the certificate, in addition to domain. Server-computed; re-derived whenever the certificate material is updated.
+- `status` (String) Certificate status. One of: `active`, `pending`, `failed`, `expiring`, `expired`. Server-computed; may change on update.
