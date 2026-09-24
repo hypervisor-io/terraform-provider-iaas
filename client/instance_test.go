@@ -298,3 +298,106 @@ func TestUpdateInstance_Success(t *testing.T) {
 		t.Errorf("obj[display_name] = %v; want renamed", obj["display_name"])
 	}
 }
+
+// TestRescueInstance_EnterSuccess verifies POST /instance/{id}/rescue with
+// body {enable:true} returns the BARE envelope (no nested object key) so the
+// caller can read the top-level task_id, per InstanceService::rescue() at
+// Master 8eb77dcfe.
+func TestRescueInstance_EnterSuccess(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"message":"The instance is entering rescue mode.","task_id":"t1","rescue":{"active":true,"since":"2026-09-24T00:00:00.000000Z","username":"root","password":"aB3xQ9zK7mP2rL5t"}}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	obj, err := c.RescueInstance(context.Background(), "i1", true)
+	if err != nil {
+		t.Fatalf("RescueInstance returned error: %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %s; want POST", gotMethod)
+	}
+	if gotPath != "/api/instance/i1/rescue" {
+		t.Errorf("path = %s; want /api/instance/i1/rescue", gotPath)
+	}
+	if gotBody["enable"] != true {
+		t.Errorf("body[enable] = %v; want true", gotBody["enable"])
+	}
+	if obj["task_id"] != "t1" {
+		t.Errorf("obj[task_id] = %v; want t1", obj["task_id"])
+	}
+	rescue, ok := obj["rescue"].(map[string]any)
+	if !ok {
+		t.Fatalf("obj[rescue] is not an object: %#v", obj["rescue"])
+	}
+	if rescue["active"] != true {
+		t.Errorf("rescue[active] = %v; want true", rescue["active"])
+	}
+	if rescue["password"] != "aB3xQ9zK7mP2rL5t" {
+		t.Errorf("rescue[password] = %v; want aB3xQ9zK7mP2rL5t", rescue["password"])
+	}
+}
+
+// TestRescueInstance_ExitSendsEnableFalse verifies the exit call sends
+// {enable:false} (as opposed to omitting the key or sending a string).
+func TestRescueInstance_ExitSendsEnableFalse(t *testing.T) {
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"message":"The instance is exiting rescue mode.","task_id":"t2","rescue":{"active":false,"since":null,"username":"root","password":null}}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	obj, err := c.RescueInstance(context.Background(), "i1", false)
+	if err != nil {
+		t.Fatalf("RescueInstance returned error: %v", err)
+	}
+	if v, ok := gotBody["enable"]; !ok || v != false {
+		t.Errorf("body[enable] = %v (present=%v); want false", v, ok)
+	}
+	rescue, _ := obj["rescue"].(map[string]any)
+	if rescue["active"] != false {
+		t.Errorf("rescue[active] = %v; want false", rescue["active"])
+	}
+	if rescue["password"] != nil {
+		t.Errorf("rescue[password] = %v; want nil", rescue["password"])
+	}
+}
+
+// TestRescueInstance_ConflictFailure verifies a 409 guard failure (e.g.
+// already active, suspended, task running) surfaces as an error carrying the
+// API message - InstanceService::rescue() returns the ConflictException's
+// status code (409) rather than 200 for these cases, unlike most other
+// instance write paths in this client.
+func TestRescueInstance_ConflictFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"success":false,"message":"This instance is already in rescue mode."}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	_, err := c.RescueInstance(context.Background(), "i1", true)
+	if err == nil {
+		t.Fatal("RescueInstance: expected error for 409 conflict, got nil")
+	}
+	if !contains(err.Error(), "already in rescue mode") {
+		t.Errorf("error = %q; want it to contain the API message", err.Error())
+	}
+}
+
+// TestRescueInstance_EmptyID verifies the client-side guard against an empty id.
+func TestRescueInstance_EmptyID(t *testing.T) {
+	c := New("http://example.invalid/api", "tok", 10*time.Second, false)
+	if _, err := c.RescueInstance(context.Background(), "", true); err == nil {
+		t.Fatal("RescueInstance: expected error for empty id, got nil")
+	}
+}

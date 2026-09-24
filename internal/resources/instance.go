@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -106,6 +107,36 @@ type instanceModel struct {
 	PrimaryPublicIP  types.String `tfsdk:"primary_public_ip"`
 	PrimaryPrivateIP types.String `tfsdk:"primary_private_ip"`
 	VNCPassword      types.String `tfsdk:"vnc_password"`
+
+	// RescueMode is a live TOGGLE (NUI-V-R18-RESCUE1-TRISYNC), not a plain
+	// metadata field: on change, Update calls POST .../rescue {enable} and
+	// waits for the resulting task, same as the deploy-task convergence in
+	// Create. Optional+Computed+Default(false) so an omitted config value
+	// resolves to "not in rescue mode" without forcing a plan diff.
+	RescueMode types.Bool `tfsdk:"rescue_mode"`
+
+	// The Rescue{Active,Since,Username,Password} quartet is the read-only
+	// {active,since,username,password} block Instance::rescuePayload() (Master
+	// 8eb77dcfe) appends to every SHOW as a nested "rescue" object, FLATTENED
+	// into top-level attributes (the same convention primary_public_ip/
+	// primary_private_ip use for their nested API objects, via
+	// nestedStringFromAPI) rather than a schema.SingleNestedAttribute.
+	// MEASURED (TestUnitInstance_lifecycle, terraform-plugin-framework
+	// v1.19.0 + OpenTofu 1.9.1): a Computed-only SingleNestedAttribute here
+	// produced a PERSISTENT non-empty plan after every apply — a real
+	// "provider always shows a diff" defect, not a test artifact — even with
+	// objectplanmodifier.UseStateForUnknown() attached and confirmed (via
+	// TF_LOG=trace) to run and copy the prior object forward; something in
+	// this framework version's nested-object plan reconciliation still
+	// disagreed on the outcome. The four flat scalar attributes below use the
+	// exact same "Computed, no plan modifier" shape as deployed/status
+	// (already proven stable by this same test), which is also the right
+	// semantics: rescue state is server-mutable out of band (a failed task,
+	// an admin exit), so it must never be masked with UseStateForUnknown.
+	RescueActive   types.Bool   `tfsdk:"rescue_active"`
+	RescueSince    types.String `tfsdk:"rescue_since"`
+	RescueUsername types.String `tfsdk:"rescue_username"`
+	RescuePassword types.String `tfsdk:"rescue_password"`
 
 	Timeouts timeouts.Value `tfsdk:"timeouts"`
 }
@@ -263,6 +294,34 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"rescue_mode": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				Default:  booldefault.StaticBool(false),
+				Description: "Whether the instance is booted into rescue mode (a rescue ISO with a " +
+					"generated root password, KVM only). Toggling this attribute calls the " +
+					"rescue enter/exit endpoint in place and waits for the resulting task; it " +
+					"does not force a new resource. Entering requires the instance to already " +
+					"be deployed, not suspended, not migrating, without an active Forge session " +
+					"or another task in flight, and is refused (409) on Proxmox hypervisors.",
+			},
+			"rescue_active": schema.BoolAttribute{
+				Computed:    true,
+				Description: "Whether rescue mode is currently active, refreshed on every read.",
+			},
+			"rescue_since": schema.StringAttribute{
+				Computed:    true,
+				Description: "Timestamp rescue mode was entered; empty when inactive.",
+			},
+			"rescue_username": schema.StringAttribute{
+				Computed:    true,
+				Description: "Rescue console username (always \"root\").",
+			},
+			"rescue_password": schema.StringAttribute{
+				Computed:    true,
+				Sensitive:   true,
+				Description: "Generated rescue root password; empty when inactive.",
+			},
 		},
 		Blocks: map[string]schema.Block{
 			// The timeouts nested block (create/update/delete) is the async-resource
@@ -412,6 +471,24 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
+	// ── optional rescue_mode = true in the initial config ────────────────────
+	// rescue_mode is Optional+Computed+Default(false), so plan.RescueMode is
+	// always known by this point. A config that requests rescue mode from
+	// create must actually enter it here - otherwise the post-create state
+	// (rescue.active=false, since the endpoint was never called) would
+	// disagree with the known plan value and the framework would reject the
+	// apply as "inconsistent result". This mirrors Update's toggle below,
+	// just run once, after the instance is confirmed deployed.
+	if plan.RescueMode.ValueBool() {
+		if err := r.applyRescueMode(ctx, id, true, createTimeout); err != nil {
+			resp.Diagnostics.AddError(
+				"Error entering rescue mode",
+				fmt.Sprintf("instance %s: %s", id, err.Error()),
+			)
+			return
+		}
+	}
+
 	// ── hydrate state from the now-deployed instance ─────────────────────────
 	obj, err := r.client.GetInstance(ctx, id)
 	if err != nil {
@@ -420,6 +497,34 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, instanceStateFromAPI(obj, plan))...)
+}
+
+// applyRescueMode calls POST /instance/{id}/rescue {enable} and waits for the
+// resulting task via the SAME GetInstanceTask primitive Create uses for the
+// deploy task (rescue enter/exit dispatches exactly one task_id, per
+// InstanceService::rescue() at Master 8eb77dcfe). A response with no task_id
+// is treated as already-converged rather than hung, defensively, though the
+// documented contract always returns one on success.
+func (r *instanceResource) applyRescueMode(ctx context.Context, id string, enable bool, timeout time.Duration) error {
+	result, err := r.client.RescueInstance(ctx, id, enable)
+	if err != nil {
+		return err
+	}
+	taskID, _ := result["task_id"].(string)
+	if taskID == "" {
+		return nil
+	}
+	return waiter.WaitFor(ctx, waiter.Options{
+		Interval: pollInterval(),
+		Timeout:  timeout,
+		Refresh: waiter.StatePollerWithErrorTolerance(
+			func() (map[string]any, error) { return r.client.GetInstanceTask(ctx, id, taskID) },
+			"status",
+			[]string{"completed"},
+			[]string{"failed"},
+			3,
+		),
+	})
 }
 
 // Read refreshes state from the API. A 404 means the instance was deleted out of
@@ -448,10 +553,12 @@ func (r *instanceResource) Read(ctx context.Context, req resource.ReadRequest, r
 	resp.Diagnostics.Append(resp.State.Set(ctx, instanceStateFromAPI(obj, state))...)
 }
 
-// Update changes the only mutable fields - display_name and hostname. Everything
-// else is RequiresReplace, so only those two ever reach here. We PATCH the
-// changed fields then GetInstance to refresh, since the PATCH response is a
-// thinner envelope than SHOW.
+// Update changes the mutable fields - display_name, hostname (a PATCH) - and,
+// as of NUI-V-R18-RESCUE1-TRISYNC, rescue_mode (a live enter/exit toggle via
+// POST .../rescue + a task wait). Everything else is RequiresReplace, so only
+// these ever reach here. We PATCH the changed metadata fields, toggle rescue
+// mode if it changed, then GetInstance to refresh, since the PATCH response
+// is a thinner envelope than SHOW.
 func (r *instanceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state instanceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -471,6 +578,19 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	if len(fields) > 0 {
 		if _, err := r.client.UpdateInstance(ctx, state.ID.ValueString(), fields); err != nil {
 			resp.Diagnostics.Append(diagFromErr("Error updating instance", err))
+			return
+		}
+	}
+
+	// ── rescue_mode toggle (enter/exit + task wait) ───────────────────────────
+	if !plan.RescueMode.Equal(state.RescueMode) {
+		updateTimeout, diags := plan.Timeouts.Update(ctx, defaultUpdateTimeout)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if err := r.applyRescueMode(ctx, state.ID.ValueString(), plan.RescueMode.ValueBool(), updateTimeout); err != nil {
+			resp.Diagnostics.Append(diagFromErr("Error changing rescue mode", err))
 			return
 		}
 	}
@@ -575,8 +695,45 @@ func instanceStateFromAPI(obj map[string]any, prior instanceModel) instanceModel
 		PrimaryPrivateIP: nestedStringFromAPI(obj, "primary_private_ip", "ip", prior.PrimaryPrivateIP),
 		VNCPassword:      stringFromAPI(obj, "vnc_password", prior.VNCPassword),
 
+		// rescue_mode is a plain (unhidden) model column on the SHOW payload
+		// (Instance::$hidden only hides rescue_password); rescue_active/since/
+		// username/password are the FLATTENED appended {active,since,username,
+		// password} block InstanceShowResource adds via Instance::
+		// rescuePayload() - see the instanceModel field comment for why this
+		// is flat rather than a nested object. All are server-mutable (a task
+		// failure, an admin-initiated exit) so - like deployed/status - NONE
+		// carries UseStateForUnknown.
+		RescueMode:     boolFromIntAPI(obj, "rescue_mode", prior.RescueMode),
+		RescueActive:   nestedBoolFromAPI(obj, "rescue", "active", prior.RescueActive),
+		RescueSince:    nestedStringFromAPI(obj, "rescue", "since", prior.RescueSince),
+		RescueUsername: nestedStringFromAPI(obj, "rescue", "username", prior.RescueUsername),
+		RescuePassword: nestedStringFromAPI(obj, "rescue", "password", prior.RescuePassword),
+
 		Timeouts: prior.Timeouts,
 	}
+}
+
+// nestedBoolFromAPI extracts a bool sub-field (e.g. "active") from an
+// appended nested object (e.g. rescue{active:true,...}), mirroring
+// nestedStringFromAPI. A missing parent, non-object, or missing/non-bool
+// sub-field falls back to the prior value.
+func nestedBoolFromAPI(obj map[string]any, parent, sub string, fallback types.Bool) types.Bool {
+	raw, ok := obj[parent]
+	if !ok || raw == nil {
+		return fallback
+	}
+	nested, ok := raw.(map[string]any)
+	if !ok {
+		return fallback
+	}
+	v, ok := nested[sub]
+	if !ok || v == nil {
+		return fallback
+	}
+	if b, ok := v.(bool); ok {
+		return types.BoolValue(b)
+	}
+	return fallback
 }
 
 // stringOrPrior reads a string field but, unlike stringFromAPI, falls back to the

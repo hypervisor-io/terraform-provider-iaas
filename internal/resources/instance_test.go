@@ -83,24 +83,40 @@ func TestUnitInstance_lifecycle(t *testing.T) {
 	srv := acctest.NewMockServer(t)
 
 	const (
-		instanceID = "11111111-1111-1111-1111-111111111111"
-		taskID     = "t1"
-		locationID = "22222222-2222-2222-2222-222222222222"
-		planID     = "33333333-3333-3333-3333-333333333333"
-		imageID    = "44444444-4444-4444-4444-444444444444"
-		sshKeyID   = "55555555-5555-5555-5555-555555555555"
-		vncPass    = "secret"
-		publicIP   = "1.2.3.4"
-		createName = "web-01"
-		updateName = "renamed"
+		instanceID        = "11111111-1111-1111-1111-111111111111"
+		taskID            = "t1"
+		rescueEnterTaskID = "t-rescue-enter"
+		rescueExitTaskID  = "t-rescue-exit"
+		locationID        = "22222222-2222-2222-2222-222222222222"
+		planID            = "33333333-3333-3333-3333-333333333333"
+		imageID           = "44444444-4444-4444-4444-444444444444"
+		sshKeyID          = "55555555-5555-5555-5555-555555555555"
+		vncPass           = "secret"
+		publicIP          = "1.2.3.4"
+		createName        = "web-01"
+		updateName        = "renamed"
+		rescuePassword    = "aB3xQ9zK7mP2rL5t"
+		rescueSince       = "2026-09-24T00:00:00.000000Z"
 	)
 
 	// Stateful server-side fields.
 	currentDisplay := createName
 	var deleted atomic.Bool
+	var rescueActive atomic.Bool
 
 	// showObject builds the BARE instance model returned by GET /instance/{id}.
+	// rescue_mode (plain column) and rescue{active,since,username,password}
+	// (InstanceShowResource's appended block, Instance::rescuePayload() at
+	// Master 8eb77dcfe) both track rescueActive, matching the real payload
+	// shape where both keys are always present.
 	showObject := func() map[string]any {
+		rescueMode := 0
+		var since, password any
+		if rescueActive.Load() {
+			rescueMode = 1
+			since = rescueSince
+			password = rescuePassword
+		}
 		return map[string]any{
 			"id":                instanceID,
 			"location_id":       locationID,
@@ -115,6 +131,13 @@ func TestUnitInstance_lifecycle(t *testing.T) {
 			"vnc_password":      vncPass,
 			"primary_public_ip": map[string]any{"ip": publicIP},
 			"task_running":      false,
+			"rescue_mode":       rescueMode,
+			"rescue": map[string]any{
+				"active":   rescueActive.Load(),
+				"since":    since,
+				"username": "root",
+				"password": password,
+			},
 		}
 	}
 
@@ -167,6 +190,45 @@ func TestUnitInstance_lifecycle(t *testing.T) {
 		})
 	})
 
+	// RESCUE - enter/exit toggle (NUI-V-R18-RESCUE1-TRISYNC); stateful so SHOW
+	// reflects it, and each direction dispatches its own task id so the two
+	// GET task handlers below stay distinguishable in the request log.
+	srv.Handle("POST", "/instance/"+instanceID+"/rescue", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		enable, _ := body["enable"].(bool)
+		rescueActive.Store(enable)
+
+		taskID := rescueExitTaskID
+		msg := "The instance is exiting rescue mode."
+		rescueBlock := map[string]any{"active": false, "since": nil, "username": "root", "password": nil}
+		if enable {
+			taskID = rescueEnterTaskID
+			msg = "The instance is entering rescue mode."
+			rescueBlock = map[string]any{"active": true, "since": rescueSince, "username": "root", "password": rescuePassword}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success": true,
+			"message": msg,
+			"task_id": taskID,
+			"rescue":  rescueBlock,
+		})
+	})
+
+	// RESCUE task polls - completed on the first poll, mirroring the deploy task.
+	srv.Handle("GET", "/instance/"+instanceID+"/task/"+rescueEnterTaskID, func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"logs": []any{map[string]any{"message": "rescue enter complete"}},
+			"task": map[string]any{"id": rescueEnterTaskID, "status": "completed", "progress": 100},
+		})
+	})
+	srv.Handle("GET", "/instance/"+instanceID+"/task/"+rescueExitTaskID, func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"logs": []any{map[string]any{"message": "rescue exit complete"}},
+			"task": map[string]any{"id": rescueExitTaskID, "status": "completed", "progress": 100},
+		})
+	})
+
 	// DELETE - async enqueue; flips deleted so the next SHOW 404s.
 	srv.Handle("DELETE", "/cloud-service/instances/"+instanceID, func(w http.ResponseWriter, r *http.Request) {
 		deleted.Store(true)
@@ -190,6 +252,26 @@ resource "iaas_instance" "test" {
   image_id     = "` + imageID + `"
   ssh_keys     = ["` + sshKeyID + `"]
   display_name = "` + updateName + `"
+}
+`
+	rescueEnterCfg := providerCfg + `
+resource "iaas_instance" "test" {
+  location_id  = "` + locationID + `"
+  plan_id      = "` + planID + `"
+  image_id     = "` + imageID + `"
+  ssh_keys     = ["` + sshKeyID + `"]
+  display_name = "` + updateName + `"
+  rescue_mode  = true
+}
+`
+	rescueExitCfg := providerCfg + `
+resource "iaas_instance" "test" {
+  location_id  = "` + locationID + `"
+  plan_id      = "` + planID + `"
+  image_id     = "` + imageID + `"
+  ssh_keys     = ["` + sshKeyID + `"]
+  display_name = "` + updateName + `"
+  rescue_mode  = false
 }
 `
 
@@ -227,10 +309,53 @@ resource "iaas_instance" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("iaas_instance.test", "id", instanceID),
 					resource.TestCheckResourceAttr("iaas_instance.test", "display_name", updateName),
+					resource.TestCheckResourceAttr("iaas_instance.test", "rescue_mode", "false"),
+					resource.TestCheckResourceAttr("iaas_instance.test", "rescue_active", "false"),
+				),
+			},
+			// Enter rescue mode - toggling rescue_mode calls POST .../rescue
+			// {enable:true} and waits for the resulting task; the computed
+			// rescue block must reflect the new active/password state.
+			{
+				Config: rescueEnterCfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("iaas_instance.test", "rescue_mode", "true"),
+					resource.TestCheckResourceAttr("iaas_instance.test", "rescue_active", "true"),
+					resource.TestCheckResourceAttr("iaas_instance.test", "rescue_username", "root"),
+					resource.TestCheckResourceAttr("iaas_instance.test", "rescue_password", rescuePassword),
+					resource.TestCheckResourceAttr("iaas_instance.test", "rescue_since", rescueSince),
+				),
+			},
+			// Exit rescue mode - toggling back calls {enable:false} and the
+			// computed block clears.
+			{
+				Config: rescueExitCfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("iaas_instance.test", "rescue_mode", "false"),
+					resource.TestCheckResourceAttr("iaas_instance.test", "rescue_active", "false"),
 				),
 			},
 		},
 	})
+
+	// Assert both rescue toggles hit the endpoint with the right body, in order.
+	rescueCalls := srv.Requests("POST", "/instance/"+instanceID+"/rescue")
+	if len(rescueCalls) != 2 {
+		t.Fatalf("expected exactly 2 POST .../rescue calls (enter, exit); got %d", len(rescueCalls))
+	}
+	var enterBody, exitBody map[string]any
+	if err := json.Unmarshal(rescueCalls[0].Body, &enterBody); err != nil {
+		t.Fatalf("decoding rescue enter body: %v", err)
+	}
+	if err := json.Unmarshal(rescueCalls[1].Body, &exitBody); err != nil {
+		t.Fatalf("decoding rescue exit body: %v", err)
+	}
+	if enterBody["enable"] != true {
+		t.Errorf("rescue call 1 body[enable] = %v; want true", enterBody["enable"])
+	}
+	if exitBody["enable"] != false {
+		t.Errorf("rescue call 2 body[enable] = %v; want false", exitBody["enable"])
+	}
 
 	// Assert the phase-1 create body carried location_id + plan_id (and NOT the
 	// deploy-only fields).

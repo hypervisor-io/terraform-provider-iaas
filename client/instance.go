@@ -99,6 +99,23 @@ func (c *Client) UpdateInstance(ctx context.Context, id string, fields map[strin
 	return c.doItem(ctx, "PATCH", "/instance/"+url.PathEscape(id), fields, "instance")
 }
 
+// RescueInstance enters or exits rescue mode (POST /instance/{id}/rescue,
+// body {enable: bool}). Verified against UserApi\InstanceController::rescue()
+// + InstanceService::rescue() at Master commit 8eb77dcfe: the response is a
+// BARE envelope (no nested object key) carrying {success, message, task_id,
+// rescue:{active,since,username,password}} on success (200) — the caller
+// polls task_id via GetInstanceTask the same way Create polls the deploy
+// task. A guard failure (already active/inactive, suspended, no task
+// running, unsupported hypervisor, etc.) is a 409 with {success:false,
+// message}, which doItem surfaces as an *APIError.
+func (c *Client) RescueInstance(ctx context.Context, id string, enable bool) (map[string]any, error) {
+	if id == "" {
+		return nil, fmt.Errorf("RescueInstance: empty id")
+	}
+	body := map[string]any{"enable": enable}
+	return c.doItem(ctx, "POST", "/instance/"+url.PathEscape(id)+"/rescue", body, "")
+}
+
 // DeleteCSInstance enqueues deletion of an instance. The DELETE is asynchronous
 // (the slave finalizes and the row soft-deletes later), so the resource converges
 // by polling GetInstance until IsNotFound. A failure (e.g. protection_enabled) is

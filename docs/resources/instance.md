@@ -91,6 +91,7 @@ output "instance_public_ip" {
 - `cloudcfg` (String) Optional cloud-init user-data (YAML) applied at deploy time. WRITE-ONLY: not returned by the API on read. Changing it forces a new resource.
 - `display_name` (String) Display name of the instance. Server-assigned when omitted; updatable in place (PATCH).
 - `hostname` (String) Hostname of the instance. The server auto-generates one when omitted. This field is updatable in place (PATCH) and is NOT RequiresReplace.
+- `rescue_mode` (Boolean) Whether the instance is booted into rescue mode (a rescue ISO with a generated root password, KVM only). Toggling this attribute calls the rescue enter/exit endpoint in place and waits for the resulting task; it does not force a new resource. Entering requires the instance to already be deployed, not suspended, not migrating, without an active Forge session or another task in flight, and is refused (409) on Proxmox hypervisors.
 - `ssh_keys` (List of String) Optional list of SSH key UUIDs injected at deploy time. WRITE-ONLY: the API does not return the keys on read, so this value is echoed from configuration and never refreshed. Changing it forces a new resource.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `timezone` (String) Optional timezone applied at deploy time (e.g. "UTC"). WRITE-ONLY: not returned by the API on read. Changing it forces a new resource.
@@ -105,6 +106,10 @@ output "instance_public_ip" {
 - `primary_private_ip` (String) Primary private IPv4 address, extracted from the appended IP object.
 - `primary_public_ip` (String) Primary public IPv4 address, extracted from the appended IP object.
 - `ram` (Number) RAM in megabytes, derived from the plan. Stable after create.
+- `rescue_active` (Boolean) Whether rescue mode is currently active, refreshed on every read.
+- `rescue_password` (String, Sensitive) Generated rescue root password; empty when inactive.
+- `rescue_since` (String) Timestamp rescue mode was entered; empty when inactive.
+- `rescue_username` (String) Rescue console username (always "root").
 - `status` (Number) Power/lifecycle status code (0 stopped, 1 running, 2 suspended). Server-mutable.
 - `vnc_password` (String, Sensitive) Cleartext VNC console password (server force-generated). Marked sensitive so it is never shown in plan/CLI output.
 
