@@ -31,6 +31,15 @@ type manifestEndpoint struct {
 	OpenTofu struct {
 		Status string `json:"status"`
 		Type   string `json:"type"`
+		// Resource is the attribute-level coverage shape (an endpoint folded
+		// into an existing resource as one of its attributes rather than its
+		// own type, e.g. instance rescue_mode on iaas_instance). Checked the
+		// same way as Type: the NAMED resource/data-source must be
+		// registered. Found stale/unchecked during NUI-V-R19-WH1's
+		// make sync-manifest (this field was silently dropped by
+		// encoding/json before this fix, so the endpoint always read as
+		// Type=="" and false-flagged as missing coverage).
+		Resource string `json:"resource"`
 	} `json:"opentofu"`
 }
 
@@ -68,8 +77,16 @@ func checkCoverage(registered map[string]bool, m manifest) (missing, pending []s
 	for _, e := range m.Endpoints {
 		switch e.OpenTofu.Status {
 		case "covered":
-			if e.OpenTofu.Type == "" || !registered[e.OpenTofu.Type] {
-				missingSet[e.OpenTofu.Type+"  (e.g. "+e.ID+")"] = true
+			// Two coverage shapes: a standalone "type" (its own resource/data
+			// source) or an attribute-level "resource" (folded into an
+			// existing resource's schema, e.g. instance rescue_mode). Either
+			// way the NAMED type must be registered.
+			name := e.OpenTofu.Type
+			if name == "" {
+				name = e.OpenTofu.Resource
+			}
+			if name == "" || !registered[name] {
+				missingSet[name+"  (e.g. "+e.ID+")"] = true
 			}
 		case "pending":
 			pending = append(pending, e.ID)

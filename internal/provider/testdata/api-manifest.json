@@ -217,6 +217,34 @@
       }
     },
     {
+      "id": "admin POST /api/v1/backup-policy/{instanceBackupPolicyId}/attach",
+      "method": "POST",
+      "path": "/api/v1/backup-policy/{instanceBackupPolicyId}/attach",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/backup-policy/{instanceBackupPolicyId}/detach",
+      "method": "POST",
+      "path": "/api/v1/backup-policy/{instanceBackupPolicyId}/detach",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
       "id": "admin DELETE /api/v1/backups/destination/{backupDestinationId}",
       "method": "DELETE",
       "path": "/api/v1/backups/destination/{backupDestinationId}",
@@ -2555,6 +2583,20 @@
       }
     },
     {
+      "id": "admin POST /api/v1/instance/{instanceId}/change-plan",
+      "method": "POST",
+      "path": "/api/v1/instance/{instanceId}/change-plan",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
       "id": "admin POST /api/v1/instance/{instanceId}/deploy",
       "method": "POST",
       "path": "/api/v1/instance/{instanceId}/deploy",
@@ -3073,6 +3115,20 @@
       }
     },
     {
+      "id": "admin POST /api/v1/instance/{instanceId}/console-session",
+      "method": "POST",
+      "path": "/api/v1/instance/{instanceId}/console-session",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
       "id": "admin POST /api/v1/instance/{instanceId}/power/{action}",
       "method": "POST",
       "path": "/api/v1/instance/{instanceId}/power/{action}",
@@ -3132,6 +3188,20 @@
       "id": "admin POST /api/v1/instance/{instanceId}/resetPassword",
       "method": "POST",
       "path": "/api/v1/instance/{instanceId}/resetPassword",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/instance/{instanceId}/rescue",
+      "method": "POST",
+      "path": "/api/v1/instance/{instanceId}/rescue",
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
@@ -5467,6 +5537,20 @@
       }
     },
     {
+      "id": "admin GET /api/v1/security-group/{securityGroupId}/rules",
+      "method": "GET",
+      "path": "/api/v1/security-group/{securityGroupId}/rules",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
       "id": "admin POST /api/v1/security-group/{securityGroupId}/rules",
       "method": "POST",
       "path": "/api/v1/security-group/{securityGroupId}/rules",
@@ -6948,6 +7032,20 @@
       "mcp": {
         "status": "covered",
         "tool": "admin.vpc.list"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/vpcs",
+      "method": "POST",
+      "path": "/api/v1/vpcs",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
       }
     },
     {
@@ -9317,6 +9415,21 @@
       }
     },
     {
+      "id": "user POST /api/instance/{user_instanceId}/rescue",
+      "method": "POST",
+      "path": "/api/instance/{user_instanceId}/rescue",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "resource": "iaas_instance",
+        "attribute": "rescue_mode"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.instance.rescue"
+      }
+    },
+    {
       "id": "user POST /api/instance/{user_instanceId}/secure-boot/{action}",
       "method": "POST",
       "path": "/api/instance/{user_instanceId}/secure-boot/{action}",
@@ -11021,7 +11134,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.list"
+        "tool": "user.microvm.list"
       }
     },
     {
@@ -11035,7 +11148,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.create"
+        "tool": "user.microvm.create"
       }
     },
     {
@@ -11049,7 +11162,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.get"
+        "tool": "user.microvm.get"
       }
     },
     {
@@ -11063,7 +11176,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.delete"
+        "tool": "user.microvm.delete"
       }
     },
     {
@@ -11077,7 +11190,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.logs"
+        "tool": "user.microvm.logs"
       }
     },
     {
@@ -11091,7 +11204,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.metrics"
+        "tool": "user.microvm.metrics"
       }
     },
     {
@@ -11105,7 +11218,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.pause"
+        "tool": "user.microvm.pause"
       }
     },
     {
@@ -11119,7 +11232,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.resume"
+        "tool": "user.microvm.resume"
       }
     },
     {
@@ -11133,7 +11246,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.stop"
+        "tool": "user.microvm.stop"
       }
     },
     {
@@ -11147,7 +11260,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.start"
+        "tool": "user.microvm.start"
       }
     },
     {
@@ -11161,7 +11274,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.kill"
+        "tool": "user.microvm.kill"
       }
     },
     {
@@ -11175,7 +11288,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.set_timeout"
+        "tool": "user.microvm.set_timeout"
       }
     },
     {
@@ -11189,7 +11302,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.deploy"
+        "tool": "user.microvm.deploy"
       }
     },
     {
@@ -11203,7 +11316,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.rollback"
+        "tool": "user.microvm.rollback"
       }
     },
     {
@@ -11217,7 +11330,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.set_env"
+        "tool": "user.microvm.set_env"
       }
     },
     {
@@ -11231,7 +11344,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.domain_add"
+        "tool": "user.microvm.domain_add"
       }
     },
     {
@@ -11245,7 +11358,7 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.microvm.vm.domain_remove"
+        "tool": "user.microvm.domain_remove"
       }
     },
     {
@@ -13220,6 +13333,20 @@
       "mcp": {
         "status": "covered",
         "tool": "user.vpn_gateway.list"
+      }
+    },
+    {
+      "id": "user GET /api/webhook-event-kinds",
+      "method": "GET",
+      "path": "/api/webhook-event-kinds",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "type": "iaas_webhook_event_kinds"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.webhook.event_kinds"
       }
     },
     {

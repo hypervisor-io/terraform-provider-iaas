@@ -264,10 +264,11 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 
 // DataSources returns the list of data sources provided. These are the
 // account whoami singleton, the instance-essential catalog lookups (location,
-// plan, image, iso), the VPN peer config download, and the Kubernetes data
+// plan, image, iso), the VPN peer config download, the Kubernetes data
 // sources (kubeconfig + autoscaler manifest downloads, the cluster-create
 // catalog lookups for version / region / plan, and the vpc / subnet catalog
-// lookups used to resolve vpc_id / subnet_id).
+// lookups used to resolve vpc_id / subnet_id), and the webhook event-kind
+// catalog (NUI-V-R19-WH1).
 func (p *IaasProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		datasources.NewAccountDataSource,
@@ -285,5 +286,6 @@ func (p *IaasProvider) DataSources(_ context.Context) []func() datasource.DataSo
 		datasources.NewKubernetesSubnetDataSource,
 		datasources.NewMicrovmImagesDataSource,
 		datasources.NewMicrovmCatalogDataSource,
+		datasources.NewWebhookEventKindsDataSource,
 	}
 }
