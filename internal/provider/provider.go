@@ -267,8 +267,8 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 // plan, image, iso), the VPN peer config download, the Kubernetes data
 // sources (kubeconfig + autoscaler manifest downloads, the cluster-create
 // catalog lookups for version / region / plan, and the vpc / subnet catalog
-// lookups used to resolve vpc_id / subnet_id), and the webhook event-kind
-// catalog (NUI-V-R19-WH1).
+// lookups used to resolve vpc_id / subnet_id), the webhook event-kind
+// catalog (NUI-V-R19-WH1), and the platform version singleton (NUI-V-R20-VER1).
 func (p *IaasProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		datasources.NewAccountDataSource,
@@ -287,5 +287,6 @@ func (p *IaasProvider) DataSources(_ context.Context) []func() datasource.DataSo
 		datasources.NewMicrovmImagesDataSource,
 		datasources.NewMicrovmCatalogDataSource,
 		datasources.NewWebhookEventKindsDataSource,
+		datasources.NewPlatformVersionDataSource,
 	}
 }

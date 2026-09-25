@@ -2863,6 +2863,20 @@
       }
     },
     {
+      "id": "admin GET /api/v1/instance/{instanceId}/forge",
+      "method": "GET",
+      "path": "/api/v1/instance/{instanceId}/forge",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
       "id": "admin POST /api/v1/instance/{instanceId}/forge/commit",
       "method": "POST",
       "path": "/api/v1/instance/{instanceId}/forge/commit",
@@ -9135,6 +9149,20 @@
       }
     },
     {
+      "id": "user GET /api/instance/{user_instanceId}/forge",
+      "method": "GET",
+      "path": "/api/instance/{user_instanceId}/forge",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "session state, not IaC"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.instance.forge"
+      }
+    },
+    {
       "id": "user POST /api/instance/{user_instanceId}/forge/commit",
       "method": "POST",
       "path": "/api/instance/{user_instanceId}/forge/commit",
@@ -13434,6 +13462,20 @@
       }
     },
     {
+      "id": "user GET /api/version",
+      "method": "GET",
+      "path": "/api/version",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "type": "iaas_platform_version"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.platform.version"
+      }
+    },
+    {
       "id": "admin GET /api/v1/microvm/connector/{microvmConnectorId}",
       "method": "GET",
       "path": "/api/v1/microvm/connector/{microvmConnectorId}",
@@ -13759,6 +13801,20 @@
       "id": "admin GET /api/v1/microvm/vms",
       "method": "GET",
       "path": "/api/v1/microvm/vms",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/system/version",
+      "method": "GET",
+      "path": "/api/v1/system/version",
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
