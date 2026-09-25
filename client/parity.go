@@ -335,6 +335,15 @@ func (c *Client) InstanceISOAction(ctx context.Context, id, device, action strin
 	return c.doItem(ctx, "POST", inst(id)+"/iso/"+url.PathEscape(device)+"/"+url.PathEscape(action), body, "")
 }
 
+// ForgeStatus reads the instance's Forge session state
+// ({active, session:{id,status,snapshot_name,disks,error,created_at,...}}) -
+// GET, no side effects (NUI-V-R19-FORGE1). session falls back to the latest
+// session of any status (including "failed") when none is currently
+// active/transitioning, so a failed session is still readable.
+func (c *Client) ForgeStatus(ctx context.Context, id string) (map[string]any, error) {
+	return c.doItem(ctx, "GET", inst(id)+"/forge", nil, "data")
+}
+
 func (c *Client) ForgeEnable(ctx context.Context, id string, body map[string]any) (map[string]any, error) {
 	return c.doItem(ctx, "POST", inst(id)+"/forge/enable", body, "forge")
 }
