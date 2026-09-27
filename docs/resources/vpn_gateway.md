@@ -97,7 +97,7 @@ output "vpn_gateway_endpoint" {
 - `listen_port` (Number) WireGuard UDP listen port on the gateway (1024-65535). Defaults to 51820 when omitted. Changing it forces a new resource.
 - `name` (String) Display name for the gateway. Defaults to a server-assigned "vpngw-<random>" when omitted. The gateway has no update endpoint, so changing the name forces a new resource. Modelled Optional+Computed so an omitted name round-trips against the server default without showing spurious drift.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `tunnel_subnet` (String) WireGuard tunnel subnet (CIDR) from which peer tunnel IPs are allocated (the gateway itself takes .1). Defaults to "10.99.0.0/24" when omitted. Must not overlap the VPC CIDR or any VPC subnet. Changing it forces a new resource.
+- `tunnel_subnet` (String) WireGuard tunnel subnet (CIDR) from which peer tunnel IPs are allocated (the gateway itself takes .1). Defaults to "10.99.0.0/24" when omitted. Must be a strict IPv4 CIDR (a.b.c.d/p, prefix 0-32), checked at plan time; must also not overlap the VPC CIDR or any VPC subnet, enforced server-side. Changing it forces a new resource.
 
 ### Read-Only
 

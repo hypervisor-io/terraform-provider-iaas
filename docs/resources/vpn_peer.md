@@ -79,14 +79,14 @@ resource "iaas_vpn_peer" "branch_office" {
 
 ### Optional
 
-- `allowed_ips` (Set of String) The CIDRs routed to this peer through the tunnel (WireGuard AllowedIPs), as an order-independent set. Defaults to the peer's tunnel_ip/32 when omitted. Updatable in place.
-- `dns` (String) DNS server to advertise to a road_warrior client in its generated config. Fixed at creation; changing it forces a new resource.
+- `allowed_ips` (Set of String) The CIDRs routed to this peer through the tunnel (WireGuard AllowedIPs), as an order-independent set. Defaults to the peer's tunnel_ip/32 when omitted. Updatable in place. Each element must not contain control characters (checked at plan time and enforced server-side).
+- `dns` (String) DNS server to advertise to a road_warrior client in its generated config. Fixed at creation; changing it forces a new resource. Must not contain control characters (checked at plan time and enforced server-side).
 - `enabled` (Boolean) Whether the peer is enabled (included in the gateway's WireGuard config). Defaults to true. Updatable in place.
-- `endpoint` (String) Remote endpoint address (host:port) for a site_to_site peer the gateway should dial out to, e.g. "203.0.113.1:51820". Omitted for road_warrior peers (the client dials in). Updatable in place.
+- `endpoint` (String) Remote endpoint address (host:port) for a site_to_site peer the gateway should dial out to, e.g. "203.0.113.1:51820". Omitted for road_warrior peers (the client dials in). Updatable in place. Must not contain control characters (checked at plan time and enforced server-side).
 - `keepalive` (Number) WireGuard PersistentKeepalive interval in seconds (0-65535). Defaults to 25. Updatable in place.
-- `name` (String) Display name for the peer. Updatable in place.
-- `preshared_key` (String, Sensitive) Optional WireGuard pre-shared key (an extra symmetric secret layered on top of the public-key crypto). Write-only and sensitive: it is stored encrypted server-side and never returned, so it is preserved from configuration and cannot be recovered on import. Updatable in place.
-- `public_key` (String) The peer's WireGuard PUBLIC key. For a road_warrior client, this is the client device's public key; for a site_to_site link it is the remote endpoint's public key. Updatable in place. (This is a public key, not a secret.)
+- `name` (String) Display name for the peer. Updatable in place. Must not contain control characters (checked at plan time and enforced server-side).
+- `preshared_key` (String, Sensitive) Optional WireGuard pre-shared key (an extra symmetric secret layered on top of the public-key crypto). Write-only and sensitive: it is stored encrypted server-side and never returned, so it is preserved from configuration and cannot be recovered on import. Updatable in place. Must not contain control characters (checked at plan time and enforced server-side).
+- `public_key` (String) The peer's WireGuard PUBLIC key. For a road_warrior client, this is the client device's public key; for a site_to_site link it is the remote endpoint's public key. Updatable in place. (This is a public key, not a secret.) Must not contain control characters (checked at plan time and enforced server-side).
 - `tunnel_ip` (String) The peer's IP inside the gateway's tunnel subnet. Auto-allocated from the gateway's tunnel_subnet when omitted. Fixed at creation; changing it forces a new resource.
 
 ### Read-Only

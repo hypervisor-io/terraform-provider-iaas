@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"sync"
 	"testing"
 
@@ -277,4 +278,60 @@ resource "iaas_vpn_peer" "test" {
 	if patchBody["enabled"] != false {
 		t.Errorf("patch body enabled = %v; want false", patchBody["enabled"])
 	}
+}
+
+// TestUnitVpnPeer_invalidControlCharacterNameErrors proves the name attribute
+// is checked at plan time by the shared no-control-characters validator - no
+// HTTP call is made for a value carrying an embedded newline.
+func TestUnitVpnPeer_invalidControlCharacterNameErrors(t *testing.T) {
+	ensureTFBinary(t)
+	srv := acctest.NewMockServer(t)
+
+	const gatewayID = "22222222-2222-2222-2222-222222222222"
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + fmt.Sprintf(`
+resource "iaas_vpn_peer" "test" {
+  vpn_gateway_id = %q
+  type           = "road_warrior"
+  name           = "peer\nname"
+}
+`, gatewayID)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config:      cfg,
+				ExpectError: regexp.MustCompile("Invalid Control Character"),
+			},
+		},
+	})
+}
+
+// TestUnitVpnPeer_invalidControlCharacterAllowedIPErrors proves each
+// allowed_ips SET element is also checked at plan time - a control character
+// inside one element must reject the whole config before any HTTP call.
+func TestUnitVpnPeer_invalidControlCharacterAllowedIPErrors(t *testing.T) {
+	ensureTFBinary(t)
+	srv := acctest.NewMockServer(t)
+
+	const gatewayID = "22222222-2222-2222-2222-222222222222"
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + fmt.Sprintf(`
+resource "iaas_vpn_peer" "test" {
+  vpn_gateway_id = %q
+  type           = "site_to_site"
+  allowed_ips    = ["10.0.0.0/24;\rrm -rf /"]
+}
+`, gatewayID)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config:      cfg,
+				ExpectError: regexp.MustCompile("Invalid Control Character"),
+			},
+		},
+	})
 }

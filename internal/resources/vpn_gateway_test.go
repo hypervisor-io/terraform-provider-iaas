@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"sync"
 	"testing"
 
@@ -231,4 +232,37 @@ resource "iaas_vpn_gateway" "test" {
 			t.Errorf("create body must NOT include %q; got %v", stray, createBody)
 		}
 	}
+}
+
+// TestUnitVpnGateway_invalidTunnelSubnetErrors proves tunnel_subnet is checked
+// at plan time by the shared IPv4 CIDR validator - no HTTP call is made for a
+// bare address with no prefix.
+func TestUnitVpnGateway_invalidTunnelSubnetErrors(t *testing.T) {
+	ensureTFBinary(t)
+	srv := acctest.NewMockServer(t)
+
+	const (
+		vpcID    = "11111111-1111-1111-1111-111111111111"
+		subnetID = "55555555-5555-5555-5555-555555555555"
+		planID   = "66666666-6666-6666-6666-666666666666"
+	)
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + fmt.Sprintf(`
+resource "iaas_vpn_gateway" "test" {
+  vpc_id        = %q
+  vpc_subnet_id = %q
+  vpngw_plan_id = %q
+  tunnel_subnet = "10.99.0.0"
+}
+`, vpcID, subnetID, planID)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config:      cfg,
+				ExpectError: regexp.MustCompile("Invalid IPv4 CIDR Block"),
+			},
+		},
+	})
 }

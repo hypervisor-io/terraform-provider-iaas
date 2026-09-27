@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/validators"
 )
 
 // Interface assertions - vpc mirrors the golden ssh_key resource's full set of
@@ -89,8 +90,13 @@ func (r *vpcResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 			},
 			"cidr": schema.StringAttribute{
 				Required: true,
-				Description: "CIDR block for the VPC (e.g. 10.0.0.0/24). Must fall within an " +
-					"RFC1918 private range, enforced server-side. Changing this forces a new resource.",
+				Description: "CIDR block for the VPC (e.g. 10.0.0.0/24). Must be a strict IPv4 " +
+					"CIDR (a.b.c.d/p, prefix 0-32) and fall within an RFC1918 private range, both " +
+					"enforced server-side; the IPv4 CIDR shape is also checked at plan time. " +
+					"Changing this forces a new resource.",
+				Validators: []validator.String{
+					validators.IPv4CIDR(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

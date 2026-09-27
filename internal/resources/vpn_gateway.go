@@ -12,9 +12,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/validators"
 	"github.com/hypervisor-io/terraform-provider-iaas/waiter"
 )
 
@@ -158,8 +160,13 @@ func (r *vpnGatewayResource) Schema(ctx context.Context, _ resource.SchemaReques
 				Optional: true,
 				Computed: true,
 				Description: "WireGuard tunnel subnet (CIDR) from which peer tunnel IPs are allocated " +
-					"(the gateway itself takes .1). Defaults to \"10.99.0.0/24\" when omitted. Must not " +
-					"overlap the VPC CIDR or any VPC subnet. Changing it forces a new resource.",
+					"(the gateway itself takes .1). Defaults to \"10.99.0.0/24\" when omitted. Must be a " +
+					"strict IPv4 CIDR (a.b.c.d/p, prefix 0-32), checked at plan time; must also not " +
+					"overlap the VPC CIDR or any VPC subnet, enforced server-side. Changing it forces " +
+					"a new resource.",
+				Validators: []validator.String{
+					validators.IPv4CIDR(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),

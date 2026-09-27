@@ -5,15 +5,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/validators"
 )
 
 // Interface assertions. iaas_vpn_peer is a CHILD resource of a VPN gateway. It
@@ -110,22 +113,34 @@ func (r *vpnPeerResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				},
 			},
 			"name": schema.StringAttribute{
-				Optional:    true,
-				Computed:    true,
-				Description: "Display name for the peer. Updatable in place.",
+				Optional: true,
+				Computed: true,
+				Description: "Display name for the peer. Updatable in place. Must not contain control " +
+					"characters (checked at plan time and enforced server-side).",
+				Validators: []validator.String{
+					validators.NoControlCharacters(),
+				},
 			},
 			"public_key": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
 				Description: "The peer's WireGuard PUBLIC key. For a road_warrior client, this is the " +
 					"client device's public key; for a site_to_site link it is the remote endpoint's " +
-					"public key. Updatable in place. (This is a public key, not a secret.)",
+					"public key. Updatable in place. (This is a public key, not a secret.) Must not " +
+					"contain control characters (checked at plan time and enforced server-side).",
+				Validators: []validator.String{
+					validators.NoControlCharacters(),
+				},
 			},
 			"endpoint": schema.StringAttribute{
 				Optional: true,
 				Description: "Remote endpoint address (host:port) for a site_to_site peer the gateway " +
 					"should dial out to, e.g. \"203.0.113.1:51820\". Omitted for road_warrior peers " +
-					"(the client dials in). Updatable in place.",
+					"(the client dials in). Updatable in place. Must not contain control characters " +
+					"(checked at plan time and enforced server-side).",
+				Validators: []validator.String{
+					validators.NoControlCharacters(),
+				},
 			},
 			"tunnel_ip": schema.StringAttribute{
 				Optional: true,
@@ -148,12 +163,20 @@ func (r *vpnPeerResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				ElementType: types.StringType,
 				Description: "The CIDRs routed to this peer through the tunnel (WireGuard AllowedIPs), " +
 					"as an order-independent set. Defaults to the peer's tunnel_ip/32 when omitted. " +
-					"Updatable in place.",
+					"Updatable in place. Each element must not contain control characters (checked at " +
+					"plan time and enforced server-side).",
+				Validators: []validator.Set{
+					setvalidator.ValueStringsAre(validators.NoControlCharacters()),
+				},
 			},
 			"dns": schema.StringAttribute{
 				Optional: true,
 				Description: "DNS server to advertise to a road_warrior client in its generated config. " +
-					"Fixed at creation; changing it forces a new resource.",
+					"Fixed at creation; changing it forces a new resource. Must not contain control " +
+					"characters (checked at plan time and enforced server-side).",
+				Validators: []validator.String{
+					validators.NoControlCharacters(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -182,7 +205,11 @@ func (r *vpnPeerResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description: "Optional WireGuard pre-shared key (an extra symmetric secret layered on " +
 					"top of the public-key crypto). Write-only and sensitive: it is stored encrypted " +
 					"server-side and never returned, so it is preserved from configuration and cannot " +
-					"be recovered on import. Updatable in place.",
+					"be recovered on import. Updatable in place. Must not contain control characters " +
+					"(checked at plan time and enforced server-side).",
+				Validators: []validator.String{
+					validators.NoControlCharacters(),
+				},
 			},
 		},
 	}

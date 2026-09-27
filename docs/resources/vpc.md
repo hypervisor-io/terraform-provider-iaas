@@ -33,7 +33,7 @@ resource "iaas_vpc" "example" {
 
 ### Required
 
-- `cidr` (String) CIDR block for the VPC (e.g. 10.0.0.0/24). Must fall within an RFC1918 private range, enforced server-side. Changing this forces a new resource.
+- `cidr` (String) CIDR block for the VPC (e.g. 10.0.0.0/24). Must be a strict IPv4 CIDR (a.b.c.d/p, prefix 0-32) and fall within an RFC1918 private range, both enforced server-side; the IPv4 CIDR shape is also checked at plan time. Changing this forces a new resource.
 - `name` (String) Name of the VPC. Maximum 16 characters; only lowercase letters and digits are allowed (regex ^[a-z0-9]+$ - no spaces, dots, or dashes). Validated server-side. Changing this forces a new resource.
 
 ### Optional

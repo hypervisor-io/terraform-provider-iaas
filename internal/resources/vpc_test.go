@@ -381,3 +381,30 @@ resource "iaas_vpc" "test" {
 		},
 	})
 }
+
+// TestUnitVPC_invalidCidrErrors proves the cidr attribute is checked at plan
+// time by the shared IPv4 CIDR validator - no HTTP call is made, and neither
+// a missing prefix nor an appended shell-metacharacter suffix reaches the API
+// as-is.
+func TestUnitVPC_invalidCidrErrors(t *testing.T) {
+	ensureTFBinary(t)
+	srv := acctest.NewMockServer(t)
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+resource "iaas_vpc" "test" {
+  name        = "prod"
+  cidr        = "10.99.0.0/24 -j MASQUERADE"
+  location_id = "33333333-3333-3333-3333-333333333333"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config:      cfg,
+				ExpectError: regexp.MustCompile("Invalid IPv4 CIDR Block"),
+			},
+		},
+	})
+}
