@@ -139,6 +139,14 @@ func TestUnitManagedDatabase_lifecycle(t *testing.T) {
 			// managed_databases.php).
 			"last_error":         nil,
 			"error_acknowledged": true,
+			// restored_from: provenance of a database created by restore-to-new
+			// (computed, read-only, null for an ordinary database).
+			"restored_from": map[string]any{
+				"backup_id":      "99999999-9999-9999-9999-999999999999",
+				"source_name":    "orders",
+				"taken_at":       "2026-10-01T10:00:00+00:00",
+				"engine_version": "8.0",
+			},
 		}
 	}
 
@@ -243,6 +251,10 @@ resource "iaas_managed_database" "test" {
 					resource.TestCheckResourceAttr("iaas_managed_database.test", "username", "dbadmin"),
 					resource.TestCheckResourceAttr("iaas_managed_database.test", "role", "primary"),
 					resource.TestCheckResourceAttr("iaas_managed_database.test", "password", "rotated-secret-pw"),
+					resource.TestCheckResourceAttr("iaas_managed_database.test", "restored_from.backup_id", "99999999-9999-9999-9999-999999999999"),
+					resource.TestCheckResourceAttr("iaas_managed_database.test", "restored_from.source_name", "orders"),
+					resource.TestCheckResourceAttr("iaas_managed_database.test", "restored_from.taken_at", "2026-10-01T10:00:00+00:00"),
+					resource.TestCheckResourceAttr("iaas_managed_database.test", "restored_from.engine_version", "8.0"),
 				),
 			},
 			{
@@ -465,6 +477,7 @@ resource "iaas_managed_database" "test" {
 				Config: upgradeCfg,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("iaas_managed_database.test", "engine_version", "8.4"),
+					resource.TestCheckNoResourceAttr("iaas_managed_database.test", "restored_from.backup_id"),
 					resource.TestCheckResourceAttr("iaas_managed_database.test", "status", "active"),
 				),
 			},

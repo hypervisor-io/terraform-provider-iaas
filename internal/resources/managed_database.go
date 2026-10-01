@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -102,6 +103,10 @@ type managedDatabaseModel struct {
 	Password          types.String `tfsdk:"password"`
 	LastError         types.String `tfsdk:"last_error"`
 	ErrorAcknowledged types.Bool   `tfsdk:"error_acknowledged"`
+
+	// RestoredFrom is the read-only provenance of a database created by restoring a VM backup
+	// into a new database ({backup_id, source_name, taken_at, engine_version}); null for any other database.
+	RestoredFrom types.Object `tfsdk:"restored_from"`
 
 	Timeouts timeouts.Value `tfsdk:"timeouts"`
 }
@@ -289,6 +294,21 @@ func (r *managedDatabaseResource) Schema(ctx context.Context, _ resource.SchemaR
 				Computed: true,
 				Description: "Whether the last_error above has been acknowledged/dismissed. false while an " +
 					"unacknowledged error is outstanding. Server-mutable.",
+			},
+			// restored_from: read-only provenance returned by GET /api/database/{id} for a database created
+			// by "restore to a new database"; null otherwise. Server-set once at creation, never written.
+			"restored_from": schema.SingleNestedAttribute{
+				Computed: true,
+				Description: "Where this database came from when it was created by restoring a full VM " +
+					"backup into a new database: the backup, the name of the source database, when the " +
+					"backup was taken and the engine version. Null for a database that was not restored. " +
+					"Read-only.",
+				Attributes: map[string]schema.Attribute{
+					"backup_id":      schema.StringAttribute{Computed: true, Description: "ID of the backup that was restored."},
+					"source_name":    schema.StringAttribute{Computed: true, Description: "Name of the source database (may no longer exist)."},
+					"taken_at":       schema.StringAttribute{Computed: true, Description: "When the backup was taken (ISO 8601)."},
+					"engine_version": schema.StringAttribute{Computed: true, Description: "Engine version of the restored database."},
+				},
 			},
 			"password": schema.StringAttribute{
 				Computed:  true,
@@ -668,6 +688,7 @@ func managedDatabaseStateFromAPI(obj map[string]any, prior managedDatabaseModel)
 		// returned by SHOW like status - no write-only preservation needed.
 		LastError:         optionalStringFromAPI(obj, "last_error", prior.LastError),
 		ErrorAcknowledged: boolFromIntAPI(obj, "error_acknowledged", prior.ErrorAcknowledged),
+		RestoredFrom:      restoredFromObjectFromAPI(obj),
 
 		// password is captured from the reset-password action, never from SHOW -
 		// preserve prior (the caller overrides it after a rotation).
@@ -675,6 +696,40 @@ func managedDatabaseStateFromAPI(obj map[string]any, prior managedDatabaseModel)
 
 		Timeouts: prior.Timeouts,
 	}
+}
+
+var restoredFromAttrTypes = map[string]attr.Type{
+	"backup_id":      types.StringType,
+	"source_name":    types.StringType,
+	"taken_at":       types.StringType,
+	"engine_version": types.StringType,
+}
+
+// restoredFromObjectFromAPI maps the optional restored_from object of SHOW into a
+// types.Object. An absent or null value is a known null object (the database was not
+// restored); a missing member is null. Always known after read, never unknown.
+func restoredFromObjectFromAPI(obj map[string]any) types.Object {
+	raw, ok := obj["restored_from"]
+	if !ok || raw == nil {
+		return types.ObjectNull(restoredFromAttrTypes)
+	}
+	m, ok := raw.(map[string]any)
+	if !ok {
+		return types.ObjectNull(restoredFromAttrTypes)
+	}
+	str := func(k string) attr.Value {
+		if v, ok := m[k].(string); ok {
+			return types.StringValue(v)
+		}
+		return types.StringNull()
+	}
+	o, _ := types.ObjectValue(restoredFromAttrTypes, map[string]attr.Value{
+		"backup_id":      str("backup_id"),
+		"source_name":    str("source_name"),
+		"taken_at":       str("taken_at"),
+		"engine_version": str("engine_version"),
+	})
+	return o
 }
 
 // dbRoleFromAPI reads the role field, defaulting an absent/empty value to

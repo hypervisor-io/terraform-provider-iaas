@@ -101,6 +101,7 @@ output "db_last_error" {
 - `last_error` (String) The most recent action failure recorded for this database (deploy, backup, upgrade, resync, health check, ...), or empty when none is outstanding. Cleared by a successful subsequent action, or explicitly via the acknowledge-error action (AcknowledgeManagedDatabaseError in the client - implemented but not invoked by this resource; see error_acknowledged). Server-mutable.
 - `password` (String, Sensitive) Cleartext admin password. The API NEVER returns the password on create or read (it is encrypted and hidden server-side), so this is empty until you rotate it by changing reset_password - the reset-password action returns the new password, which is captured here. Marked sensitive so it is never shown in plan/CLI output.
 - `port` (Number) Connection port (3306 for MySQL/MariaDB, 5432 for PostgreSQL). Stable after create.
+- `restored_from` (Attributes) Where this database came from when it was created by restoring a full VM backup into a new database: the backup, the name of the source database, when the backup was taken and the engine version. Null for a database that was not restored. Read-only. (see [below for nested schema](#nestedatt--restored_from))
 - `role` (String) Replication role: "primary" for a standalone/primary database. Server-mutable (a replica promotion can change it).
 - `status` (String) Lifecycle status of the managed database: "deploying", "active", "suspended", "error", "destroying". Server-mutable.
 - `username` (String) Admin username (the server-created "dbadmin" account). Stable after create.
@@ -113,3 +114,14 @@ Optional:
 - `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 - `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
 - `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+
+
+<a id="nestedatt--restored_from"></a>
+### Nested Schema for `restored_from`
+
+Read-Only:
+
+- `backup_id` (String) ID of the backup that was restored.
+- `engine_version` (String) Engine version of the restored database.
+- `source_name` (String) Name of the source database (may no longer exist).
+- `taken_at` (String) When the backup was taken (ISO 8601).
