@@ -109,6 +109,12 @@ func (c *Client) do(ctx context.Context, method, path string, body any) (*http.R
 // header is re-applied on each retry attempt (a fresh request is built per
 // attempt), so the idempotency key survives a 429/5xx retry.
 func (c *Client) doWithHeaders(ctx context.Context, method, path string, body any, extraHeaders map[string]string) (*http.Response, []byte, error) {
+	return c.doWithAttempts(ctx, method, path, body, extraHeaders, maxRetryAttempts)
+}
+
+// doWithAttempts lets non-idempotent actions opt out of replay while sharing the
+// same authentication, body reading, and error handling as ordinary requests.
+func (c *Client) doWithAttempts(ctx context.Context, method, path string, body any, extraHeaders map[string]string, attempts int) (*http.Response, []byte, error) {
 	rawURL := c.baseURL + path
 
 	// Pre-marshal the body once; each attempt creates a new bytes.Reader.
@@ -121,7 +127,7 @@ func (c *Client) doWithHeaders(ctx context.Context, method, path string, body an
 		}
 	}
 
-	for attempt := 0; attempt < maxRetryAttempts; attempt++ {
+	for attempt := 0; attempt < attempts; attempt++ {
 		// If this is a retry, sleep with exponential back-off + jitter,
 		// but honour ctx cancellation.
 		if attempt > 0 {
@@ -188,7 +194,7 @@ func (c *Client) doWithHeaders(ctx context.Context, method, path string, body an
 		isRetryable := resp.StatusCode == http.StatusTooManyRequests || // 429
 			(resp.StatusCode >= 500 && resp.StatusCode < 600) // 5xx
 
-		if !isRetryable || attempt == maxRetryAttempts-1 {
+		if !isRetryable || attempt == attempts-1 {
 			// Either not retryable, or this was the final attempt - return.
 			return resp, data, nil
 		}
@@ -196,5 +202,5 @@ func (c *Client) doWithHeaders(ctx context.Context, method, path string, body an
 	}
 
 	// Unreachable (loop always returns on last attempt), but satisfies compiler.
-	return nil, nil, fmt.Errorf("do: exhausted %d attempts for %s %s", maxRetryAttempts, method, rawURL)
+	return nil, nil, fmt.Errorf("do: exhausted %d attempts for %s %s", attempts, method, rawURL)
 }

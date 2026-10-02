@@ -42,6 +42,19 @@ func (c *Client) doItem(ctx context.Context, method, path string, body any, key 
 	return decodeItem(raw, key)
 }
 
+// doItemOnce is for actions whose dispatch outcome may be uncertain. A 429/5xx
+// cannot establish that work never started, so return it without replaying.
+func (c *Client) doItemOnce(ctx context.Context, method, path string, body any, key string) (map[string]any, error) {
+	resp, raw, err := c.doWithAttempts(ctx, method, path, body, nil, 1)
+	if err != nil {
+		return nil, err
+	}
+	if err := responseError(resp, raw); err != nil {
+		return nil, err
+	}
+	return decodeItem(raw, key)
+}
+
 // doItemWithHeaders is doItem with optional per-request extra headers. It is the
 // idempotent-write seam: create paths that must carry an Idempotency-Key header
 // (so the Master's idempotency.user middleware deduplicates a retried create)

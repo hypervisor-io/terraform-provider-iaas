@@ -93,6 +93,11 @@ import (
 //     doItem/doVoid surface all of these (C3).
 //
 // An empty-id guard is applied on every path-id argument (consistency).
+//
+// Lifecycle admission: restart, reset-password, resize and applying a parameter
+// group refuse with HTTP 409 restore_not_activated while a restore-to-new has
+// not activated (including a failed restore). The existing APIError preserves
+// status and message; no password, plan or configuration mutation starts.
 
 // CreateManagedDatabase deploys a managed database from the supplied prebuilt
 // body (name + engine + engine_version + db_plan_id + vpc_id + vpc_subnet_id

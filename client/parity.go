@@ -72,12 +72,17 @@ func db(id string) string   { return "/database/" + url.PathEscape(id) }
 // ── managed database actions ─────────────────────────────────────────────────
 
 func (c *Client) BackupManagedDatabase(ctx context.Context, id string) (map[string]any, error) {
-	return c.doItem(ctx, "POST", db(id)+"/backup", nil, "backup")
+	return c.doItemOnce(ctx, "POST", db(id)+"/backup", nil, "backup")
 }
 
 // BackupManagedDatabaseOfType takes an on-demand backup of the given type ("full" or
 // "incremental"). An empty type sends no body, which the server treats as a full backup.
 // An incremental that cannot be taken answers 409 with a reason (nothing is started).
+// Full and incremental backups also refuse with 409 backup_in_progress while a
+// backup is pending/in_progress, database_busy for nonterminal source VM work,
+// restore_not_activated, recovery_in_progress, or pitr_reopen_in_progress.
+// Requests are sent once: transport/5xx/invalid acknowledgements can leave the
+// server reservation pending. Inspect database backups/tasks before trying again.
 func (c *Client) BackupManagedDatabaseOfType(ctx context.Context, id, backupType string) (map[string]any, error) {
 	switch backupType {
 	case "":
@@ -86,7 +91,7 @@ func (c *Client) BackupManagedDatabaseOfType(ctx context.Context, id, backupType
 	default:
 		return nil, fmt.Errorf("backup_type must be full or incremental, got %q", backupType)
 	}
-	return c.doItem(ctx, "POST", db(id)+"/backup", map[string]any{"backup_type": backupType}, "backup")
+	return c.doItemOnce(ctx, "POST", db(id)+"/backup", map[string]any{"backup_type": backupType}, "backup")
 }
 
 func (c *Client) PromoteManagedDatabase(ctx context.Context, id string) error {

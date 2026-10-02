@@ -781,6 +781,7 @@
       "method": "POST",
       "path": "/api/v1/database/{api_managed_database}/backup",
       "surface": "admin",
+      "contract_notes": "backup_type full (default) or incremental; atomic admission shared by both types. 409 backup_in_progress while a backup is pending/in_progress, database_busy for nonterminal work on the actual source VM, restore_not_activated for a restore-to-new database not activated, recovery_in_progress or pitr_reopen_in_progress during recovery/PITR reopen. Incremental-only refusals: incremental_requires_policy, incremental_not_supported_on_replica, incremental_requires_pitr, incremental_requires_full_backup, incremental_parent_unavailable; never silently falls back to full. Refusals carry success:false, reason and message. A transport error, 5xx, 408/429 or invalid node ACK does not prove refusal; backup/task reservations can remain pending until a terminal callback or operator reconciliation. The user API returns 200 success:false with message for caught dispatch failures; the admin API maps that body to 400. No generic dispatch reason is promised. Inspect backup/task state before retrying; acceptance is not completion. Pending/in_progress backups are conservatively serialized across the primary and all its replicas because historical source VM ownership is not stored. A retained backup of another family member answers 409 database_busy even when its source Task is missing or terminal, regardless of current replica health; distinct sibling source VMs are also held until the authoritative backup state is terminal.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Deferred consumer sync: the request body gained optional backup_type (full|incremental, default full) and incremental refusals answer 409 with reasons (incremental_requires_policy, incremental_not_supported_on_replica, incremental_requires_pitr, backup_in_progress, incremental_requires_full_backup, incremental_parent_unavailable); the tool/provider send no backup_type."
@@ -795,6 +796,7 @@
       "method": "POST",
       "path": "/api/v1/database/{api_managed_database}/reset-password",
       "surface": "admin",
+      "contract_notes": "409 restore_not_activated with success:false, reason and message while a restore-to-new database has not activated, including a failed restore; no task, configuration, plan or password change starts. Wait for successful activation before retrying.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; successful reset returns data.password as a named scalar; failures never contain the generated password"
@@ -809,6 +811,7 @@
       "method": "PATCH",
       "path": "/api/v1/database/{api_managed_database}/resize",
       "surface": "admin",
+      "contract_notes": "409 restore_not_activated with success:false, reason and message while a restore-to-new database has not activated, including a failed restore; no task, configuration, plan or password change starts. Wait for successful activation before retrying.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -823,6 +826,7 @@
       "method": "POST",
       "path": "/api/v1/database/{api_managed_database}/restart",
       "surface": "admin",
+      "contract_notes": "409 restore_not_activated with success:false, reason and message while a restore-to-new database has not activated, including a failed restore; no task, configuration, plan or password change starts. Wait for successful activation before retrying.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -963,6 +967,7 @@
       "method": "PATCH",
       "path": "/api/v1/database/{managedDatabaseId}/parameter-group",
       "surface": "admin",
+      "contract_notes": "409 restore_not_activated with success:false, reason and message while a restore-to-new database has not activated, including a failed restore; no task, configuration, plan or password change starts. Wait for successful activation before retrying.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8484,6 +8489,7 @@
       "method": "POST",
       "path": "/api/database/{user_dbId}/backup",
       "surface": "user",
+      "contract_notes": "backup_type full (default) or incremental; atomic admission shared by both types. 409 backup_in_progress while a backup is pending/in_progress, database_busy for nonterminal work on the actual source VM, restore_not_activated for a restore-to-new database not activated, recovery_in_progress or pitr_reopen_in_progress during recovery/PITR reopen. Incremental-only refusals: incremental_requires_policy, incremental_not_supported_on_replica, incremental_requires_pitr, incremental_requires_full_backup, incremental_parent_unavailable; never silently falls back to full. Refusals carry success:false, reason and message. A transport error, 5xx, 408/429 or invalid node ACK does not prove refusal; backup/task reservations can remain pending until a terminal callback or operator reconciliation. The user API returns 200 success:false with message for caught dispatch failures; the admin API maps that body to 400. No generic dispatch reason is promised. Inspect backup/task state before retrying; acceptance is not completion. Pending/in_progress backups are conservatively serialized across the primary and all its replicas because historical source VM ownership is not stored. A retained backup of another family member answers 409 database_busy even when its source Task is missing or terminal, regardless of current replica health; distinct sibling source VMs are also held until the authoritative backup state is terminal.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -8512,9 +8518,10 @@
       "method": "PATCH",
       "path": "/api/database/{user_dbId}/parameter-group",
       "surface": "user",
+      "contract_notes": "409 restore_not_activated with success:false, reason and message while a restore-to-new database has not activated, including a failed restore; no task, configuration, plan or password change starts. Wait for successful activation before retrying.",
       "opentofu": {
-        "status": "covered",
-        "type": "iaas_managed_database"
+        "status": "excluded",
+        "reason": "applying or clearing database parameters is an imperative action; iaas_managed_database has no declarative parameter-group field (shared client method exists for explicit callers)"
       },
       "mcp": {
         "status": "covered",
@@ -8554,6 +8561,7 @@
       "method": "POST",
       "path": "/api/database/{user_dbId}/reset-password",
       "surface": "user",
+      "contract_notes": "409 restore_not_activated with success:false, reason and message while a restore-to-new database has not activated, including a failed restore; no task, configuration, plan or password change starts. Wait for successful activation before retrying.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -8568,6 +8576,7 @@
       "method": "PATCH",
       "path": "/api/database/{user_dbId}/resize",
       "surface": "user",
+      "contract_notes": "409 restore_not_activated with success:false, reason and message while a restore-to-new database has not activated, including a failed restore; no task, configuration, plan or password change starts. Wait for successful activation before retrying.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_managed_database"
@@ -8582,6 +8591,7 @@
       "method": "POST",
       "path": "/api/database/{user_dbId}/restart",
       "surface": "user",
+      "contract_notes": "409 restore_not_activated with success:false, reason and message while a restore-to-new database has not activated, including a failed restore; no task, configuration, plan or password change starts. Wait for successful activation before retrying.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"

@@ -133,7 +133,9 @@ func (r *managedDatabaseResource) Schema(ctx context.Context, _ resource.SchemaR
 			"replicas. Managed databases are a billed add-on: if billing is disabled the create " +
 			"fails with HTTP 403; feature/quota limits (plan disabled, engine unsupported, quota reached, " +
 			"location not database-enabled, no free IP, NAT gateway required for a private subnet) fail " +
-			"with a clear message.",
+			"with a clear message. Restart, password reset, resize and parameter-group application refuse " +
+			"with HTTP 409 while a database restored into a new database has not activated, including a failed " +
+			"restore (restore_not_activated). Wait for successful activation before applying those changes.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
