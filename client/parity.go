@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 )
 
@@ -72,6 +73,20 @@ func db(id string) string   { return "/database/" + url.PathEscape(id) }
 
 func (c *Client) BackupManagedDatabase(ctx context.Context, id string) (map[string]any, error) {
 	return c.doItem(ctx, "POST", db(id)+"/backup", nil, "backup")
+}
+
+// BackupManagedDatabaseOfType takes an on-demand backup of the given type ("full" or
+// "incremental"). An empty type sends no body, which the server treats as a full backup.
+// An incremental that cannot be taken answers 409 with a reason (nothing is started).
+func (c *Client) BackupManagedDatabaseOfType(ctx context.Context, id, backupType string) (map[string]any, error) {
+	switch backupType {
+	case "":
+		return c.BackupManagedDatabase(ctx, id)
+	case "full", "incremental":
+	default:
+		return nil, fmt.Errorf("backup_type must be full or incremental, got %q", backupType)
+	}
+	return c.doItem(ctx, "POST", db(id)+"/backup", map[string]any{"backup_type": backupType}, "backup")
 }
 
 func (c *Client) PromoteManagedDatabase(ctx context.Context, id string) error {

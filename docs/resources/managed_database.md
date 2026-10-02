@@ -103,7 +103,7 @@ output "db_last_error" {
 - `port` (Number) Connection port (3306 for MySQL/MariaDB, 5432 for PostgreSQL). Stable after create.
 - `restored_from` (Attributes) Where this database came from when it was created by restoring a full VM backup into a new database: the backup, the name of the source database, when the backup was taken and the engine version. Null for a database that was not restored. Read-only. (see [below for nested schema](#nestedatt--restored_from))
 - `role` (String) Replication role: "primary" for a standalone/primary database. Server-mutable (a replica promotion can change it).
-- `status` (String) Lifecycle status of the managed database: "deploying", "active", "suspended", "error", "destroying". Server-mutable.
+- `status` (String) Lifecycle status of the managed database: "deploying", "active", "restoring" (a database being created from a VM backup), "suspended", "error", "destroying". Server-mutable.
 - `username` (String) Admin username (the server-created "dbadmin" account). Stable after create.
 
 <a id="nestedblock--timeouts"></a>

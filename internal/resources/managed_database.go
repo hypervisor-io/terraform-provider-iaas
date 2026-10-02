@@ -248,7 +248,8 @@ func (r *managedDatabaseResource) Schema(ctx context.Context, _ resource.SchemaR
 			"status": schema.StringAttribute{
 				Computed: true,
 				Description: "Lifecycle status of the managed database: \"deploying\", \"active\", " +
-					"\"suspended\", \"error\", \"destroying\". Server-mutable.",
+					"\"restoring\" (a database being created from a VM backup), \"suspended\", \"error\", " +
+					"\"destroying\". Server-mutable.",
 			},
 			"host": schema.StringAttribute{
 				Computed: true,

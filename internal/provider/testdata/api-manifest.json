@@ -153,11 +153,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; accepts optional retention_mode and keep_* age-window/GFS retention fields"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); accepts optional retention_mode and keep_* age-window/GFS retention fields"
       }
     },
     {
@@ -195,11 +195,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; accepts optional retention_mode and keep_* age-window/GFS retention fields"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); accepts optional retention_mode and keep_* age-window/GFS retention fields"
       }
     },
     {
@@ -242,6 +242,20 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/backup-dispatch/{operationId}/reconcile",
+      "method": "POST",
+      "path": "/api/v1/backup-dispatch/{operationId}/reconcile",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 online PBS dispatch reconciliation is operator-only; the user-scoped OpenTofu provider does not model it"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin operation mutates task or queue status only after a matching Slave receipt; excluded from the curated MCP allowlist"
       }
     },
     {
@@ -769,11 +783,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Deferred consumer sync: the request body gained optional backup_type (full|incremental, default full) and incremental refusals answer 409 with reasons (incremental_requires_policy, incremental_not_supported_on_replica, incremental_requires_pitr, backup_in_progress, incremental_requires_full_backup, incremental_parent_unavailable); the tool/provider send no backup_type."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md). Deferred consumer sync: the request body gained optional backup_type (full|incremental, default full) and incremental refusals answer 409 with reasons (incremental_requires_policy, incremental_not_supported_on_replica, incremental_requires_pitr, backup_in_progress, incremental_requires_full_backup, incremental_parent_unavailable); the tool/provider send no backup_type."
       }
     },
     {
@@ -783,11 +797,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; successful reset returns data.password as a named scalar; failures never contain the generated password"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); successful reset returns data.password as a named scalar; failures never contain the generated password"
       }
     },
     {
@@ -822,6 +836,90 @@
       "id": "admin POST /api/v1/database/{api_managed_database}/restore",
       "method": "POST",
       "path": "/api/v1/database/{api_managed_database}/restore",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/database/{api_managed_database}/vm-backups",
+      "method": "GET",
+      "path": "/api/v1/database/{api_managed_database}/vm-backups",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/database/{api_managed_database}/vm-backups",
+      "method": "POST",
+      "path": "/api/v1/database/{api_managed_database}/vm-backups",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin DELETE /api/v1/database/{api_managed_database}/vm-backups/settings",
+      "method": "DELETE",
+      "path": "/api/v1/database/{api_managed_database}/vm-backups/settings",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin PUT /api/v1/database/{api_managed_database}/vm-backups/settings",
+      "method": "PUT",
+      "path": "/api/v1/database/{api_managed_database}/vm-backups/settings",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin DELETE /api/v1/database/{api_managed_database}/vm-backups/{vm_backup}",
+      "method": "DELETE",
+      "path": "/api/v1/database/{api_managed_database}/vm-backups/{vm_backup}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/database/{api_managed_database}/vm-backups/{vm_backup}/restore",
+      "method": "POST",
+      "path": "/api/v1/database/{api_managed_database}/vm-backups/{vm_backup}/restore",
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
@@ -965,11 +1063,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; asynchronous success returns a named data.task_id"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); asynchronous success returns a named data.task_id"
       }
     },
     {
@@ -1015,6 +1113,20 @@
       }
     },
     {
+      "id": "admin POST /api/v1/database/{managedDatabaseId}/abandon-recovery",
+      "method": "POST",
+      "path": "/api/v1/database/{managedDatabaseId}/abandon-recovery",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
       "id": "admin GET /api/v1/databases",
       "method": "GET",
       "path": "/api/v1/databases",
@@ -1035,11 +1147,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Deferred consumer sync: creating while the account's quota check lock is held by a concurrent request now answers 409 reason account_busy, and a genuine quota breach answers 422 reason quota_exceeded, instead of HTTP 200 success:false; the consumers do not branch on these reasons yet."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md). Deferred consumer sync: creating while the account's quota check lock is held by a concurrent request now answers 409 reason account_busy, and a genuine quota breach answers 422 reason quota_exceeded, instead of HTTP 200 success:false; the consumers do not branch on these reasons yet."
       }
     },
     {
@@ -1379,6 +1491,34 @@
       }
     },
     {
+      "id": "admin GET /api/v1/dns/system-domains",
+      "method": "GET",
+      "path": "/api/v1/dns/system-domains",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/dns/system-domains",
+      "method": "POST",
+      "path": "/api/v1/dns/system-domains",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
       "id": "admin DELETE /api/v1/dns/reverse/request/{rdnsRequestId}",
       "method": "DELETE",
       "path": "/api/v1/dns/reverse/request/{rdnsRequestId}",
@@ -1455,11 +1595,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; asynchronous success returns a named data.task_id"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); asynchronous success returns a named data.task_id"
       }
     },
     {
@@ -1483,11 +1623,39 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; new request field adopt_existing (use the zone that already exists on the provider) is not modelled"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); new request field adopt_existing stays excluded, as for the endpoint"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/dns/reverse/zone/{rdnsZoneId}/import",
+      "method": "POST",
+      "path": "/api/v1/dns/reverse/zone/{rdnsZoneId}/import",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
       },
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/dns/reverse/zone/{rdnsZoneId}/import/preview",
+      "method": "GET",
+      "path": "/api/v1/dns/reverse/zone/{rdnsZoneId}/import/preview",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
       }
     },
     {
@@ -1623,7 +1791,7 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; includes nullable PBS usage_total_bytes, usage_used_bytes and usage_checked_at admin telemetry"
       },
       "mcp": {
         "status": "covered",
@@ -1634,6 +1802,20 @@
       "id": "admin PATCH /api/v1/hypervisor/backup-storage/{hypervisorBackupStorageId}",
       "method": "PATCH",
       "path": "/api/v1/hypervisor/backup-storage/{hypervisorBackupStorageId}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; partial same-backend config preserves omitted fields, credential-id rotation requires a replacement secret, and backend switches require complete new config (or a new local path); invalid switches return 422; this admin mutation remains explicitly excluded"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); partial same-backend config preserves omitted fields, credential-id rotation requires a replacement secret, and backend switches require complete new config (or a new local path); invalid switches return 422; this admin mutation remains explicitly excluded"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/hypervisor/backup-storage/{hypervisorBackupStorageId}/test",
+      "method": "POST",
+      "path": "/api/v1/hypervisor/backup-storage/{hypervisorBackupStorageId}/test",
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
@@ -1651,7 +1833,7 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; includes nullable PBS usage_total_bytes, usage_used_bytes and usage_checked_at admin telemetry"
       },
       "mcp": {
         "status": "covered",
@@ -1665,11 +1847,25 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; successful creation returns data.storage_id as a named scalar"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); successful creation returns data.storage_id as a named scalar"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/hypervisor/backup-storages/fingerprint",
+      "method": "POST",
+      "path": "/api/v1/hypervisor/backup-storages/fingerprint",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; fingerprint discovery accepts omitted or null port as 8007"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); fingerprint discovery accepts omitted or null port as 8007"
       }
     },
     {
@@ -1707,11 +1903,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; new request fields l2_interface, vxlan_mode, lb_image_id and image_storages are not modelled"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); new request fields l2_interface, vxlan_mode, lb_image_id and image_storages stay excluded, as for the endpoint"
       }
     },
     {
@@ -1763,7 +1959,7 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; optional system.backup_deletion_fence is an explicit agent capability boolean, absent on older heartbeats"
       },
       "mcp": {
         "status": "covered",
@@ -1791,11 +1987,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; request fields l2_interface, vxlan_mode, lb_image_id and image_storages are not modelled"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); request fields l2_interface, vxlan_mode, lb_image_id and image_storages stay excluded, as for the endpoint"
       }
     },
     {
@@ -1875,11 +2071,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; local storage creation requires hypervisor_id and resolves a supported backend type (omitted or null selects QCOW2); successful creation returns data.storage_id as a named scalar"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); local storage creation requires hypervisor_id and resolves a supported backend type (omitted or null selects QCOW2); successful creation returns data.storage_id as a named scalar"
       }
     },
     {
@@ -1903,7 +2099,7 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; optional system.backup_deletion_fence is an explicit agent capability boolean, absent on older heartbeats"
       },
       "mcp": {
         "status": "covered",
@@ -1917,11 +2113,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints, including nullable backup_storage_id destination assignment"
       },
       "mcp": {
-        "status": "covered",
-        "tool": "admin.hypervisor.set_maintenance"
+        "status": "excluded",
+        "reason": "general admin hypervisor mutation, including nullable backup_storage_id destination assignment, is outside the MCP safe allowlist; the existing admin.hypervisor.set_maintenance tool covers only the maintenance toggle"
       }
     },
     {
@@ -2127,7 +2323,7 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; optional system.backup_deletion_fence is an explicit agent capability boolean, absent on older heartbeats"
       },
       "mcp": {
         "status": "covered",
@@ -2141,11 +2337,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints, including optional backup_storage_id destination assignment and the now required hypervisor_group_id; creation returns data.hypervisor_id as a named scalar"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin hypervisor creation and optional backup_storage_id destination assignment are excluded from the D3 safe allowlist (see mcp-phase4-excluded.md), and hypervisor_group_id is now required; creation returns data.hypervisor_id as a named scalar"
       }
     },
     {
@@ -2298,8 +2494,8 @@
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
       },
       "mcp": {
-        "status": "covered",
-        "tool": "admin.image.list"
+        "status": "excluded",
+        "reason": "admin.image.list does not pass the purpose filter; consumer support is deferred until after release per /decisions/consumers-after-release-2026-09-28"
       }
     },
     {
@@ -2337,11 +2533,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; live admitted backup operations return 409 backup_operation_live and preserve task or queue evidence"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); live admitted backup operations return 409 backup_operation_live and preserve task or queue evidence"
       }
     },
     {
@@ -2449,11 +2645,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; accepts optional delete_backups (default false keeps backups)"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); accepts optional delete_backups (default false keeps backups)"
       }
     },
     {
@@ -2477,11 +2673,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; new request fields vnc_keymap and protection_enabled are not modelled"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); new request fields vnc_keymap and protection_enabled stay excluded, as for the endpoint"
       }
     },
     {
@@ -2505,11 +2701,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; deletion uses the recorded destination, claims before dispatch, and returns typed refusal or unconfirmed-dispatch errors; unconfirmed Slave dispatch retains the live task/claim until terminal callback or proven-dead reconciliation"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); deletion uses the recorded destination, claims before dispatch, and returns typed refusal or unconfirmed-dispatch errors; unconfirmed Slave dispatch retains the live task/claim until terminal callback or proven-dead reconciliation"
       }
     },
     {
@@ -2519,11 +2715,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; restore answers 409 backup_being_deleted while a deletion claim is held; unconfirmed Slave dispatch retains the live task/storage-op lock until terminal callback or proven-dead reconciliation; on Proxmox only a proven pre-mutation refusal releases the restore lock; an attempted stop or restore request keeps its task and lock live pending confirmation"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); restore answers 409 backup_being_deleted while a deletion claim is held; unconfirmed Slave dispatch retains the live task/storage-op lock until terminal callback or proven-dead reconciliation; on Proxmox only a proven pre-mutation refusal releases the restore lock; an attempted stop or restore request keeps its task and lock live pending confirmation"
       }
     },
     {
@@ -2537,7 +2733,8 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "admin.instance.backups"
+        "tool": "admin.instance.backups",
+        "reason": "additive nullable response fields based_on_backup_id/based_on_pbs_backup_time pass through the tool's raw response unchanged"
       }
     },
     {
@@ -2561,11 +2758,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; deletion uses the recorded destination, claims before dispatch, and returns typed refusal or unconfirmed-dispatch errors; unconfirmed Slave dispatch retains the live task/claim until terminal callback or proven-dead reconciliation"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); deletion uses the recorded destination, claims before dispatch, and returns typed refusal or unconfirmed-dispatch errors; unconfirmed Slave dispatch retains the live task/claim until terminal callback or proven-dead reconciliation"
       }
     },
     {
@@ -2617,11 +2814,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; task-bearing success returns a named data.task_id; no-task branches omit it"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); task-bearing success returns a named data.task_id; no-task branches omit it"
       }
     },
     {
@@ -2631,11 +2828,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; task-bearing success returns a named data.task_id; no-task branches omit it"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); task-bearing success returns a named data.task_id; no-task branches omit it"
       }
     },
     {
@@ -2645,11 +2842,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; task-bearing success returns a named data.task_id; no-task branches omit it"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); task-bearing success returns a named data.task_id; no-task branches omit it"
       }
     },
     {
@@ -2673,11 +2870,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; offline imported disk creation requires owner assignment and otherwise returns 409 imported_disk_requires_assignment; omitted or null fstype defaults to ext4; task-bearing success returns a named data.task_id; no-task branches omit it"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); offline imported disk creation requires owner assignment and otherwise returns 409 imported_disk_requires_assignment; omitted or null fstype defaults to ext4; task-bearing success returns a named data.task_id; no-task branches omit it"
       }
     },
     {
@@ -2687,11 +2884,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; task-bearing success returns a named data.task_id; no-task branches omit it"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); task-bearing success returns a named data.task_id; no-task branches omit it"
       }
     },
     {
@@ -2799,11 +2996,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; available cached output returns data.logs as a named scalar; missing logs remains 404"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase; available cached output returns data.logs as a named scalar; missing logs remains 404"
       }
     },
     {
@@ -2981,11 +3178,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; task-bearing success returns a named data.task_id; no-task branches omit it"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); task-bearing success returns a named data.task_id; no-task branches omit it"
       }
     },
     {
@@ -3121,11 +3318,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Proxmox ticket failures now answer 503 reason=proxmox_console_unavailable."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+        "reason": "Admin console capability is outside the curated MCP allowlist. Proxmox ticket failures now answer 503 reason=proxmox_console_unavailable."
       }
     },
     {
@@ -3135,11 +3332,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Proxmox ticket failures now answer 503 reason=proxmox_console_unavailable."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "Admin console capability is outside the curated MCP allowlist. Proxmox ticket failures now answer 503 reason=proxmox_console_unavailable."
       }
     },
     {
@@ -3247,11 +3444,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; task-bearing success returns a named data.task_id; no-task branches omit it"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); task-bearing success returns a named data.task_id; no-task branches omit it"
       }
     },
     {
@@ -3261,11 +3458,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; response carries ws_url (wss, token in the path) and expires_in, failures are typed 409/422/503 with a reason; consumer support parked after release"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase; response carries ws_url (wss, token in the path) and expires_in, failures are typed 409/422/503 with a reason; consumer support parked after release"
       }
     },
     {
@@ -3303,11 +3500,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; task-bearing success returns a named data.task_id; no-task branches omit it"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); task-bearing success returns a named data.task_id; no-task branches omit it"
       }
     },
     {
@@ -3317,11 +3514,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; enabling answers 409 tpm_unsupported_on_node when the node does not report TPM support"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); enabling answers 409 tpm_unsupported_on_node when the node does not report TPM support"
       }
     },
     {
@@ -3331,11 +3528,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; task-bearing success returns a named data.task_id; no-task branches omit it"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); task-bearing success returns a named data.task_id; no-task branches omit it"
       }
     },
     {
@@ -3451,6 +3648,48 @@
       }
     },
     {
+      "id": "admin GET /api/v1/instance/{instanceId}/metrics/series",
+      "method": "GET",
+      "path": "/api/v1/instance/{instanceId}/metrics/series",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/instance/{instanceId}/backup/pbs-chain/reset",
+      "method": "POST",
+      "path": "/api/v1/instance/{instanceId}/backup/pbs-chain/reset",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin PATCH /api/v1/instance/{instanceId}/backup/{backupId}/protected",
+      "method": "PATCH",
+      "path": "/api/v1/instance/{instanceId}/backup/{backupId}/protected",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Protection returns 409 reason=backup_being_deleted while any accepted or uncertain deletion claim remains outstanding, regardless of age; explicit reconciliation or confirmed deletion is required."
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md). Protection returns 409 reason=backup_being_deleted while any accepted or uncertain deletion claim remains outstanding, regardless of age; explicit reconciliation or confirmed deletion is required."
+      }
+    },
+    {
       "id": "admin GET /api/v1/instances",
       "method": "GET",
       "path": "/api/v1/instances",
@@ -3471,11 +3710,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Admin create now answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. The OpenTofu provider and MCP server do not model this field yet (consumer work deferred)."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md). Admin create now answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. The OpenTofu provider and MCP server do not model this field yet (consumer work deferred)."
       }
     },
     {
@@ -4098,6 +4337,118 @@
       "id": "admin PATCH /api/v1/kubernetes/cluster/{kubernetesClusterId}/workers/autoscaling",
       "method": "PATCH",
       "path": "/api/v1/kubernetes/cluster/{kubernetesClusterId}/workers/autoscaling",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups",
+      "method": "GET",
+      "path": "/api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups",
+      "method": "POST",
+      "path": "/api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin DELETE /api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups/sets/{vm_backup_set}",
+      "method": "DELETE",
+      "path": "/api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups/sets/{vm_backup_set}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups/sets/{vm_backup_set}/dr-restore",
+      "method": "POST",
+      "path": "/api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups/sets/{vm_backup_set}/dr-restore",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin DELETE /api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups/settings",
+      "method": "DELETE",
+      "path": "/api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups/settings",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin PUT /api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups/settings",
+      "method": "PUT",
+      "path": "/api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups/settings",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin DELETE /api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups/{vm_backup}",
+      "method": "DELETE",
+      "path": "/api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups/{vm_backup}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups/{vm_backup}/restore",
+      "method": "POST",
+      "path": "/api/v1/kubernetes/cluster/{kubernetesClusterId}/vm-backups/{vm_backup}/restore",
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
@@ -6117,11 +6468,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; live admitted backup operations return 409 backup_operation_live and preserve task or queue evidence"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); live admitted backup operations return 409 backup_operation_live and preserve task or queue evidence"
       }
     },
     {
@@ -6135,7 +6486,8 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "admin.task.get"
+        "tool": "admin.task.get",
+        "reason": "additive nullable response fields source_backup_id/source_backup_at pass through the tool's raw response unchanged"
       }
     },
     {
@@ -6159,11 +6511,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; live admitted backup operations return 409 backup_operation_live and preserve task or queue evidence"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); live admitted backup operations return 409 backup_operation_live and preserve task or queue evidence"
       }
     },
     {
@@ -6177,7 +6529,8 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "admin.task.list"
+        "tool": "admin.task.list",
+        "reason": "additive nullable response fields source_backup_id/source_backup_at pass through the tool's raw response unchanged"
       }
     },
     {
@@ -7657,11 +8010,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials)"
+        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials); credentials belong only to the authenticated user, including team members"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials)"
+        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials); credentials belong only to the authenticated user, including team members"
       }
     },
     {
@@ -7671,11 +8024,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials)"
+        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials); credentials belong only to the authenticated user, including team members"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials)"
+        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials); credentials belong only to the authenticated user, including team members"
       }
     },
     {
@@ -7685,11 +8038,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials)"
+        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials); credentials belong only to the authenticated user, including team members"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials)"
+        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials); credentials belong only to the authenticated user, including team members"
       }
     },
     {
@@ -7699,11 +8052,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials)"
+        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials); credentials belong only to the authenticated user, including team members"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials)"
+        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials); credentials belong only to the authenticated user, including team members"
       }
     },
     {
@@ -7713,11 +8066,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials)"
+        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials); credentials belong only to the authenticated user, including team members"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials)"
+        "reason": "API-token self-management excluded (would let the agent mint/rotate its own credentials); credentials belong only to the authenticated user, including team members"
       }
     },
     {
@@ -7726,12 +8079,12 @@
       "path": "/api/backup-policies",
       "surface": "user",
       "opentofu": {
-        "status": "covered",
-        "type": "iaas_instance_backup_policy"
+        "status": "excluded",
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available"
       },
       "mcp": {
-        "status": "covered",
-        "tool": "user.instance_backup_policy.list"
+        "status": "excluded",
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available"
       }
     },
     {
@@ -7740,12 +8093,12 @@
       "path": "/api/backup-policies",
       "surface": "user",
       "opentofu": {
-        "status": "covered",
-        "type": "iaas_instance_backup_policy"
+        "status": "excluded",
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available"
       },
       "mcp": {
-        "status": "covered",
-        "tool": "user.instance_backup_policy.create"
+        "status": "excluded",
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available"
       }
     },
     {
@@ -7768,12 +8121,12 @@
       "path": "/api/backup-policy/{user_backupPolicyId}",
       "surface": "user",
       "opentofu": {
-        "status": "covered",
-        "type": "iaas_instance_backup_policy"
+        "status": "excluded",
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the schedule full_backup_time and weekly full_backup_day use the account owner effective timezone with UTC storage, and schedule values pass through unchanged"
       },
       "mcp": {
-        "status": "covered",
-        "tool": "user.instance_backup_policy.get"
+        "status": "excluded",
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the schedule full_backup_time and weekly full_backup_day use the account owner effective timezone with UTC storage, and schedule values pass through unchanged"
       }
     },
     {
@@ -7782,12 +8135,12 @@
       "path": "/api/backup-policy/{user_backupPolicyId}",
       "surface": "user",
       "opentofu": {
-        "status": "covered",
-        "type": "iaas_instance_backup_policy"
+        "status": "excluded",
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available"
       },
       "mcp": {
-        "status": "covered",
-        "tool": "user.instance_backup_policy.update"
+        "status": "excluded",
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available"
       }
     },
     {
@@ -7964,12 +8317,12 @@
       "path": "/api/cloud-service/instances",
       "surface": "user",
       "opentofu": {
-        "status": "covered",
-        "type": "iaas_instance"
+        "status": "excluded",
+        "reason": "Create may answer 422 with a machine-readable capacity reason; OpenTofu client parity is pending. A no-media placeholder leaves VNC off; a boot ISO auto-enables it."
       },
       "mcp": {
-        "status": "covered",
-        "tool": "user.instance.create"
+        "status": "excluded",
+        "reason": "Create may answer 422 with a machine-readable capacity reason; MCP client/tool parity is pending. A no-media placeholder leaves VNC off; a boot ISO auto-enables it."
       }
     },
     {
@@ -7978,12 +8331,12 @@
       "path": "/api/cloud-service/instances/{user_instanceId}",
       "surface": "user",
       "opentofu": {
-        "status": "covered",
-        "type": "iaas_instance"
+        "status": "excluded",
+        "reason": "optional delete_backups request field and retained-backup deletion behavior are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; existing instance deletion remains available without the cleanup option"
       },
       "mcp": {
-        "status": "covered",
-        "tool": "user.instance.delete"
+        "status": "excluded",
+        "reason": "optional delete_backups request field and retained-backup deletion behavior are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; existing instance deletion remains available without the cleanup option"
       }
     },
     {
@@ -8334,6 +8687,76 @@
       "mcp": {
         "status": "covered",
         "tool": "user.managed_database.upgrade"
+      }
+    },
+    {
+      "id": "user GET /api/database/{user_dbId}/vm-backups",
+      "method": "GET",
+      "path": "/api/database/{user_dbId}/vm-backups",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "imperative action, not representable as declarative IaC"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "service VM backup endpoints (3.3.2) have no MCP tool yet; consumer work deferred by owner decision"
+      }
+    },
+    {
+      "id": "user DELETE /api/database/{user_dbId}/vm-backups/settings",
+      "method": "DELETE",
+      "path": "/api/database/{user_dbId}/vm-backups/settings",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "service VM backup toggle (3.3.2) is not modelled by the provider yet; consumer work deferred by owner decision, candidate attribute vm_backups_enabled on the database and cluster resources"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "service VM backup endpoints (3.3.2) have no MCP tool yet; consumer work deferred by owner decision"
+      }
+    },
+    {
+      "id": "user PUT /api/database/{user_dbId}/vm-backups/settings",
+      "method": "PUT",
+      "path": "/api/database/{user_dbId}/vm-backups/settings",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "service VM backup toggle (3.3.2) is not modelled by the provider yet; consumer work deferred by owner decision, candidate attribute vm_backups_enabled on the database and cluster resources"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "service VM backup endpoints (3.3.2) have no MCP tool yet; consumer work deferred by owner decision"
+      }
+    },
+    {
+      "id": "user DELETE /api/database/{user_dbId}/vm-backups/{vm_backup}",
+      "method": "DELETE",
+      "path": "/api/database/{user_dbId}/vm-backups/{vm_backup}",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "imperative action, not representable as declarative IaC"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "service VM backup endpoints (3.3.2) have no MCP tool yet; consumer work deferred by owner decision"
+      }
+    },
+    {
+      "id": "user POST /api/database/{user_dbId}/vm-backups/{vm_backup}/restore",
+      "method": "POST",
+      "path": "/api/database/{user_dbId}/vm-backups/{vm_backup}/restore",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "imperative action, not representable as declarative IaC"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "service VM backup endpoints (3.3.2) have no MCP tool yet; consumer work deferred by owner decision"
       }
     },
     {
@@ -8777,11 +9200,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "imperative action, not representable as declarative IaC"
+        "reason": "imperative action, not representable as declarative IaC; deletion uses the recorded destination, claims before dispatch, and returns typed refusal or unconfirmed-dispatch errors; unconfirmed Slave dispatch retains the live task/claim until terminal callback or proven-dead reconciliation"
       },
       "mcp": {
-        "status": "covered",
-        "tool": "user.instance.delete_backup"
+        "status": "excluded",
+        "reason": "async dispatch semantics changed: an unconfirmed Slave send leaves the task/claim live until terminal callback or proven-dead reconciliation; consumer user.instance.delete_backup was previously covered and must be reviewed before reenabling"
       }
     },
     {
@@ -8819,11 +9242,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "imperative action, not representable as declarative IaC"
+        "reason": "imperative action, not representable as declarative IaC; restore answers 409 backup_being_deleted while a deletion claim is held; unconfirmed Slave dispatch retains the live task/storage-op lock until terminal callback or proven-dead reconciliation; on Proxmox only a proven pre-mutation refusal releases the restore lock; an attempted stop or restore request keeps its task and lock live pending confirmation"
       },
       "mcp": {
-        "status": "covered",
-        "tool": "user.instance.restore_backup"
+        "status": "excluded",
+        "reason": "async dispatch semantics changed: an unconfirmed Slave send leaves the task/claim live until terminal callback or proven-dead reconciliation; consumer user.instance.restore_backup was previously covered and must be reviewed before reenabling; on Proxmox only a proven pre-mutation refusal releases the restore lock; an attempted stop or restore request keeps its task and lock live pending confirmation"
       }
     },
     {
@@ -8837,7 +9260,8 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.instance.list_backups"
+        "tool": "user.instance.list_backups",
+        "reason": "additive nullable response fields based_on_backup_id/based_on_pbs_backup_time pass through the tool's raw response unchanged"
       }
     },
     {
@@ -8861,11 +9285,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "imperative action, not representable as declarative IaC"
+        "reason": "imperative action, not representable as declarative IaC; deletion uses the recorded destination, claims before dispatch, and returns typed refusal or unconfirmed-dispatch errors with per-backup results and queued/refused counts on partial failure; unconfirmed Slave dispatch retains the live task/claim until terminal callback or proven-dead reconciliation"
       },
       "mcp": {
-        "status": "covered",
-        "tool": "user.instance.destroy_backups"
+        "status": "excluded",
+        "reason": "async dispatch semantics changed: an unconfirmed Slave send leaves the task/claim live until terminal callback or proven-dead reconciliation; consumer user.instance.destroy_backups was previously covered and must be reviewed before reenabling"
       }
     },
     {
@@ -9337,11 +9761,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "ephemeral console/session capability, not declarative IaC"
+        "reason": "ephemeral console/session capability, not declarative IaC. Proxmox ticket failures now answer 503 reason=proxmox_console_unavailable."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "ephemeral console/session capability, not a declarative or AI-management action"
+        "reason": "ephemeral console/session capability, not a declarative or AI-management action. Proxmox ticket failures now answer 503 reason=proxmox_console_unavailable."
       }
     },
     {
@@ -9576,11 +10000,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "ephemeral console/session capability, not declarative IaC"
+        "reason": "ephemeral console/session capability, not declarative IaC; response carries ws_url (wss, token in the path) and expires_in, failures are typed 409/422/503 with a reason; consumer support parked after release"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "ephemeral console/session capability, not a declarative or AI-management action"
+        "reason": "ephemeral console/session capability, not a declarative or AI-management action; response carries ws_url (wss, token in the path) and expires_in, failures are typed 409/422/503 with a reason; consumer support parked after release"
       }
     },
     {
@@ -9632,11 +10056,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "imperative action, not representable as declarative IaC"
+        "reason": "imperative action, not representable as declarative IaC; enabling answers 409 tpm_unsupported_on_node when the node does not report TPM support"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "imperative instance lifecycle op deferred to a future power-ops tool phase (v1 MCP is declarative CRUD + safe actions)"
+        "reason": "imperative instance lifecycle op deferred to a future power-ops tool phase (v1 MCP is declarative CRUD + safe actions); enabling answers 409 tpm_unsupported_on_node when the node does not report TPM support"
       }
     },
     {
@@ -9800,11 +10224,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "ephemeral console/session capability, not declarative IaC"
+        "reason": "ephemeral console/session capability, not declarative IaC; now answers the JSON session descriptor (was HTTP 500), typed failures 409/422/503; consumer support parked after release"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "ephemeral console/session capability, not a declarative or AI-management action"
+        "reason": "ephemeral console/session capability, not a declarative or AI-management action; now answers the JSON session descriptor (was HTTP 500), typed failures 409/422/503; consumer support parked after release"
       }
     },
     {
@@ -10407,6 +10831,48 @@
       "mcp": {
         "status": "covered",
         "tool": "user.kubernetes_cluster.workers_scale"
+      }
+    },
+    {
+      "id": "user GET /api/kubernetes/cluster/{user_clusterId}/vm-backups",
+      "method": "GET",
+      "path": "/api/kubernetes/cluster/{user_clusterId}/vm-backups",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "imperative action, not representable as declarative IaC"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "service VM backup endpoints (3.3.2) have no MCP tool yet; consumer work deferred by owner decision"
+      }
+    },
+    {
+      "id": "user DELETE /api/kubernetes/cluster/{user_clusterId}/vm-backups/settings",
+      "method": "DELETE",
+      "path": "/api/kubernetes/cluster/{user_clusterId}/vm-backups/settings",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "service VM backup toggle (3.3.2) is not modelled by the provider yet; consumer work deferred by owner decision, candidate attribute vm_backups_enabled on the database and cluster resources"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "service VM backup endpoints (3.3.2) have no MCP tool yet; consumer work deferred by owner decision"
+      }
+    },
+    {
+      "id": "user PUT /api/kubernetes/cluster/{user_clusterId}/vm-backups/settings",
+      "method": "PUT",
+      "path": "/api/kubernetes/cluster/{user_clusterId}/vm-backups/settings",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "service VM backup toggle (3.3.2) is not modelled by the provider yet; consumer work deferred by owner decision, candidate attribute vm_backups_enabled on the database and cluster resources"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "service VM backup endpoints (3.3.2) have no MCP tool yet; consumer work deferred by owner decision"
       }
     },
     {
@@ -12319,12 +12785,12 @@
       "path": "/api/self-provisioning/instances",
       "surface": "user",
       "opentofu": {
-        "status": "covered",
-        "type": "iaas_instance"
+        "status": "excluded",
+        "reason": "Create may answer 422 with a machine-readable capacity reason; OpenTofu client parity is pending."
       },
       "mcp": {
-        "status": "covered",
-        "tool": "user.instance.create"
+        "status": "excluded",
+        "reason": "Create may answer 422 with a machine-readable capacity reason; MCP client/tool parity is pending."
       }
     },
     {
@@ -12333,12 +12799,12 @@
       "path": "/api/self-provisioning/instances/{user_instanceId}",
       "surface": "user",
       "opentofu": {
-        "status": "covered",
-        "type": "iaas_instance"
+        "status": "excluded",
+        "reason": "optional delete_backups request field and retained-backup deletion behavior are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; existing instance deletion remains available without the cleanup option"
       },
       "mcp": {
-        "status": "covered",
-        "tool": "user.instance.delete"
+        "status": "excluded",
+        "reason": "optional delete_backups request field and retained-backup deletion behavior are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; existing instance deletion remains available without the cleanup option"
       }
     },
     {
@@ -12726,11 +13192,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "imperative action, not representable as declarative IaC"
+        "reason": "imperative action, not representable as declarative IaC; live admitted backup operations return 409 backup_operation_live and preserve task or queue evidence"
       },
       "mcp": {
-        "status": "covered",
-        "tool": "user.task.delete"
+        "status": "excluded",
+        "reason": "Consumer contract alignment deferred until after release by owner decision; live admitted backup operations return 409 backup_operation_live and preserve task or queue evidence"
       }
     },
     {
@@ -12758,7 +13224,8 @@
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.task.list"
+        "tool": "user.task.list",
+        "reason": "additive nullable response fields source_backup_id/source_backup_at pass through the tool's raw response unchanged"
       }
     },
     {
@@ -13476,6 +13943,62 @@
       }
     },
     {
+      "id": "user DELETE /api/backup/{user_backupId}",
+      "method": "DELETE",
+      "path": "/api/backup/{user_backupId}",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "imperative action, not representable as declarative IaC; deletion uses the recorded destination, claims before dispatch, and returns typed refusal or unconfirmed-dispatch errors"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "deferred post-release per owner directive (instance-destroy-keeps-backups); candidate for a later phase"
+      }
+    },
+    {
+      "id": "user GET /api/backups",
+      "method": "GET",
+      "path": "/api/backups",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "imperative action, not representable as declarative IaC"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "deferred post-release per owner directive (instance-destroy-keeps-backups); candidate for a later phase"
+      }
+    },
+    {
+      "id": "user POST /api/backups/destroy",
+      "method": "POST",
+      "path": "/api/backups/destroy",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "imperative action, not representable as declarative IaC; deletion uses the recorded destination, claims before dispatch, and returns typed refusal or unconfirmed-dispatch errors with per-backup results and queued/refused counts on partial failure"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "deferred post-release per owner directive (instance-destroy-keeps-backups); candidate for a later phase"
+      }
+    },
+    {
+      "id": "user POST /api/database-vm-backups/{user_svm_backupId}/restore-to-new",
+      "method": "POST",
+      "path": "/api/database-vm-backups/{user_svm_backupId}/restore-to-new",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "imperative action, not representable as declarative IaC"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "service VM backup endpoints (3.3.2) have no MCP tool yet; consumer work deferred by owner decision"
+      }
+    },
+    {
       "id": "admin GET /api/v1/microvm/connector/{microvmConnectorId}",
       "method": "GET",
       "path": "/api/v1/microvm/connector/{microvmConnectorId}",
@@ -13823,6 +14346,230 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/instance/{sourceInstanceId}/backup/{backupId}/restore-to-new",
+      "method": "POST",
+      "path": "/api/v1/instance/{sourceInstanceId}/backup/{backupId}/restore-to-new",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; this restore requires a KVM agent target (Proxmox returns 422 unsupported_hypervisor), retaining resolvable image metadata for OS seed flavor without installation or changing Windows settings; restore answers 409 backup_being_deleted while a deletion claim is held; unconfirmed deploy retains the new instance and live task, and unconfirmed archive dispatch retains its task, step marker and storage lock until terminal callback or proven-dead reconciliation"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); restore answers 409 backup_being_deleted while a deletion claim is held; unconfirmed deploy retains the new instance and live task, and unconfirmed archive dispatch retains its task, step marker and storage lock until terminal callback or proven-dead reconciliation"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/system/failed-jobs",
+      "method": "GET",
+      "path": "/api/v1/system/failed-jobs",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin DELETE /api/v1/instance-backup/{backupId}",
+      "method": "DELETE",
+      "path": "/api/v1/instance-backup/{backupId}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; unconfirmed Slave dispatch retains the live task/claim until terminal callback or proven-dead reconciliation"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); unconfirmed Slave dispatch retains the live task/claim until terminal callback or proven-dead reconciliation"
+      }
+    },
+    {
+      "id": "admin PATCH /api/v1/instance-backup/{backupId}/protected",
+      "method": "PATCH",
+      "path": "/api/v1/instance-backup/{backupId}/protected",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/instance-backups",
+      "method": "GET",
+      "path": "/api/v1/instance-backups",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; the issue=cleanup_pending query filter and the instance_cleanup_pending response row field are not implemented in this consumer; consumer synchronization is deferred until after release by owner decision"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase; the issue=cleanup_pending query filter and the instance_cleanup_pending response row field are not implemented in this consumer; consumer synchronization is deferred until after release by owner decision"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/instance-backups/destroy",
+      "method": "POST",
+      "path": "/api/v1/instance-backups/destroy",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; unconfirmed Slave dispatch retains the live task/claim until terminal callback or proven-dead reconciliation"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); unconfirmed Slave dispatch retains the live task/claim until terminal callback or proven-dead reconciliation"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/instance-backup/{backupId}/reconcile",
+      "method": "GET",
+      "path": "/api/v1/instance-backup/{backupId}/reconcile",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; access uses a full-admin bearer token without panel role permissions"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase; admin api/v1 requires a full-admin bearer token without panel role permissions"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/instance-backup/{backupId}/reconcile/probe",
+      "method": "POST",
+      "path": "/api/v1/instance-backup/{backupId}/reconcile/probe",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; access uses a full-admin bearer token without panel role permissions"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); admin api/v1 requires a full-admin bearer token without panel role permissions"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/instance-backup/{backupId}/reconcile",
+      "method": "POST",
+      "path": "/api/v1/instance-backup/{backupId}/reconcile",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; access uses a full-admin bearer token without panel role permissions; recover_protected sets and verifies PBS protection before clearing a held deletion claim, and request_unfenced_recovery and cancel_unfenced_recovery drive an engineer-run offline node recovery of an unfenced local, S3 or Rclone claim; all are excluded from this consumer"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); admin api/v1 requires a full-admin bearer token without panel role permissions; recover_protected sets and verifies PBS protection before clearing a held deletion claim, and request_unfenced_recovery and cancel_unfenced_recovery drive an engineer-run offline node recovery of an unfenced local, S3 or Rclone claim; all are excluded from this consumer"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/instance-disks/pending",
+      "method": "GET",
+      "path": "/api/v1/instance-disks/pending",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin api/v1 requires a full-admin bearer token; pending disk repair evidence is outside the curated MCP admin read allowlist"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/instance/{instanceId}/disk/{instanceStorageId}/reconcile",
+      "method": "GET",
+      "path": "/api/v1/instance/{instanceId}/disk/{instanceStorageId}/reconcile",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin api/v1 requires a full-admin bearer token; pending disk repair evidence is outside the curated MCP admin read allowlist"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/instance/{instanceId}/disk/{instanceStorageId}/reconcile/inspect",
+      "method": "POST",
+      "path": "/api/v1/instance/{instanceId}/disk/{instanceStorageId}/reconcile/inspect",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin api/v1 requires a full-admin bearer token; node inspection queues a task for an offline engineer workflow outside the curated MCP admin allowlist"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/instance/{instanceId}/disk/{instanceStorageId}/reconcile",
+      "method": "POST",
+      "path": "/api/v1/instance/{instanceId}/disk/{instanceStorageId}/reconcile",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin api/v1 requires a full-admin bearer token; offline root disk repair approval is outside the curated MCP mutation allowlist"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/instance/{instanceId}/disk-repair/{repairId}",
+      "method": "GET",
+      "path": "/api/v1/instance/{instanceId}/disk-repair/{repairId}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin api/v1 requires a full-admin bearer token; pending disk repair evidence is outside the curated MCP admin read allowlist"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/instance/{instanceId}/disk-repair/{repairId}/cancel",
+      "method": "POST",
+      "path": "/api/v1/instance/{instanceId}/disk-repair/{repairId}/cancel",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin api/v1 requires a full-admin bearer token; cancelling an unfetched offline root disk repair is outside the curated MCP mutation allowlist"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/database-vm-backups/{svm_backupId}/restore-to-new",
+      "method": "POST",
+      "path": "/api/v1/database-vm-backups/{svm_backupId}/restore-to-new",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
       }
     }
   ]
