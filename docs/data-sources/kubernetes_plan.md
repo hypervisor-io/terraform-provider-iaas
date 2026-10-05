@@ -59,6 +59,20 @@ output "worker_plan_id" {
 - `cpu_cores` (Number) vCPU cores of the matched plan.
 - `credit_value` (Number) Hourly credit value of the matched plan.
 - `description` (String) Human display text of the matched plan (name plus a spec summary).
+- `gpu` (Attributes) The GPU the plan comes with, or null for a plan without a GPU. `label` is the customer-facing description (for example `1 × NVIDIA RTX A5000 · 24 GB`). `available` is always null here: this lookup is not scoped to one location. (see [below for nested schema](#nestedatt--gpu))
 - `id` (String) UUID of the matched plan.
 - `ram` (Number) RAM of the matched plan, in MB.
 - `storage` (Number) Root disk of the matched plan, in GB. Always 0 for `lb` plans (load-balancer plans carry no storage).
+
+<a id="nestedatt--gpu"></a>
+### Nested Schema for `gpu`
+
+Read-Only:
+
+- `available` (Boolean) Whether the location can currently take the plan; null when no location is in scope.
+- `count` (Number) Number of GPUs the plan provides.
+- `label` (String) Customer-facing GPU description.
+- `mode` (String) GPU mode: passthrough, mig or sriov.
+- `profile` (String) MIG or SR-IOV profile, or null.
+- `vendor` (String) Required GPU vendor, or null for any.
+- `vram_min_gb` (Number) Minimum GPU memory per GPU in GB, or null.

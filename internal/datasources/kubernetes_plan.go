@@ -61,6 +61,7 @@ type kubernetesPlanModel struct {
 	RAM         types.Int64  `tfsdk:"ram"`
 	Storage     types.Int64  `tfsdk:"storage"`
 	CreditValue types.Int64  `tfsdk:"credit_value"`
+	GPU         types.Object `tfsdk:"gpu"`
 }
 
 func (d *kubernetesPlanDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -116,6 +117,7 @@ func (d *kubernetesPlanDataSource) Schema(_ context.Context, _ datasource.Schema
 				Computed:    true,
 				Description: "Hourly credit value of the matched plan.",
 			},
+			"gpu": gpuSchemaAttribute(false),
 		},
 	}
 }
@@ -177,6 +179,7 @@ func (d *kubernetesPlanDataSource) Read(ctx context.Context, req datasource.Read
 	cfg.RAM = types.Int64Value(int64Field(match, "ram"))
 	cfg.Storage = types.Int64Value(int64Field(match, "storage"))
 	cfg.CreditValue = types.Int64Value(int64Field(match, "credit_value"))
+	cfg.GPU = gpuObject(match)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &cfg)...)
 }

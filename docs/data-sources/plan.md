@@ -47,7 +47,21 @@ output "plan_id" {
 
 - `bandwidth` (Number) Monthly bandwidth allowance the plan provides.
 - `cpu_cores` (Number) Number of vCPU cores the plan provides.
+- `gpu` (Attributes) The GPU the plan comes with, or null for a plan without a GPU. `label` is the customer-facing description (for example `1 × NVIDIA RTX A5000 · 24 GB`). `available` is true when a server in this location can currently take the plan. (see [below for nested schema](#nestedatt--gpu))
 - `id` (String) UUID of the matched plan.
 - `plan_group_id` (String) UUID of the plan group the matched plan belongs to.
 - `ram` (Number) RAM the plan provides, in MB.
 - `storage` (Number) Root storage the plan provides, in GB.
+
+<a id="nestedatt--gpu"></a>
+### Nested Schema for `gpu`
+
+Read-Only:
+
+- `available` (Boolean) Whether the location can currently take the plan; null when no location is in scope.
+- `count` (Number) Number of GPUs the plan provides.
+- `label` (String) Customer-facing GPU description.
+- `mode` (String) GPU mode: passthrough, mig or sriov.
+- `profile` (String) MIG or SR-IOV profile, or null.
+- `vendor` (String) Required GPU vendor, or null for any.
+- `vram_min_gb` (Number) Minimum GPU memory per GPU in GB, or null.
