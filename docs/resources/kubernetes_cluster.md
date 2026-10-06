@@ -113,7 +113,7 @@ output "k8s_api_endpoint" {
 ### Required
 
 - `control_node_count` (Number) Number of control-plane nodes: 1 (single CP) or 3 (HA CP). Immutable; changing it forces a new resource. lb_ha_enabled=true requires 3.
-- `cp_instance_plan_id` (String) UUID of the instance plan used for control-plane nodes. Immutable; changing it forces a new resource.
+- `cp_instance_plan_id` (String) UUID of the instance plan used for control-plane nodes. Immutable; changing it forces a new resource. A plan with a GPU is refused (Kubernetes does not support GPU plans).
 - `cp_lb_plan_id` (String) UUID of the load balancer plan used for the CP load balancer. Immutable; changing it forces a new resource.
 - `cp_vpc_subnet_id` (String) UUID of the PRIVATE VPC subnet the control plane lives in. Must belong to the chosen VPC. Immutable; changing it forces a new resource.
 - `endpoint_mode` (String) API server exposure: "private" (VPC-internal only) or "public_and_private" (also reachable from the internet via the CP LB). Immutable; changing it forces a new resource.
@@ -121,7 +121,7 @@ output "k8s_api_endpoint" {
 - `name` (String) Display name (3-50 chars). Updatable in place (PATCH).
 - `slug` (String) URL-safe slug (lowercase letters, digits, hyphens; max 63), unique within the account. Immutable; changing it forces a new resource.
 - `vpc_id` (String) UUID of the VPC the cluster lives in. Must belong to the caller, be in the chosen region, and have an active NAT gateway with a public IP. Immutable; changing it forces a new resource.
-- `worker_instance_plan_id` (String) UUID of the instance plan used for the default worker pool. Immutable through this resource; changing it forces a new resource.
+- `worker_instance_plan_id` (String) UUID of the instance plan used for the default worker pool. Immutable through this resource; changing it forces a new resource. A plan with a GPU is refused (Kubernetes does not support GPU plans).
 - `worker_vpc_subnet_id` (String) UUID of the VPC subnet workers live in. Must belong to the chosen VPC. Immutable; changing it forces a new resource.
 
 ### Optional

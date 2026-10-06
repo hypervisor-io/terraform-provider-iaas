@@ -149,3 +149,40 @@ data "iaas_kubernetes_plan" "t" {
 		},
 	})
 }
+
+// TestUnitKubernetesPlan_gpuIsAlwaysNull - Kubernetes does not support GPU plans, so
+// Master's plan search (ClusterSearchService::instancePlans) never lists one and answers
+// every row with gpu:null. The lookup keeps the attribute (null) so the schema matches
+// iaas_plan, and a name that only exists as a GPU plan is simply not found.
+func TestUnitKubernetesPlan_gpuIsAlwaysNull(t *testing.T) {
+	ensureTFBinary(t)
+
+	srv := acctest.NewMockServer(t)
+	srv.Handle("GET", "/kubernetes/search/plans", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"results":[` +
+			`{"id":"ip-p","text":"std-2 - 2 CPU, 4096 MB, 80 GB","name":"std-2","cpu_cores":2,"ram":4096,"storage":80,"credit_value":1000,"gpu":null}` +
+			`],"pagination":{"more":false}}`))
+	})
+
+	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+data "iaas_kubernetes_plan" "plain" {
+  kind = "worker"
+  name = "std-2"
+}
+`
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.iaas_kubernetes_plan.plain", "id", "ip-p"),
+					resource.TestCheckNoResourceAttr("data.iaas_kubernetes_plan.plain", "gpu.count"),
+					resource.TestCheckNoResourceAttr("data.iaas_kubernetes_plan.plain", "gpu.label"),
+				),
+			},
+		},
+	})
+}

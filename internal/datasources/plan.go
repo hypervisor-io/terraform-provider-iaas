@@ -42,6 +42,7 @@ type planModel struct {
 	Storage     types.Int64  `tfsdk:"storage"`
 	Bandwidth   types.Int64  `tfsdk:"bandwidth"`
 	PlanGroupID types.String `tfsdk:"plan_group_id"`
+	GPU         types.Object `tfsdk:"gpu"`
 }
 
 func (d *planDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -93,6 +94,7 @@ func (d *planDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 				Computed:    true,
 				Description: "UUID of the plan group the matched plan belongs to.",
 			},
+			"gpu": gpuSchemaAttribute(true),
 		},
 	}
 }
@@ -160,6 +162,7 @@ func (d *planDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	cfg.Storage = types.Int64Value(int64Field(match, "storage"))
 	cfg.Bandwidth = types.Int64Value(int64Field(match, "bandwidth"))
 	cfg.PlanGroupID = types.StringValue(strField(match, "__plan_group_id"))
+	cfg.GPU = gpuObject(match)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &cfg)...)
 }

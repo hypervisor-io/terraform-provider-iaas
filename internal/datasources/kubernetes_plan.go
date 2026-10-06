@@ -61,6 +61,7 @@ type kubernetesPlanModel struct {
 	RAM         types.Int64  `tfsdk:"ram"`
 	Storage     types.Int64  `tfsdk:"storage"`
 	CreditValue types.Int64  `tfsdk:"credit_value"`
+	GPU         types.Object `tfsdk:"gpu"`
 }
 
 func (d *kubernetesPlanDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -75,7 +76,8 @@ func (d *kubernetesPlanDataSource) Schema(_ context.Context, _ datasource.Schema
 			"underlying list - use the result as `worker_instance_plan_id` / " +
 			"`cp_instance_plan_id`), and `lb` resolves the control-plane load-balancer plan " +
 			"(use as `cp_lb_plan_id`). Only enabled plans are returned; exactly one plan must " +
-			"match the given `name`.",
+			"match the given `name`. Plans with a GPU are never returned: Kubernetes does not " +
+			"support GPU plans.",
 		Attributes: map[string]schema.Attribute{
 			"kind": schema.StringAttribute{
 				Required: true,
@@ -116,6 +118,7 @@ func (d *kubernetesPlanDataSource) Schema(_ context.Context, _ datasource.Schema
 				Computed:    true,
 				Description: "Hourly credit value of the matched plan.",
 			},
+			"gpu": gpuKubernetesSchemaAttribute(),
 		},
 	}
 }
@@ -177,6 +180,7 @@ func (d *kubernetesPlanDataSource) Read(ctx context.Context, req datasource.Read
 	cfg.RAM = types.Int64Value(int64Field(match, "ram"))
 	cfg.Storage = types.Int64Value(int64Field(match, "storage"))
 	cfg.CreditValue = types.Int64Value(int64Field(match, "credit_value"))
+	cfg.GPU = gpuObject(match)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &cfg)...)
 }

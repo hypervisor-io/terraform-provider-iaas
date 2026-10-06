@@ -1300,6 +1300,20 @@
       }
     },
     {
+      "id": "admin POST /api/v1/db/backup/{dbBackupId}/reconcile",
+      "method": "POST",
+      "path": "/api/v1/db/backup/{dbBackupId}/reconcile",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
       "id": "admin DELETE /api/v1/db/plan-group/{dbPlanGroupId}",
       "method": "DELETE",
       "path": "/api/v1/db/plan-group/{dbPlanGroupId}",
@@ -2311,6 +2325,48 @@
       "id": "admin POST /api/v1/hypervisor/{hypervisorId}/test-bmc",
       "method": "POST",
       "path": "/api/v1/hypervisor/{hypervisorId}/test-bmc",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin DELETE /api/v1/hypervisor/{hypervisorId}/app-update/chain",
+      "method": "DELETE",
+      "path": "/api/v1/hypervisor/{hypervisorId}/app-update/chain",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/hypervisor/{hypervisorId}/app-update/chain",
+      "method": "GET",
+      "path": "/api/v1/hypervisor/{hypervisorId}/app-update/chain",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/hypervisor/{hypervisorId}/app-update/latest",
+      "method": "POST",
+      "path": "/api/v1/hypervisor/{hypervisorId}/app-update/latest",
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
@@ -10242,6 +10298,20 @@
       }
     },
     {
+      "id": "user POST /api/instance/{user_instanceId}/vpc/source-check",
+      "method": "POST",
+      "path": "/api/instance/{user_instanceId}/vpc/source-check",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "source_check boolean on the instance VPC interface and, with the optional body field interface=public, on its public interface (anti-spoof switch); owner deferred the OpenTofu attribute until after the 3.3.4 release (decision 334-source-check)"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "source_check boolean on the instance VPC interface and, with the optional body field interface=public, on its public interface (anti-spoof switch); owner deferred the MCP tool until after the 3.3.4 release (decision 334-source-check)"
+      }
+    },
+    {
       "id": "user GET /api/instances",
       "method": "GET",
       "path": "/api/instances",
@@ -14569,9 +14639,65 @@
       }
     },
     {
+      "id": "admin POST /api/v1/instance/{instanceId}/vpc/source-check",
+      "method": "POST",
+      "path": "/api/v1/instance/{instanceId}/vpc/source-check",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints (source_check switch; owner deferred consumer work after release)"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); source_check switch, owner deferred consumer work after release"
+      }
+    },
+    {
       "id": "admin POST /api/v1/database-vm-backups/{svm_backupId}/restore-to-new",
       "method": "POST",
       "path": "/api/v1/database-vm-backups/{svm_backupId}/restore-to-new",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin DELETE /api/v1/hypervisors/update-to-latest",
+      "method": "DELETE",
+      "path": "/api/v1/hypervisors/update-to-latest",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/hypervisors/update-to-latest",
+      "method": "GET",
+      "path": "/api/v1/hypervisors/update-to-latest",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/hypervisors/update-to-latest",
+      "method": "POST",
+      "path": "/api/v1/hypervisors/update-to-latest",
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
