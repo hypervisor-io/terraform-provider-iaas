@@ -3771,11 +3771,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Admin create now answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. The OpenTofu provider and MCP server do not model this field yet (consumer work deferred)."
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Admin create now answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. Optional string external_reference (max 191) makes a repeated create for the same user and reference return the existing instance. The OpenTofu provider and MCP server do not model these fields yet (consumer work deferred)."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md). Admin create now answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. The OpenTofu provider and MCP server do not model this field yet (consumer work deferred)."
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md). Admin create now answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. Optional string external_reference (max 191) makes a repeated create for the same user and reference return the existing instance. The OpenTofu provider and MCP server do not model these fields yet (consumer work deferred)."
       }
     },
     {
