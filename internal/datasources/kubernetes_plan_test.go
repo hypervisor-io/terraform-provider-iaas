@@ -150,26 +150,22 @@ data "iaas_kubernetes_plan" "t" {
 	})
 }
 
-// TestUnitKubernetesPlan_gpuBlock - the plan search carries `gpu` in the exact
-// shape Master answers (ClusterSearchService::instancePlans): not location
-// scoped, so no `available` key; a plan without a GPU has gpu:null.
-func TestUnitKubernetesPlan_gpuBlock(t *testing.T) {
+// TestUnitKubernetesPlan_gpuIsAlwaysNull - Kubernetes does not support GPU plans, so
+// Master's plan search (ClusterSearchService::instancePlans) never lists one and answers
+// every row with gpu:null. The lookup keeps the attribute (null) so the schema matches
+// iaas_plan, and a name that only exists as a GPU plan is simply not found.
+func TestUnitKubernetesPlan_gpuIsAlwaysNull(t *testing.T) {
 	ensureTFBinary(t)
 
 	srv := acctest.NewMockServer(t)
 	srv.Handle("GET", "/kubernetes/search/plans", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"results":[` +
-			`{"id":"ip-g","text":"gpu-1 - 8 CPU, 32768 MB, 200 GB","name":"gpu-1","cpu_cores":8,"ram":32768,"storage":200,"credit_value":9000,"gpu":{"count":2,"vendor":null,"vram_min_gb":null,"mode":"passthrough","profile":null,"label":"2 × GPU"}},` +
 			`{"id":"ip-p","text":"std-2 - 2 CPU, 4096 MB, 80 GB","name":"std-2","cpu_cores":2,"ram":4096,"storage":80,"credit_value":1000,"gpu":null}` +
 			`],"pagination":{"more":false}}`))
 	})
 
 	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
-data "iaas_kubernetes_plan" "gpu" {
-  kind = "worker"
-  name = "gpu-1"
-}
 data "iaas_kubernetes_plan" "plain" {
   kind = "worker"
   name = "std-2"
@@ -182,12 +178,9 @@ data "iaas_kubernetes_plan" "plain" {
 			{
 				Config: cfg,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.iaas_kubernetes_plan.gpu", "gpu.count", "2"),
-					resource.TestCheckResourceAttr("data.iaas_kubernetes_plan.gpu", "gpu.mode", "passthrough"),
-					resource.TestCheckResourceAttr("data.iaas_kubernetes_plan.gpu", "gpu.label", "2 × GPU"),
-					resource.TestCheckNoResourceAttr("data.iaas_kubernetes_plan.gpu", "gpu.vendor"),
-					resource.TestCheckNoResourceAttr("data.iaas_kubernetes_plan.gpu", "gpu.available"),
+					resource.TestCheckResourceAttr("data.iaas_kubernetes_plan.plain", "id", "ip-p"),
 					resource.TestCheckNoResourceAttr("data.iaas_kubernetes_plan.plain", "gpu.count"),
+					resource.TestCheckNoResourceAttr("data.iaas_kubernetes_plan.plain", "gpu.label"),
 				),
 			},
 		},

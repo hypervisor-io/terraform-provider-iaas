@@ -332,7 +332,8 @@ func (r *kubernetesClusterResource) Schema(ctx context.Context, _ resource.Schem
 			"cp_instance_plan_id": schema.StringAttribute{
 				Required: true,
 				Description: "UUID of the instance plan used for control-plane nodes. Immutable; changing " +
-					"it forces a new resource.",
+					"it forces a new resource. A plan with a GPU is refused (Kubernetes does not support " +
+					"GPU plans).",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -348,7 +349,8 @@ func (r *kubernetesClusterResource) Schema(ctx context.Context, _ resource.Schem
 			"worker_instance_plan_id": schema.StringAttribute{
 				Required: true,
 				Description: "UUID of the instance plan used for the default worker pool. Immutable " +
-					"through this resource; changing it forces a new resource.",
+					"through this resource; changing it forces a new resource. A plan with a GPU is " +
+					"refused (Kubernetes does not support GPU plans).",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

@@ -3,12 +3,12 @@
 page_title: "iaas_kubernetes_plan Data Source - iaas"
 subcategory: ""
 description: |-
-  Looks up a Kubernetes cluster plan by name from the cluster-create catalog, resolving the id you pass on an iaas_kubernetes_cluster. The kind argument selects the picker: worker and cp resolve instance plans (the same underlying list - use the result as worker_instance_plan_id / cp_instance_plan_id), and lb resolves the control-plane load-balancer plan (use as cp_lb_plan_id). Only enabled plans are returned; exactly one plan must match the given name.
+  Looks up a Kubernetes cluster plan by name from the cluster-create catalog, resolving the id you pass on an iaas_kubernetes_cluster. The kind argument selects the picker: worker and cp resolve instance plans (the same underlying list - use the result as worker_instance_plan_id / cp_instance_plan_id), and lb resolves the control-plane load-balancer plan (use as cp_lb_plan_id). Only enabled plans are returned; exactly one plan must match the given name. Plans with a GPU are never returned: Kubernetes does not support GPU plans.
 ---
 
 # iaas_kubernetes_plan (Data Source)
 
-Looks up a Kubernetes cluster plan by name from the cluster-create catalog, resolving the `id` you pass on an `iaas_kubernetes_cluster`. The `kind` argument selects the picker: `worker` and `cp` resolve instance plans (the same underlying list - use the result as `worker_instance_plan_id` / `cp_instance_plan_id`), and `lb` resolves the control-plane load-balancer plan (use as `cp_lb_plan_id`). Only enabled plans are returned; exactly one plan must match the given `name`.
+Looks up a Kubernetes cluster plan by name from the cluster-create catalog, resolving the `id` you pass on an `iaas_kubernetes_cluster`. The `kind` argument selects the picker: `worker` and `cp` resolve instance plans (the same underlying list - use the result as `worker_instance_plan_id` / `cp_instance_plan_id`), and `lb` resolves the control-plane load-balancer plan (use as `cp_lb_plan_id`). Only enabled plans are returned; exactly one plan must match the given `name`. Plans with a GPU are never returned: Kubernetes does not support GPU plans.
 
 ## Example Usage
 
@@ -59,7 +59,7 @@ output "worker_plan_id" {
 - `cpu_cores` (Number) vCPU cores of the matched plan.
 - `credit_value` (Number) Hourly credit value of the matched plan.
 - `description` (String) Human display text of the matched plan (name plus a spec summary).
-- `gpu` (Attributes) The GPU the plan comes with, or null for a plan without a GPU. `label` is the customer-facing description (for example `1 × NVIDIA RTX A5000 · 24 GB`). `available` is always null here: this lookup is not scoped to one location. (see [below for nested schema](#nestedatt--gpu))
+- `gpu` (Attributes) Always null: Kubernetes does not support GPU plans, so this data source never returns a plan with a GPU and the API refuses a GPU plan on clusters and node pools. The attribute exists so the schema matches `iaas_plan`. (see [below for nested schema](#nestedatt--gpu))
 - `id` (String) UUID of the matched plan.
 - `ram` (Number) RAM of the matched plan, in MB.
 - `storage` (Number) Root disk of the matched plan, in GB. Always 0 for `lb` plans (load-balancer plans carry no storage).

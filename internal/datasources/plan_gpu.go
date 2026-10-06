@@ -29,6 +29,20 @@ func gpuSchemaAttribute(scoped bool) schema.Attribute {
 	} else {
 		desc += " `available` is always null here: this lookup is not scoped to one location."
 	}
+	return gpuSchemaAttributeWithDescription(desc)
+}
+
+// gpuKubernetesSchemaAttribute is the `gpu` block of iaas_kubernetes_plan. Kubernetes
+// does not support GPU plans (nodes are never given a GPU), so the lookup never returns
+// one and the attribute is always null; it stays so the schema matches iaas_plan.
+func gpuKubernetesSchemaAttribute() schema.Attribute {
+	return gpuSchemaAttributeWithDescription(
+		"Always null: Kubernetes does not support GPU plans, so this data source never returns a plan " +
+			"with a GPU and the API refuses a GPU plan on clusters and node pools. " +
+			"The attribute exists so the schema matches `iaas_plan`.")
+}
+
+func gpuSchemaAttributeWithDescription(desc string) schema.Attribute {
 	return schema.SingleNestedAttribute{
 		Computed:    true,
 		Description: desc,
