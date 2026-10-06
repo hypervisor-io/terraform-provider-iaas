@@ -139,11 +139,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
       }
     },
     {
@@ -153,11 +153,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; accepts optional retention_mode and keep_* age-window/GFS retention fields"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; accepts optional retention_mode and keep_* age-window/GFS retention fields; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); accepts optional retention_mode and keep_* age-window/GFS retention fields"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); accepts optional retention_mode and keep_* age-window/GFS retention fields; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
       }
     },
     {
@@ -181,11 +181,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
       }
     },
     {
@@ -195,11 +195,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; accepts optional retention_mode and keep_* age-window/GFS retention fields"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; accepts optional retention_mode and keep_* age-window/GFS retention fields; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); accepts optional retention_mode and keep_* age-window/GFS retention fields"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); accepts optional retention_mode and keep_* age-window/GFS retention fields; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
       }
     },
     {
@@ -2861,11 +2861,13 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints",
+        "notes": "Explicit pre-dispatch image_not_ready refusal answers 409 with a retry message. Existing instances survive; new direct/order-time creates roll back. Legacy reason-less replies remain ambiguous. Existing generic API-error handling retains HTTP status and the retry message; machine reason remains an HTTP-body field, not a separate consumer result field. No request or success schema change."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)",
+        "notes": "Explicit pre-dispatch image_not_ready refusal answers 409 with a retry message. Existing instances survive; new direct/order-time creates roll back. Legacy reason-less replies remain ambiguous. Existing generic API-error handling retains HTTP status and the retry message; machine reason remains an HTTP-body field, not a separate consumer result field. No request or success schema change."
       }
     },
     {
@@ -3449,11 +3451,13 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints",
+        "notes": "Explicit pre-dispatch image_not_ready refusal answers 409 with a retry message. Existing instances survive; new direct/order-time creates roll back. Legacy reason-less replies remain ambiguous. Existing generic API-error handling retains HTTP status and the retry message; machine reason remains an HTTP-body field, not a separate consumer result field. No request or success schema change."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)",
+        "notes": "Explicit pre-dispatch image_not_ready refusal answers 409 with a retry message. Existing instances survive; new direct/order-time creates roll back. Legacy reason-less replies remain ambiguous. Existing generic API-error handling retains HTTP status and the retry message; machine reason remains an HTTP-body field, not a separate consumer result field. No request or success schema change."
       }
     },
     {
@@ -3771,11 +3775,13 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Admin create now answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. Optional string external_reference (max 191) makes a repeated create for the same user and reference return the existing instance. The OpenTofu provider and MCP server do not model these fields yet (consumer work deferred)."
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Admin create now answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. Optional string external_reference (max 191) makes a repeated create for the same user and reference return the existing instance. The OpenTofu provider and MCP server do not model these fields yet (consumer work deferred).",
+        "notes": "Explicit pre-dispatch image_not_ready refusal answers 409 with a retry message. Existing instances survive; new direct/order-time creates roll back. Legacy reason-less replies remain ambiguous. Existing generic API-error handling retains HTTP status and the retry message; machine reason remains an HTTP-body field, not a separate consumer result field. No request or success schema change."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md). Admin create now answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. Optional string external_reference (max 191) makes a repeated create for the same user and reference return the existing instance. The OpenTofu provider and MCP server do not model these fields yet (consumer work deferred)."
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md). Admin create now answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. Optional string external_reference (max 191) makes a repeated create for the same user and reference return the existing instance. The OpenTofu provider and MCP server do not model these fields yet (consumer work deferred).",
+        "notes": "Explicit pre-dispatch image_not_ready refusal answers 409 with a retry message. Existing instances survive; new direct/order-time creates roll back. Legacy reason-less replies remain ambiguous. Existing generic API-error handling retains HTTP status and the retry message; machine reason remains an HTTP-body field, not a separate consumer result field. No request or success schema change."
       }
     },
     {
@@ -3995,11 +4001,13 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints",
+        "notes": "ISO hypervisors is an observed node UUID array (never a JSON string); this surface remains excluded."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase",
+        "notes": "ISO hypervisors is an observed node UUID array (never a JSON string); this surface remains excluded."
       }
     },
     {
@@ -4023,11 +4031,13 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints",
+        "notes": "ISO hypervisors is an observed node UUID array (never a JSON string); this surface remains excluded."
       },
       "mcp": {
         "status": "covered",
-        "tool": "admin.iso.list"
+        "tool": "admin.iso.list",
+        "notes": "ISO hypervisors is an observed node UUID array (never a JSON string); raw-map tools preserve the array."
       }
     },
     {
@@ -8141,11 +8151,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
       }
     },
     {
@@ -8155,11 +8165,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
       }
     },
     {
@@ -8183,11 +8193,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the schedule full_backup_time and weekly full_backup_day use the account owner effective timezone with UTC storage, and schedule values pass through unchanged"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the schedule full_backup_time and weekly full_backup_day use the account owner effective timezone with UTC storage, and schedule values pass through unchanged; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the schedule full_backup_time and weekly full_backup_day use the account owner effective timezone with UTC storage, and schedule values pass through unchanged"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the schedule full_backup_time and weekly full_backup_day use the account owner effective timezone with UTC storage, and schedule values pass through unchanged; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
       }
     },
     {
@@ -8197,11 +8207,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
       }
     },
     {
@@ -9393,11 +9403,13 @@
       "surface": "user",
       "opentofu": {
         "status": "covered",
-        "type": "iaas_instance"
+        "type": "iaas_instance",
+        "notes": "Explicit pre-dispatch image_not_ready refusal answers 409 with a retry message. Existing instances survive; new direct/order-time creates roll back. Legacy reason-less replies remain ambiguous. Existing generic API-error handling retains HTTP status and the retry message; machine reason remains an HTTP-body field, not a separate consumer result field. No request or success schema change."
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.instance.deploy"
+        "tool": "user.instance.deploy",
+        "notes": "Explicit pre-dispatch image_not_ready refusal answers 409 with a retry message. Existing instances survive; new direct/order-time creates roll back. Legacy reason-less replies remain ambiguous. Existing generic API-error handling retains HTTP status and the retry message; machine reason remains an HTTP-body field, not a separate consumer result field. No request or success schema change."
       }
     },
     {
@@ -9421,11 +9433,13 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "UI form-data / browse helper, not a management action"
+        "reason": "UI form-data / browse helper, not a management action",
+        "notes": "ISO hypervisors is an observed node UUID array (never a JSON string); this surface remains excluded."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "UI form-data / browse helper, not a management action"
+        "reason": "UI form-data / browse helper, not a management action",
+        "notes": "ISO hypervisors is an observed node UUID array (never a JSON string); this surface remains excluded."
       }
     },
     {
@@ -9911,11 +9925,13 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "imperative action, not representable as declarative IaC"
+        "reason": "imperative action, not representable as declarative IaC",
+        "notes": "Explicit pre-dispatch image_not_ready refusal answers 409 with a retry message. Existing instances survive; new direct/order-time creates roll back. Legacy reason-less replies remain ambiguous. Existing generic API-error handling retains HTTP status and the retry message; machine reason remains an HTTP-body field, not a separate consumer result field. No request or success schema change."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "imperative instance lifecycle op deferred to a future power-ops tool phase (v1 MCP is declarative CRUD + safe actions)"
+        "reason": "imperative instance lifecycle op deferred to a future power-ops tool phase (v1 MCP is declarative CRUD + safe actions)",
+        "notes": "Explicit pre-dispatch image_not_ready refusal answers 409 with a retry message. Existing instances survive; new direct/order-time creates roll back. Legacy reason-less replies remain ambiguous. Existing generic API-error handling retains HTTP status and the retry message; machine reason remains an HTTP-body field, not a separate consumer result field. No request or success schema change."
       }
     },
     {
@@ -10444,11 +10460,13 @@
       "surface": "user",
       "opentofu": {
         "status": "covered",
-        "type": "iaas_iso"
+        "type": "iaas_iso",
+        "notes": "hypervisors is now a JSON array of observed node UUIDs. iaas_iso deliberately exposes only id/name/filename; node presence is excluded from declarative state."
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.catalog.isos"
+        "tool": "user.catalog.isos",
+        "notes": "ISO hypervisors is an observed node UUID array (never a JSON string); raw-map tools preserve the array."
       }
     },
     {
