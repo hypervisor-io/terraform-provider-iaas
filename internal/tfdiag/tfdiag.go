@@ -23,6 +23,7 @@ import (
 // detail:
 //   - the API message,
 //   - any 422 field-validation errors (field: [msgs]), sorted for determinism,
+//   - the typed refusal reason code (when the API sent one),
 //   - the request id (when present) for support correlation.
 //
 // summary is a short, context-specific headline (e.g. "Error reading location").
@@ -41,6 +42,9 @@ func FromErr(summary string, err error) diag.Diagnostic {
 			for _, f := range fields {
 				fmt.Fprintf(&sb, "\n  - %s: %s", f, strings.Join(apiErr.FieldErrors[f], "; "))
 			}
+		}
+		if apiErr.Reason != "" {
+			fmt.Fprintf(&sb, "\n(reason: %s)", apiErr.Reason)
 		}
 		if apiErr.RequestID != "" {
 			fmt.Fprintf(&sb, "\n(request id: %s)", apiErr.RequestID)

@@ -2,19 +2,24 @@ package resources
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
+	"github.com/hypervisor-io/terraform-provider-iaas/volumeop"
 	"github.com/hypervisor-io/terraform-provider-iaas/waiter"
 )
 
@@ -25,8 +30,13 @@ import (
 //     reaching "available" via a StatePollerWithErrorTolerance waiter,
 //   - the id is persisted to state BEFORE the wait so a failed wait still leaves
 //     a destroyable resource,
-//   - a timeouts nested block (create only - attach/detach/resize/delete are
-//     synchronous from the API's perspective),
+//   - attach, detach, resize and delete are ALSO asynchronous: the API records
+//     the operation (the volume's active_operation names it) and the size, plan,
+//     attachment or the volume itself change only when the node confirms. Every
+//     one of them goes through package volumeop, which waits for the confirmed
+//     outcome and reports a node failure, a typed refusal (reason code) or a
+//     timeout distinctly,
+//   - a timeouts nested block (create, update, delete all bound real waits),
 //   - instance_id is managed by attach/detach calls on diff (NOT RequiresReplace),
 //   - volume_plan_id is grown in place via the resize endpoint (NOT RequiresReplace).
 var (
@@ -34,6 +44,17 @@ var (
 	_ resource.ResourceWithConfigure   = &volumeResource{}
 	_ resource.ResourceWithImportState = &volumeResource{}
 )
+
+// volumeDefaultUpdateTimeout bounds an update. It is longer than the generic
+// update default because an update can chain up to three confirmed operations
+// (resize, detach, attach) and the API enforces a per-volume cooldown (five
+// minutes on the platform today) after each completed one.
+const volumeDefaultUpdateTimeout = 30 * time.Minute
+
+// volumeOpOptions builds the confirmed-operation options for one call.
+func volumeOpOptions(timeout time.Duration) volumeop.Options {
+	return volumeop.Options{Interval: pollInterval(), Timeout: timeout}
+}
 
 // NewVolumeResource is the resource constructor registered with the provider.
 func NewVolumeResource() resource.Resource {
@@ -87,7 +108,14 @@ func (r *volumeResource) Schema(ctx context.Context, _ resource.SchemaRequest, r
 			"\"available\". Sizing is plan-based: volume_plan_id selects the size/IO tier and " +
 			"can be grown in place by selecting a larger plan (the resize endpoint). A volume " +
 			"can be attached to / detached from an instance in place by setting / clearing " +
-			"instance_id. The name, hypervisor group, and project are immutable.",
+			"instance_id. The name, hypervisor group, and project are immutable. Attach, " +
+			"detach, resize and delete are confirmed operations: the API accepts them, the " +
+			"node performs them, and this resource waits until the node confirmed the new " +
+			"attachment, plan and size (or the deletion). A node failure, a refusal (with its " +
+			"reason code) or a timeout fails the apply and leaves the volume in its previous, " +
+			"still billed state. Destroying an attached volume detaches it first. The platform " +
+			"enforces a short cooldown between operations on one volume; the resource waits " +
+			"it out within the configured timeout.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -193,10 +221,9 @@ func (r *volumeResource) Schema(ctx context.Context, _ resource.SchemaRequest, r
 			},
 		},
 		Blocks: map[string]schema.Block{
-			// Only create is async (waits for status="available"); attach/detach/
-			// resize/delete are synchronous from the API's perspective, so only the
-			// create timeout is meaningful - the block still exposes all three for
-			// consistency with the async-resource pattern.
+			// create bounds provisioning plus the optional first attach; update
+			// bounds resize/detach/attach including cooldown waits (default 30m);
+			// delete bounds an optional detach plus the confirmed deletion.
 			"timeouts": timeouts.Block(ctx, timeouts.Opts{
 				Create: true,
 				Update: true,
@@ -252,22 +279,64 @@ func (r *volumeResource) Create(ctx context.Context, req resource.CreateRequest,
 		body["project_id"] = plan.ProjectID.ValueString()
 	}
 
-	created, err := r.client.CreateVolume(ctx, body)
-	if err != nil {
-		resp.Diagnostics.Append(diagFromErr("Error creating volume", err))
-		return
-	}
-	id, _ := created["id"].(string)
-	if id == "" {
-		resp.Diagnostics.AddError("Error creating volume", "create response did not include a volume id")
-		return
+	instanceID := ""
+	if !plan.InstanceID.IsNull() && !plan.InstanceID.IsUnknown() {
+		instanceID = plan.InstanceID.ValueString()
 	}
 
-	// Persist the id immediately so a failed provisioning/wait still tracks the
-	// resource for cleanup on the next destroy.
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
-	if resp.Diagnostics.HasError() {
+	obj, id, summary, err := createVolumeAndAttach(ctx, r.client, body, instanceID, createTimeout,
+		func(id string) bool {
+			// Persist the id immediately so a failed provisioning/wait still
+			// tracks the resource for cleanup on the next destroy.
+			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
+			return !resp.Diagnostics.HasError()
+		})
+	if err != nil {
+		if summary == "Error attaching volume" {
+			// Record what the API reports (the volume exists, detached) so the
+			// state is truthful, then fail the apply.
+			r.setStateFromAPI(ctx, id, plan, &resp.State, &resp.Diagnostics)
+			resp.Diagnostics.Append(volumeOpDiag(summary, err))
+			return
+		}
+		resp.Diagnostics.Append(diagFromErr(summary, err))
 		return
+	}
+	if obj == nil {
+		return // persisting the id failed; the diagnostic is already set
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, volumeStateFromAPI(obj, plan))...)
+}
+
+// createVolumeAndAttach creates the volume, waits for provisioning and, when
+// instanceID is set, performs a confirmed attach. ONE deadline (timeout) spans
+// the whole sequence: the POST, the provisioning wait, the reads and the
+// attach all share the remaining budget, so a create timeout is a bound on
+// the whole create, never one full budget per stage. persistID is called with
+// the new id before any wait; returning false stops (obj nil, err nil). On an
+// error, summary names the failed stage for the diagnostic.
+func createVolumeAndAttach(
+	ctx context.Context,
+	c *client.Client,
+	body map[string]any,
+	instanceID string,
+	timeout time.Duration,
+	persistID func(id string) bool,
+) (obj map[string]any, id string, summary string, err error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	created, err := c.CreateVolume(ctx, body)
+	if err != nil {
+		return nil, "", "Error creating volume", err
+	}
+	id, _ = created["id"].(string)
+	if id == "" {
+		return nil, "", "Error creating volume", errors.New("create response did not include a volume id")
+	}
+	if !persistID(id) {
+		return nil, id, "", nil
 	}
 
 	// ── ASYNC convergence: poll the volume SHOW until status="available" ──────
@@ -276,9 +345,8 @@ func (r *volumeResource) Create(ctx context.Context, req resource.CreateRequest,
 	// the whole create.
 	waitErr := waiter.WaitFor(ctx, waiter.Options{
 		Interval: pollInterval(),
-		Timeout:  createTimeout,
 		Refresh: waiter.StatePollerWithErrorTolerance(
-			func() (map[string]any, error) { return r.client.GetVolume(ctx, id) },
+			func() (map[string]any, error) { return c.GetVolume(ctx, id) },
 			"status",
 			[]string{"available"},
 			[]string{"failed", "error"},
@@ -286,29 +354,23 @@ func (r *volumeResource) Create(ctx context.Context, req resource.CreateRequest,
 		),
 	})
 	if waitErr != nil {
-		resp.Diagnostics.AddError(
-			"Error waiting for volume provisioning",
-			fmt.Sprintf("volume %s did not become available: %s", id, waitErr.Error()),
-		)
-		return
+		return nil, id, "Error waiting for volume provisioning",
+			fmt.Errorf("volume %s did not become available: %s", id, waitErr.Error())
 	}
 
-	// ── optional attach ──────────────────────────────────────────────────────
-	obj, err := r.client.GetVolume(ctx, id)
+	// ── optional attach (confirmed: waits for the node) ──────────────────────
+	obj, err = c.GetVolume(ctx, id)
 	if err != nil {
-		resp.Diagnostics.Append(diagFromErr("Error reading volume after provisioning", err))
-		return
+		return nil, id, "Error reading volume after provisioning", err
 	}
-	if !plan.InstanceID.IsNull() && !plan.InstanceID.IsUnknown() && plan.InstanceID.ValueString() != "" {
-		attached, err := r.client.AttachVolume(ctx, id, map[string]any{"instance_id": plan.InstanceID.ValueString()})
+	if instanceID != "" {
+		attached, err := volumeop.AttachVolume(ctx, c, id, instanceID, volumeOpOptions(0))
 		if err != nil {
-			resp.Diagnostics.Append(diagFromErr("Error attaching volume", err))
-			return
+			return nil, id, "Error attaching volume", err
 		}
 		obj = attached
 	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, volumeStateFromAPI(obj, plan))...)
+	return obj, id, "", nil
 }
 
 // Read refreshes state from the API. A 404 means the volume was deleted out of
@@ -333,15 +395,19 @@ func (r *volumeResource) Read(ctx context.Context, req resource.ReadRequest, res
 	resp.Diagnostics.Append(resp.State.Set(ctx, volumeStateFromAPI(obj, state))...)
 }
 
-// Update applies the two in-place mutations the API supports:
+// Update applies the two in-place mutations the API supports, each as a
+// CONFIRMED operation (package volumeop waits until the node confirmed it):
 //
-//   - RESIZE: if volume_plan_id changed, issue a plan-based resize.
+//   - RESIZE: if volume_plan_id changed, issue a plan-based resize and wait
+//     until the API reports the new plan (size and plan switch together, only
+//     on the node's confirmation).
 //   - ATTACH/DETACH: if instance_id changed, detach the old instance (if any)
 //     and/or attach the new one (if any). Changing the target = detach + attach.
 //
-// All other inputs are RequiresReplace, so they never reach here. After applying
-// the changes the resource Reads back via SHOW to rehydrate computed fields,
-// since the last mutating call's response may not reflect the final state.
+// All other inputs are RequiresReplace, so they never reach here. On any
+// failure the state is refreshed from the API before the error is returned, so
+// a partially applied update (e.g. resize confirmed, attach refused) is
+// recorded truthfully and the next plan shows exactly what is still missing.
 func (r *volumeResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state volumeModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -350,27 +416,28 @@ func (r *volumeResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
+	updateTimeout, diags := plan.Timeouts.Update(ctx, volumeDefaultUpdateTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// One budget for the whole update, shared by every confirmed step.
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+	opts := volumeOpOptions(0)
+
 	id := state.ID.ValueString()
+
+	fail := func(summary string, err error) {
+		r.setStateFromAPI(ctx, id, plan, &resp.State, &resp.Diagnostics)
+		resp.Diagnostics.Append(volumeOpDiag(summary, err))
+	}
 
 	// RESIZE - plan change.
 	if !plan.VolumePlanID.Equal(state.VolumePlanID) {
-		resizeResp, err := r.client.ResizeVolume(ctx, id, map[string]any{
-			"volume_plan_id": plan.VolumePlanID.ValueString(),
-		})
-		if err != nil {
-			resp.Diagnostics.Append(diagFromErr("Error resizing volume", err))
+		if _, err := volumeop.ResizeVolume(ctx, r.client, id, plan.VolumePlanID.ValueString(), opts); err != nil {
+			fail("Error resizing volume", err)
 			return
-		}
-		// The API returns is_downgrade:true when the selected plan implies a
-		// smaller size than the current plan. Warn rather than error so the
-		// apply still proceeds (the operator may have intentionally selected a
-		// smaller plan), but surface the risk clearly.
-		if downgrade, _ := resizeResp["is_downgrade"].(bool); downgrade {
-			resp.Diagnostics.AddWarning(
-				"Volume downgrade",
-				"The selected volume_plan_id implies a smaller size than the current plan. "+
-					"This may be destructive and can truncate data on some storage backends.",
-			)
 		}
 	}
 
@@ -381,16 +448,14 @@ func (r *volumeResource) Update(ctx context.Context, req resource.UpdateRequest,
 		newAttached := !plan.InstanceID.IsNull() && !plan.InstanceID.IsUnknown() && plan.InstanceID.ValueString() != ""
 
 		if oldAttached {
-			if _, err := r.client.DetachVolume(ctx, id); err != nil {
-				resp.Diagnostics.Append(diagFromErr("Error detaching volume", err))
+			if _, err := volumeop.DetachVolume(ctx, r.client, id, opts); err != nil {
+				fail("Error detaching volume", err)
 				return
 			}
 		}
 		if newAttached {
-			if _, err := r.client.AttachVolume(ctx, id, map[string]any{
-				"instance_id": plan.InstanceID.ValueString(),
-			}); err != nil {
-				resp.Diagnostics.Append(diagFromErr("Error attaching volume", err))
+			if _, err := volumeop.AttachVolume(ctx, r.client, id, plan.InstanceID.ValueString(), opts); err != nil {
+				fail("Error attaching volume", err)
 				return
 			}
 		}
@@ -406,10 +471,12 @@ func (r *volumeResource) Update(ctx context.Context, req resource.UpdateRequest,
 	resp.Diagnostics.Append(resp.State.Set(ctx, volumeStateFromAPI(obj, plan))...)
 }
 
-// Delete removes the volume. DELETE soft-deletes the row immediately (and the
-// service detaches first if attached, then dispatches a slave delete task), so a
-// subsequent SHOW 404s right away - no delete waiter is required. A precondition
-// failure (e.g. detach-before-delete failed) surfaces as success:false at 422.
+// Delete removes the volume as a CONFIRMED operation. The API refuses to
+// delete an attached volume (reason volume_attached), so an attached volume is
+// detached first (confirmed), then the delete is sent and the resource waits
+// until the node confirmed it (the SHOW then 404s). Until then the volume and
+// its billing stay in place; a refusal, a node failure or a timeout fails the
+// destroy and keeps the resource in state.
 func (r *volumeResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state volumeModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -417,10 +484,74 @@ func (r *volumeResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	if err := r.client.DeleteVolume(ctx, state.ID.ValueString()); err != nil {
-		resp.Diagnostics.Append(diagFromErr("Error deleting volume", err))
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultDeleteTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+	opts := volumeOpOptions(0)
+	id := state.ID.ValueString()
+
+	// Decide on detach only from a SETTLED volume: while an earlier attach is
+	// still pending the API reports the old (available, unattached) state, so
+	// deciding first and waiting later would send DELETE to a volume that the
+	// pending attach then attaches (refused volume_attached). A delete refused
+	// volume_attached anyway (an attach started in between) is re-evaluated,
+	// at most twice more, within the same budget.
+	for attempt := 0; ; attempt++ {
+		obj, err := volumeop.Settle(ctx, r.client, id, opts)
+		if errors.Is(err, volumeop.ErrGone) {
+			return // already gone
+		}
+		if err != nil {
+			resp.Diagnostics.Append(volumeOpDiag("Error waiting for pending volume work before delete", err))
+			return
+		}
+		if inst, _ := obj["instance_id"].(string); inst != "" || obj["status"] == "attached" {
+			if _, err := volumeop.DetachVolume(ctx, r.client, id, opts); err != nil {
+				resp.Diagnostics.Append(volumeOpDiag("Error detaching volume before delete", err))
+				return
+			}
+		}
+
+		err = volumeop.DeleteVolume(ctx, r.client, id, opts)
+		var refused *volumeop.RefusedError
+		if errors.As(err, &refused) && refused.Reason == "volume_attached" && attempt < 2 {
+			continue
+		}
+		if err != nil {
+			resp.Diagnostics.Append(volumeOpDiag("Error deleting volume", err))
+		}
+		return
+	}
+}
+
+// setStateFromAPI best-effort refreshes state from the SHOW after a failed
+// confirmed operation, so the recorded state matches what the API reports. A
+// read failure leaves the prior state untouched (the error being returned is
+// the important diagnostic).
+func (r *volumeResource) setStateFromAPI(ctx context.Context, id string, prior volumeModel, st *tfsdk.State, d *diag.Diagnostics) {
+	readCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	defer cancel()
+	obj, err := r.client.GetVolume(readCtx, id)
+	if err != nil {
+		return
+	}
+	d.Append(st.Set(ctx, volumeStateFromAPI(obj, prior))...)
+}
+
+// volumeOpDiag renders a confirmed-operation error. A refusal keeps the API's
+// own message plus its reason code (tfdiag), a node failure and a timeout are
+// rendered from their own text, which says what was kept and what may still
+// complete.
+func volumeOpDiag(summary string, err error) diag.Diagnostic {
+	var refused *volumeop.RefusedError
+	if errors.As(err, &refused) {
+		return diagFromErr(summary, refused.Err)
+	}
+	return diag.NewErrorDiagnostic(summary, err.Error())
 }
 
 // ImportState lets `terraform import iaas_volume.x <uuid>` adopt an existing

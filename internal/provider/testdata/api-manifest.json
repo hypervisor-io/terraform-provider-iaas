@@ -5,6 +5,15 @@
     "user": "UserApiAuthentication",
     "admin": "ApiAuthentication"
   },
+  "public_ip_convergence_contract": {
+    "response_fields": ["IP.convergence.state", "IP.convergence.reason", "instance_ips.public_ip_changes"],
+    "surfaces": ["user", "admin"],
+    "endpoint_ids": ["admin GET /api/v1/instance/{instanceId}/ips", "admin POST /api/v1/instance/{instanceId}/ips", "admin PUT /api/v1/instance/{instanceId}/ips/{ipId}/rdns", "admin GET /api/v1/ips", "admin POST /api/v1/ips", "admin GET /api/v1/static-ips", "admin GET /api/v1/subnet/{subnetId}/ips", "user GET /api/instance/{user_instanceId}/ips", "user POST /api/instance/{user_instanceId}/ips", "user DELETE /api/static-ip/{user_staticIpId}", "user GET /api/static-ips", "user POST /api/static-ips/allocate", "user GET /api/static-ips/available", "user GET /api/static-ips/pool"],
+    "states": ["pending", "accepted", "observed", "next_reboot", "manual_network", "failed"],
+    "semantics": "Ownership is intent. Only a durable node/guest observation completes convergence. A pending removal blocks reuse; manual_network requires operator action and keeps that fence.",
+    "opentofu": {"status": "excluded", "reason": "planned, follow-up task"},
+    "mcp": {"status": "excluded", "reason": "planned, follow-up task"}
+  },
   "endpoints": [
     {
       "id": "admin DELETE /api/v1/ai/conversation/{aiConversationId}",
@@ -139,11 +148,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; customer and provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy account-owner conversion for customers or admin-profile conversion for providers and UTC storage; GFS uses the explicit zone"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase; customer and provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy account-owner conversion for customers or admin-profile conversion for providers and UTC storage; GFS uses the explicit zone"
       }
     },
     {
@@ -153,11 +162,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; accepts optional retention_mode and keep_* age-window/GFS retention fields; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; accepts optional retention_mode and keep_* age-window/GFS retention fields; customer and provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy account-owner conversion for customers or admin-profile conversion for providers and UTC storage; GFS uses the explicit zone"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); accepts optional retention_mode and keep_* age-window/GFS retention fields; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); accepts optional retention_mode and keep_* age-window/GFS retention fields; customer and provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy account-owner conversion for customers or admin-profile conversion for providers and UTC storage; GFS uses the explicit zone"
       }
     },
     {
@@ -181,11 +190,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; customer and provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy account-owner conversion for customers or admin-profile conversion for providers and UTC storage; GFS uses the explicit zone"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase; customer and provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy account-owner conversion for customers or admin-profile conversion for providers and UTC storage; GFS uses the explicit zone"
       }
     },
     {
@@ -195,11 +204,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; accepts optional retention_mode and keep_* age-window/GFS retention fields; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; accepts optional retention_mode and keep_* age-window/GFS retention fields; customer and provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy account-owner conversion for customers or admin-profile conversion for providers and UTC storage; GFS uses the explicit zone"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); accepts optional retention_mode and keep_* age-window/GFS retention fields; provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy admin-profile conversion and UTC storage; GFS uses the explicit zone; customers retain owner-timezone behavior"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); accepts optional retention_mode and keep_* age-window/GFS retention fields; customer and provider policy timezone is an optional nullable named IANA zone from the panel list (fixed-offset/legacy aliases rejected; explicit zones require the timezone schema update): explicit values keep time/day as DST-aware local wall clock, omission on edit preserves it, null clears to legacy account-owner conversion for customers or admin-profile conversion for providers and UTC storage; GFS uses the explicit zone"
       }
     },
     {
@@ -6483,11 +6492,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; rescue_hostname_prefix applies to the sanitized customer hostname first label (internal name fallback), lowercase and capped at 63 characters; blank keeps the rescue default"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase; rescue_hostname_prefix applies to the sanitized customer hostname first label (internal name fallback), lowercase and capped at 63 characters; blank keeps the rescue default"
       }
     },
     {
@@ -6497,11 +6506,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; rescue_hostname_prefix applies to the sanitized customer hostname first label (internal name fallback), lowercase and capped at 63 characters; blank keeps the rescue default"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); rescue_hostname_prefix applies to the sanitized customer hostname first label (internal name fallback), lowercase and capped at 63 characters; blank keeps the rescue default"
       }
     },
     {
@@ -8151,11 +8160,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
       }
     },
     {
@@ -8165,11 +8174,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
       }
     },
     {
@@ -8193,11 +8202,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the schedule full_backup_time and weekly full_backup_day use the account owner effective timezone with UTC storage, and schedule values pass through unchanged; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the schedule full_backup_time and weekly full_backup_day use the account owner effective timezone with UTC storage, and schedule values pass through unchanged; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
       }
     },
     {
@@ -8207,11 +8216,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; the added nullable timezone response field is reserved for provider policies and remains null on customer policies; customer schedules retain existing owner-timezone conversion and UTC storage"
+        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
       }
     },
     {

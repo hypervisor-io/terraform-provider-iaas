@@ -22,7 +22,8 @@ import (
 //	ATTACH   POST   /storage/volume/{id}/attach           body {instance_id (req)} → {success,volume}
 //	DETACH   POST   /storage/volume/{id}/detach           (no body)               → {success,volume}
 //	RESIZE   PATCH  /storage/volume/{id}/resize           body {volume_plan_id (req)} → {success,volume,is_downgrade}
-//	DELETE   DELETE /storage/volume/{id}                  → {success,message}; 422 success:false on failure
+//	DELETE   DELETE /storage/volume/{id}                  → {success,message}
+//	         (all four: 422 {success:false,reason,message} on a definite refusal)
 //
 //	SNAPSHOT-CREATE  POST   /storage/volume/{id}/snapshot            body {name?} → {success,message,queue:{...}}
 //	SNAPSHOT-DELETE  DELETE /storage/volume/{id}/snapshot/{snapId}   → {success,message,queue:{...}}
@@ -33,12 +34,21 @@ import (
 //     status→"available" (deployed=1) or "failed". There is NO task_id in the create
 //     response (the controller returns {success,volume}); the async signal is the
 //     volume's own "status" field, polled via the SHOW endpoint. GetVolume IS the poll.
-//   - ATTACH/DETACH/RESIZE are effectively SYNCHRONOUS from the API's perspective:
-//     the controller mutates the volume row in place (status→attached/available, or
-//     size/plan) and returns the fresh volume immediately; the hot-(de)attach / resize
-//     slave task is fire-and-forget and not waited on by the API.
-//   - DELETE soft-deletes the row immediately (and dispatches a slave delete task), so a
-//     subsequent SHOW 404s right away - no delete waiter is required.
+//   - ATTACH/DETACH/RESIZE/DELETE are CONFIRMED ASYNCHRONOUS operations (Master
+//     3.3.5): a 200 means the operation was recorded and sent to the node; the
+//     volume's "active_operation" field names it while pending, and the
+//     attachment, plan and size (or the volume itself, for delete) change only
+//     when the node confirms. A node failure clears active_operation and keeps
+//     the previous state. A definite refusal is a 422 with a typed "reason"
+//     (e.g. volume_operation_refused, volume_attached) and changes nothing.
+//     The methods below only SEND the request, in ONE attempt: a 429/5xx or a
+//     transport error is returned without the client's usual replay, because
+//     the first attempt may already have been recorded (and even completed or
+//     failed on the node) and a replay would issue a second operation. Package
+//     volumeop resolves such an unknown outcome by reading the volume back and
+//     is what callers should use. Attach/detach on a
+//     stopped instance is applied immediately (no node command), which the
+//     same wait observes on its first read.
 //   - SNAPSHOT CREATE/DELETE are ASYNC: they enqueue a backup-queue job and return the
 //     QUEUE object, not the snapshot. The snapshot row starts status="pending" and is
 //     embedded in the volume SHOW under snapshots[]; there is no individual snapshot
@@ -82,49 +92,48 @@ func (c *Client) ListVolumes(ctx context.Context) ([]map[string]any, error) {
 	return c.doList(ctx, "GET", "/storage/volumes", nil)
 }
 
-// AttachVolume attaches the volume to an instance. body must contain
-// "instance_id". The controller flips status→"attached" and returns the fresh
-// volume in the "volume" envelope. A precondition failure (volume not available,
-// different hypervisor group, no free device letter) surfaces as success:false
-// at HTTP 422 → an error.
+// AttachVolume sends an attach request. body must contain "instance_id". The
+// returned volume is the accepted state (active_operation "attach" while the
+// node works); use volumeop.AttachVolume to wait for the confirmed attachment.
+// A precondition failure (volume not available, different hypervisor group, no
+// free device letter) or a node refusal surfaces as HTTP 422 with a reason.
 func (c *Client) AttachVolume(ctx context.Context, id string, body map[string]any) (map[string]any, error) {
 	if id == "" {
 		return nil, fmt.Errorf("AttachVolume: empty id")
 	}
-	return c.doItem(ctx, "POST", "/storage/volume/"+url.PathEscape(id)+"/attach", body, "volume")
+	return c.doItemOnce(ctx, "POST", "/storage/volume/"+url.PathEscape(id)+"/attach", body, "volume")
 }
 
-// DetachVolume detaches the volume from its instance (no request body). The
-// controller flips status→"available" and returns the fresh volume.
+// DetachVolume sends a detach request (no body). Use volumeop.DetachVolume to
+// wait for the confirmed detachment.
 func (c *Client) DetachVolume(ctx context.Context, id string) (map[string]any, error) {
 	if id == "" {
 		return nil, fmt.Errorf("DetachVolume: empty id")
 	}
-	return c.doItem(ctx, "POST", "/storage/volume/"+url.PathEscape(id)+"/detach", nil, "volume")
+	return c.doItemOnce(ctx, "POST", "/storage/volume/"+url.PathEscape(id)+"/detach", nil, "volume")
 }
 
-// ResizeVolume resizes the volume to a new (larger) plan. body must contain
+// ResizeVolume sends a resize to a new (larger) plan. body must contain
 // "volume_plan_id" (resize is plan-based, not a free-form size). The PATCH
 // returns the top-level envelope {success, is_downgrade, volume:{...}}; the
-// caller may inspect "is_downgrade" to warn on a potentially destructive resize.
-// A cross-class/type or invalid-plan resize surfaces as success:false at HTTP
-// 422 → an error.
+// size and plan in it are still the OLD ones (they switch only on the node's
+// confirmation), so use volumeop.ResizeVolume to wait. Shrinking and a
+// cross-class/type or invalid-plan resize are refused with HTTP 422.
 func (c *Client) ResizeVolume(ctx context.Context, id string, body map[string]any) (map[string]any, error) {
 	if id == "" {
 		return nil, fmt.Errorf("ResizeVolume: empty id")
 	}
-	return c.doItem(ctx, "PATCH", "/storage/volume/"+url.PathEscape(id)+"/resize", body, "")
+	return c.doItemOnce(ctx, "PATCH", "/storage/volume/"+url.PathEscape(id)+"/resize", body, "")
 }
 
-// DeleteVolume deletes (soft-deletes) the volume. The row is removed immediately
-// and a slave delete task is dispatched, so a subsequent SHOW 404s right away. A
-// failure (e.g. detach-before-delete failed) is signalled with success:false at
-// HTTP 422, so doVoid checks the flag.
+// DeleteVolume sends a delete. The volume (and its billing) stays until the
+// node confirms; the SHOW then 404s. An attached volume is refused with HTTP
+// 422 reason volume_attached (detach first). Use volumeop.DeleteVolume to wait.
 func (c *Client) DeleteVolume(ctx context.Context, id string) error {
 	if id == "" {
 		return fmt.Errorf("DeleteVolume: empty id")
 	}
-	return c.doVoid(ctx, "DELETE", "/storage/volume/"+url.PathEscape(id), nil)
+	return c.doVoidOnce(ctx, "DELETE", "/storage/volume/"+url.PathEscape(id), nil)
 }
 
 // CreateVolumeSnapshot enqueues a point-in-time snapshot of the volume. body may

@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added / Changed
 
+- `iaas_volume` attach, detach, resize and delete are now confirmed operations. The
+  platform accepts these requests and the node performs them; the resource waits until
+  the volume reports the new attachment, plan and size (or reads 404 after a delete)
+  and no longer trusts the accepted response. A node failure, a refusal (now shown with
+  its `reason` code) or a timeout fails the apply and keeps the volume in its previous
+  state; after a failed update the state is refreshed from the API so the next plan
+  shows exactly what is still missing. The `update` and `delete` timeouts now bound
+  real waits (update defaults to 30m because an update can chain resize, detach and
+  attach, and the platform enforces a short cooldown between operations on one volume,
+  which the resource waits out). Destroying an attached volume detaches it first. The
+  shared wait lives in the new `volumeop` package, which the MCP server uses too.
+  The four volume commands are sent in exactly one attempt (a 5xx or transport error
+  is resolved by reading the volume back, never by replaying the command), a busy
+  refusal is waited out even before the platform publishes the pending marker, a
+  refusal that raced a completion already in the requested state counts as done,
+  destroy waits for pending volume work before deciding whether to detach, and the
+  create timeout is one deadline for provisioning plus the optional attach.
+  `client.APIError` gains a `Reason` field (the API's typed refusal code), shown in
+  `Error()` and in every resource's error diagnostics.
+
 - `iaas_certificate`'s `name`, `certificate`, `private_key` and `chain` attributes are no
   longer `RequiresReplace`. Changing any of them now rotates the certificate material IN
   PLACE via `PUT /certificate/{id}`, preserving the resource's `id` (and therefore every

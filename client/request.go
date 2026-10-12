@@ -55,6 +55,21 @@ func (c *Client) doItemOnce(ctx context.Context, method, path string, body any, 
 	return decodeItem(raw, key)
 }
 
+// doVoidOnce is doVoid without transport replay: a 429/5xx (or a transport
+// error) is returned as-is after ONE attempt, because a replay of a
+// non-idempotent command cannot know whether the first attempt already ran.
+func (c *Client) doVoidOnce(ctx context.Context, method, path string, body any) error {
+	resp, raw, err := c.doWithAttempts(ctx, method, path, body, nil, 1)
+	if err != nil {
+		return err
+	}
+	if err := responseError(resp, raw); err != nil {
+		return err
+	}
+	_, err = decodeItem(raw, "")
+	return err
+}
+
 // doItemWithHeaders is doItem with optional per-request extra headers. It is the
 // idempotent-write seam: create paths that must carry an Idempotency-Key header
 // (so the Master's idempotency.user middleware deduplicates a retried create)

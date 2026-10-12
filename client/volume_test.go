@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -588,5 +589,50 @@ func TestVolumeSnapshotResolvers_EmptyIDs(t *testing.T) {
 	}
 	if _, err := c.FindVolumeSnapshotByName(context.Background(), "v", ""); err == nil {
 		t.Fatal("FindVolumeSnapshotByName: expected error for empty name")
+	}
+}
+
+// TestVolumeMutations_SingleAttemptOn5xx pins that the four confirmed volume
+// commands are sent ONCE on a 5xx (and on a 429), never replayed by the
+// transport: the first attempt may already be recorded, completed or failed on
+// the node, and a replay is a second operation. GetVolume keeps the normal
+// retry (reads are safe to repeat).
+func TestVolumeMutations_SingleAttemptOn5xx(t *testing.T) {
+	for _, status := range []int{http.StatusInternalServerError, http.StatusServiceUnavailable, http.StatusTooManyRequests} {
+		var hits int
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			hits++
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(status)
+			_, _ = w.Write([]byte(`{"message":"Server Error"}`))
+		}))
+		c := New(srv.URL, "tok", 5*time.Second, false)
+		c.retryBaseDelay = time.Millisecond
+		ctx := context.Background()
+
+		calls := map[string]func() error{
+			"attach": func() error { _, err := c.AttachVolume(ctx, "v1", map[string]any{"instance_id": "i1"}); return err },
+			"detach": func() error { _, err := c.DetachVolume(ctx, "v1"); return err },
+			"resize": func() error { _, err := c.ResizeVolume(ctx, "v1", map[string]any{"volume_plan_id": "p2"}); return err },
+			"delete": func() error { return c.DeleteVolume(ctx, "v1") },
+		}
+		for name, call := range calls {
+			hits = 0
+			err := call()
+			var apiErr *APIError
+			if !errors.As(err, &apiErr) || apiErr.Status != status {
+				t.Fatalf("%s on %d: err = %v; want the original APIError", name, status, err)
+			}
+			if hits != 1 {
+				t.Fatalf("%s on %d: %d requests; a mutation must be sent exactly once", name, status, hits)
+			}
+		}
+
+		hits = 0
+		_, _ = c.GetVolume(ctx, "v1")
+		if hits != maxRetryAttempts {
+			t.Fatalf("GetVolume on %d: %d requests; reads keep the %d-attempt retry", status, hits, maxRetryAttempts)
+		}
+		srv.Close()
 	}
 }

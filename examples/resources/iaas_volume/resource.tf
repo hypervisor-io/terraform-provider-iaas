@@ -9,7 +9,10 @@
 #      class and datastore type - the provider issues an in-place resize.
 #
 # Creation is asynchronous: the provider waits for the volume's status to become
-# "available" before completing. The create timeout is configurable below.
+# "available" before completing. Attach, detach, resize and delete are confirmed
+# operations: the provider waits until the node confirmed each one (and waits out
+# the platform's short per-volume cooldown between them). Destroying an attached
+# volume detaches it first. All three timeouts are configurable below.
 #
 # Immutable inputs (changing any forces a new resource): name, hypervisor_group_id,
 # project_id. In-place updatable inputs: volume_plan_id (resize) and instance_id
@@ -34,6 +37,8 @@ resource "iaas_volume" "data" {
 
   timeouts {
     create = "30m"
+    update = "30m"
+    delete = "30m"
   }
 }
 

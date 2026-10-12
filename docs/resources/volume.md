@@ -3,12 +3,12 @@
 page_title: "iaas_volume Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a Cloud Service block storage volume. Creation is asynchronous: the volume record is created synchronously, then the backing volume is provisioned on a hypervisor and this resource waits for its status to become "available". Sizing is plan-based: volume_plan_id selects the size/IO tier and can be grown in place by selecting a larger plan (the resize endpoint). A volume can be attached to / detached from an instance in place by setting / clearing instance_id. The name, hypervisor group, and project are immutable.
+  Manages a Cloud Service block storage volume. Creation is asynchronous: the volume record is created synchronously, then the backing volume is provisioned on a hypervisor and this resource waits for its status to become "available". Sizing is plan-based: volume_plan_id selects the size/IO tier and can be grown in place by selecting a larger plan (the resize endpoint). A volume can be attached to / detached from an instance in place by setting / clearing instance_id. The name, hypervisor group, and project are immutable. Attach, detach, resize and delete are confirmed operations: the API accepts them, the node performs them, and this resource waits until the node confirmed the new attachment, plan and size (or the deletion). A node failure, a refusal (with its reason code) or a timeout fails the apply and leaves the volume in its previous, still billed state. Destroying an attached volume detaches it first. The platform enforces a short cooldown between operations on one volume; the resource waits it out within the configured timeout.
 ---
 
 # iaas_volume (Resource)
 
-Manages a Cloud Service block storage volume. Creation is asynchronous: the volume record is created synchronously, then the backing volume is provisioned on a hypervisor and this resource waits for its status to become "available". Sizing is plan-based: volume_plan_id selects the size/IO tier and can be grown in place by selecting a larger plan (the resize endpoint). A volume can be attached to / detached from an instance in place by setting / clearing instance_id. The name, hypervisor group, and project are immutable.
+Manages a Cloud Service block storage volume. Creation is asynchronous: the volume record is created synchronously, then the backing volume is provisioned on a hypervisor and this resource waits for its status to become "available". Sizing is plan-based: volume_plan_id selects the size/IO tier and can be grown in place by selecting a larger plan (the resize endpoint). A volume can be attached to / detached from an instance in place by setting / clearing instance_id. The name, hypervisor group, and project are immutable. Attach, detach, resize and delete are confirmed operations: the API accepts them, the node performs them, and this resource waits until the node confirmed the new attachment, plan and size (or the deletion). A node failure, a refusal (with its reason code) or a timeout fails the apply and leaves the volume in its previous, still billed state. Destroying an attached volume detaches it first. The platform enforces a short cooldown between operations on one volume; the resource waits it out within the configured timeout.
 
 ## Example Usage
 
@@ -24,7 +24,10 @@ Manages a Cloud Service block storage volume. Creation is asynchronous: the volu
 #      class and datastore type - the provider issues an in-place resize.
 #
 # Creation is asynchronous: the provider waits for the volume's status to become
-# "available" before completing. The create timeout is configurable below.
+# "available" before completing. Attach, detach, resize and delete are confirmed
+# operations: the provider waits until the node confirmed each one (and waits out
+# the platform's short per-volume cooldown between them). Destroying an attached
+# volume detaches it first. All three timeouts are configurable below.
 #
 # Immutable inputs (changing any forces a new resource): name, hypervisor_group_id,
 # project_id. In-place updatable inputs: volume_plan_id (resize) and instance_id
@@ -49,6 +52,8 @@ resource "iaas_volume" "data" {
 
   timeouts {
     create = "30m"
+    update = "30m"
+    delete = "30m"
   }
 }
 

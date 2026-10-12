@@ -31,13 +31,21 @@ type APIError struct {
 	FieldErrors map[string][]string
 	// RequestID holds the X-Request-Id response header when present.
 	RequestID string
+	// Reason is the API's machine-readable "reason" code when the body carries
+	// one (e.g. "volume_operation_refused", "volume_attached"). Empty when the
+	// API sent none. It is the typed refusal callers branch on; never parse
+	// Message for it.
+	Reason string
 }
 
 // Error implements the error interface.
-// Format: "<status>: <message>[; <field>: [msg, ...]...][; (request id: <id>)]"
+// Format: "<status>: <message>[ (reason: <code>)][; <field>: [msg, ...]...][; (request id: <id>)]"
 func (e *APIError) Error() string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "%d: %s", e.Status, e.Message)
+	if e.Reason != "" {
+		fmt.Fprintf(&sb, " (reason: %s)", e.Reason)
+	}
 	fields := make([]string, 0, len(e.FieldErrors))
 	for f := range e.FieldErrors {
 		fields = append(fields, f)
@@ -82,8 +90,16 @@ func responseError(resp *http.Response, body []byte) error {
 		Message string                     `json:"message"`
 		Error   string                     `json:"error"`
 		Errors  map[string]json.RawMessage `json:"errors"`
+		Reason  json.RawMessage            `json:"reason"`
 	}
 	_ = json.Unmarshal(body, &parsed) // best-effort; ignore unmarshal failures
+
+	// reason is a string code on every typed refusal; any other JSON shape is
+	// ignored rather than failing the whole parse.
+	var reason string
+	if len(parsed.Reason) > 0 && json.Unmarshal(parsed.Reason, &reason) == nil {
+		apiErr.Reason = reason
+	}
 
 	// Base message from the parsed body, or a status-based fallback.
 	msg := parsed.Message

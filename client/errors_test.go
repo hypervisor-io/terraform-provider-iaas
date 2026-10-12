@@ -186,6 +186,34 @@ func TestResponseError_ErrorString_422(t *testing.T) {
 	}
 }
 
+// TestResponseError_Reason verifies the typed refusal reason is parsed into
+// APIError.Reason and named in Error(), and that a body without one (or with a
+// non-string one) leaves it empty.
+func TestResponseError_Reason(t *testing.T) {
+	resp := &http.Response{StatusCode: 422, Header: http.Header{}}
+	err := responseError(resp, []byte(`{"success":false,"reason":"volume_operation_refused","message":"The node refused the volume operation."}`))
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *APIError; got %T", err)
+	}
+	if apiErr.Reason != "volume_operation_refused" {
+		t.Errorf("Reason = %q; want volume_operation_refused", apiErr.Reason)
+	}
+	if !strings.Contains(apiErr.Error(), "(reason: volume_operation_refused)") {
+		t.Errorf("Error() = %q; should name the reason", apiErr.Error())
+	}
+
+	for _, body := range []string{`{"message":"x"}`, `{"message":"x","reason":{"code":1}}`, `not json`} {
+		err := responseError(&http.Response{StatusCode: 409, Header: http.Header{}}, []byte(body))
+		if !errors.As(err, &apiErr) {
+			t.Fatalf("expected *APIError for %s", body)
+		}
+		if apiErr.Reason != "" || strings.Contains(apiErr.Error(), "reason:") {
+			t.Errorf("body %s: Reason = %q, Error() = %q; want no reason", body, apiErr.Reason, apiErr.Error())
+		}
+	}
+}
+
 // ---------------------------------------------------------------------------
 // IsNotFound helper
 // ---------------------------------------------------------------------------
