@@ -50,6 +50,26 @@ func (e *SnapshotNameTakenError) Error() string {
 var ErrSnapshotNameEmpty = errors.New("a snapshot name is required: the new snapshot is found by its name, " +
 	"and without one the platform would name it itself and it could not be found")
 
+// ErrSnapshotNameInvalid rejects edge whitespace and the literal "0" to
+// preserve a recorded snapshot's configured lookup identity.
+var ErrSnapshotNameInvalid = errors.New("snapshot name must not have leading or trailing whitespace or be the literal \"0\": " +
+	"the name must stay unchanged so the new snapshot can be found by its configured name")
+
+// ValidateSnapshotName requires a name that round-trips unchanged through the
+// platform's TrimStrings middleware and snapshot service's PHP ?: fallback.
+// The consumer rule rejects all Unicode edge whitespace via strings.TrimSpace.
+// It never canonicalizes the name: the request, lookup and configured state
+// must all use the same identity.
+func ValidateSnapshotName(name string) error {
+	if name == "" {
+		return ErrSnapshotNameEmpty
+	}
+	if strings.TrimSpace(name) != name || name == "0" {
+		return ErrSnapshotNameInvalid
+	}
+	return nil
+}
+
 // SnapshotIDsNamed returns the ids of the volume's snapshots named name (read
 // from the volume SHOW's embedded snapshots[]), sorted.
 func SnapshotIDsNamed(ctx context.Context, c *client.Client, volumeID, name string) ([]string, error) {
@@ -78,12 +98,11 @@ func SnapshotIDsNamed(ctx context.Context, c *client.Client, volumeID, name stri
 
 // CheckSnapshotNameFree runs before the first create send. It returns the ids
 // of same-name snapshots it saw (the "before" set for AdoptAfterUncertain)
-// and a *SnapshotNameTakenError when there are any.
+// and a *SnapshotNameTakenError when there are any. Names that the platform
+// would change are rejected before any read or send.
 func CheckSnapshotNameFree(ctx context.Context, c *client.Client, volumeID, name string) ([]string, error) {
-	if name == "" {
-		// The API would name it itself (snap-<id>-<time>) and the new
-		// snapshot could never be found by name: it would be orphaned.
-		return nil, ErrSnapshotNameEmpty
+	if err := ValidateSnapshotName(name); err != nil {
+		return nil, err
 	}
 	ids, err := SnapshotIDsNamed(ctx, c, volumeID, name)
 	if err != nil {

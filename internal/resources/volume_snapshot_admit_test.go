@@ -322,26 +322,31 @@ func TestUnitVolumeSnapshot_PreExistingSameNameIsRefusedBeforeSend(t *testing.T)
 	}
 }
 
-// An empty name is refused at plan time (length validator): nothing is sent,
-// so the platform cannot create a snapshot under a name it chose itself.
+// A name the platform would rewrite (empty, edge whitespace, the literal "0")
+// is refused at plan time by the shared name validator: nothing is sent, so
+// the platform cannot create a snapshot under a name it chose itself.
 func TestUnitVolumeSnapshot_EmptyNameIsRejected(t *testing.T) {
 	ensureTFBinary(t)
-	srv := snapshotAdmitServer(t, nil)
-	cfg := acctest.ProviderConfig(srv.Endpoint()) + `
+	for _, name := range []string{"", "   ", " nightly ", "0"} {
+		t.Run(name, func(t *testing.T) {
+			srv := snapshotAdmitServer(t, nil)
+			cfg := acctest.ProviderConfig(srv.Endpoint()) + `
 resource "iaas_volume_snapshot" "test" {
   volume_id = "` + admitVolumeID + `"
-  name      = ""
+  name      = "` + name + `"
 }
 `
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: acctest.Factories,
-		Steps: []resource.TestStep{{
-			Config:      cfg,
-			ExpectError: regexp.MustCompile(`at\s+least\s+1`),
-		}},
-	})
-	if got := len(srv.Requests("POST", "/storage/volume/"+admitVolumeID+"/snapshot")); got != 0 {
-		t.Fatalf("snapshot creates = %d; an empty name is refused before any send", got)
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: acctest.Factories,
+				Steps: []resource.TestStep{{
+					Config:      cfg,
+					ExpectError: regexp.MustCompile(`Invalid\s+Snapshot\s+Name`),
+				}},
+			})
+			if got := len(srv.Requests("POST", "/storage/volume/"+admitVolumeID+"/snapshot")); got != 0 {
+				t.Fatalf("name=%q: snapshot creates = %d; the name is refused before any send", name, got)
+			}
+		})
 	}
 }
 

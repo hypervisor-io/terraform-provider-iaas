@@ -46,10 +46,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   does not enforce unique snapshot names per volume and the new snapshot is found by its
   name, `iaas_volume_snapshot` (and the MCP snapshot tool) now refuse a create whose name
   is already used on the volume, before anything is sent: the resource can no longer
-  adopt, and later destroy, a snapshot it did not create. An empty snapshot name is
-  refused before anything is sent (`name` must be at least 1 character), because the
-  platform would name such a snapshot itself and it could never be found. The set of
-  same-name snapshots seen before a send is refreshed before every repeated send, and the
+  adopt, and later destroy, a snapshot it did not create. Empty, all-whitespace,
+  leading/trailing-whitespace and literal `"0"` snapshot names are refused before any
+  API read or send, with the same rule at provider plan time: the platform would trim
+  or replace these names and the recorded snapshot could not be found by its configured
+  name. The set of same-name snapshots seen before a send is refreshed before every
+  repeated send, and the
   new snapshot's id is resolved as the single same-name snapshot not in that set, so one
   made by someone else during an admission wait is never taken for ours. Admission, id
   resolution and the readiness wait now share one create timeout instead of each getting

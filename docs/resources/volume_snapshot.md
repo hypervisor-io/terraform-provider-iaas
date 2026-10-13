@@ -3,12 +3,12 @@
 page_title: "iaas_volume_snapshot Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a point-in-time snapshot of a volume. A snapshot is a child of a volume: its parent volume_id is part of the API path, so changing it forces a new resource. Creation is asynchronous - the snapshot is enqueued and this resource waits for it to become "available". Snapshots are immutable (there is no update endpoint); changing the name forces a new snapshot. The name must be unique on the volume (it is how the new snapshot is found): a create whose name is already used there is refused. While another operation runs on the volume, during the platform's short per-volume cooldown or while the account is at its in-flight limit, the create waits and asks again (admission, id resolution and the readiness wait share the create timeout); any other refusal fails with its reason code. Import with a composite id: "<volume_id>/<snapshot_id>".
+  Manages a point-in-time snapshot of a volume. A snapshot is a child of a volume: its parent volume_id is part of the API path, so changing it forces a new resource. Creation is asynchronous - the snapshot is enqueued and this resource waits for it to become "available". Snapshots are immutable (there is no update endpoint); changing the name forces a new snapshot. The name must be unique on the volume (it is how the new snapshot is found): a create whose name is already used there is refused. Names must be nonempty, have no leading or trailing whitespace, and must not be the literal "0". While another operation runs on the volume, during the platform's short per-volume cooldown or while the account is at its in-flight limit, the create waits and asks again (admission, id resolution and the readiness wait share the create timeout); any other refusal fails with its reason code. Import with a composite id: "<volume_id>/<snapshot_id>".
 ---
 
 # iaas_volume_snapshot (Resource)
 
-Manages a point-in-time snapshot of a volume. A snapshot is a child of a volume: its parent volume_id is part of the API path, so changing it forces a new resource. Creation is asynchronous - the snapshot is enqueued and this resource waits for it to become "available". Snapshots are immutable (there is no update endpoint); changing the name forces a new snapshot. The name must be unique on the volume (it is how the new snapshot is found): a create whose name is already used there is refused. While another operation runs on the volume, during the platform's short per-volume cooldown or while the account is at its in-flight limit, the create waits and asks again (admission, id resolution and the readiness wait share the create timeout); any other refusal fails with its reason code. Import with a composite id: "<volume_id>/<snapshot_id>".
+Manages a point-in-time snapshot of a volume. A snapshot is a child of a volume: its parent volume_id is part of the API path, so changing it forces a new resource. Creation is asynchronous - the snapshot is enqueued and this resource waits for it to become "available". Snapshots are immutable (there is no update endpoint); changing the name forces a new snapshot. The name must be unique on the volume (it is how the new snapshot is found): a create whose name is already used there is refused. Names must be nonempty, have no leading or trailing whitespace, and must not be the literal "0". While another operation runs on the volume, during the platform's short per-volume cooldown or while the account is at its in-flight limit, the create waits and asks again (admission, id resolution and the readiness wait share the create timeout); any other refusal fails with its reason code. Import with a composite id: "<volume_id>/<snapshot_id>".
 
 ## Example Usage
 
@@ -56,7 +56,7 @@ output "snapshot_size_bytes" {
 
 ### Required
 
-- `name` (String) Name of the snapshot. Required and immutable: it is the key used to resolve the server-assigned snapshot id after creation (the create endpoint returns a job queue, not the snapshot), and there is no snapshot-update endpoint, so changing it forces a new resource. Use a unique name per volume.
+- `name` (String) Name of the snapshot. Required and immutable: it is the key used to resolve the server-assigned snapshot id after creation (the create endpoint returns a job queue, not the snapshot), and there is no snapshot-update endpoint, so changing it forces a new resource. Use a unique name per volume. Names must be nonempty, have no leading or trailing whitespace, and must not be the literal "0".
 - `volume_id` (String) UUID of the parent volume this snapshot belongs to. This value is part of the API request path, so changing it forces a new resource.
 
 ### Optional

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -58,6 +57,25 @@ type volumeSnapshotModel struct {
 	Timeouts timeouts.Value `tfsdk:"timeouts"`
 }
 
+type volumeSnapshotNameValidator struct{}
+
+func (volumeSnapshotNameValidator) Description(context.Context) string {
+	return "snapshot name must be nonempty, have no leading or trailing whitespace, and must not be the literal \"0\""
+}
+
+func (v volumeSnapshotNameValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (volumeSnapshotNameValidator) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	if err := volumeop.ValidateSnapshotName(req.ConfigValue.ValueString()); err != nil {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid Snapshot Name", err.Error())
+	}
+}
+
 // Metadata sets the resource type name → "iaas_volume_snapshot".
 func (r *volumeSnapshotResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_volume_snapshot"
@@ -72,7 +90,8 @@ func (r *volumeSnapshotResource) Schema(ctx context.Context, _ resource.SchemaRe
 			"resource waits for it to become \"available\". Snapshots are immutable (there " +
 			"is no update endpoint); changing the name forces a new snapshot. The name must " +
 			"be unique on the volume (it is how the new snapshot is found): a create whose " +
-			"name is already used there is refused. While another " +
+			"name is already used there is refused. Names must be nonempty, have no leading " +
+			"or trailing whitespace, and must not be the literal \"0\". While another " +
 			"operation runs on the volume, during the platform's short per-volume cooldown " +
 			"or while the account is at its in-flight limit, the create waits and asks " +
 			"again (admission, id resolution and the readiness wait share the create " +
@@ -100,10 +119,11 @@ func (r *volumeSnapshotResource) Schema(ctx context.Context, _ resource.SchemaRe
 					"resolve the server-assigned snapshot id after creation (the create " +
 					"endpoint returns a job queue, not the snapshot), and there is no " +
 					"snapshot-update endpoint, so changing it forces a new resource. Use a " +
-					"unique name per volume.",
-				// An empty name would make the platform name the snapshot
-				// itself, and it could then never be found by name.
-				Validators: []validator.String{stringvalidator.LengthAtLeast(1)},
+					"unique name per volume. Names must be nonempty, have no leading or trailing " +
+					"whitespace, and must not be the literal \"0\".",
+				// Share the preflight rule so plan-time validation preserves
+				// exactly the same configured name as the create and lookup.
+				Validators: []validator.String{volumeSnapshotNameValidator{}},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
