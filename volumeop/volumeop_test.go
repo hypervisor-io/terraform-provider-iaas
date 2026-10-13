@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -66,8 +68,47 @@ type fakeVolumeAPI struct {
 	// busyDesired applies the desired fields of the refused request when a
 	// hidden busy refusal is answered (a completion that raced the refusal).
 	busyDesired bool
+	// modern answers the gate refusals with the 3.3.5 contract: busy is 409
+	// reason volume_busy, cooldown is 429 reason volume_cooldown with a
+	// Retry-After header in whole seconds. Unset, the legacy 422
+	// volume_operation_rejected text shapes are answered.
+	modern bool
+	// typed are answered, in order, before refusals (status, reason, message
+	// and an optional Retry-After header value).
+	typed []typedRefusal
 
 	requests []string
+}
+
+type typedRefusal struct {
+	status     int
+	reason     string
+	message    string
+	retryAfter string
+}
+
+// gateRefusal answers a gate refusal in the legacy or the modern shape.
+func (f *fakeVolumeAPI) gateRefusal(w http.ResponseWriter, kind string, message string, left time.Duration) {
+	if !f.modern {
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{
+			"success": false, "reason": "volume_operation_rejected", "message": message,
+		})
+		return
+	}
+	switch kind {
+	case "busy":
+		writeJSON(w, http.StatusConflict, map[string]any{"success": false, "reason": "volume_busy", "message": message})
+	case "cooldown":
+		secs := int(math.Ceil(left.Seconds()))
+		if secs < 1 {
+			secs = 1
+		}
+		w.Header().Set("Retry-After", strconv.Itoa(secs))
+		writeJSON(w, http.StatusTooManyRequests, map[string]any{
+			"success": false, "reason": "volume_cooldown",
+			"message": fmt.Sprintf("Volume is in cooldown. Try again in %d seconds.", secs),
+		})
+	}
 }
 
 // finish completes the pending operation the way the Master reducer does.
@@ -194,6 +235,15 @@ func (f *fakeVolumeAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"message": "Service Unavailable"})
 		return
 	}
+	if len(f.typed) > 0 {
+		ref := f.typed[0]
+		f.typed = f.typed[1:]
+		if ref.retryAfter != "" {
+			w.Header().Set("Retry-After", ref.retryAfter)
+		}
+		writeJSON(w, ref.status, map[string]any{"success": false, "reason": ref.reason, "message": ref.message})
+		return
+	}
 	if len(f.refusals) > 0 {
 		ref := f.refusals[0]
 		f.refusals = f.refusals[1:]
@@ -205,18 +255,12 @@ func (f *fakeVolumeAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if f.busyDesired && action == "attach" {
 			f.vol["instance_id"], f.vol["dev"], f.vol["status"] = body["instance_id"], "vdb", "attached"
 		}
-		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{
-			"success": false, "reason": "volume_operation_rejected",
-			"message": "Volume is busy with operation: . Please wait.",
-		})
+		f.gateRefusal(w, "busy", "Volume is busy with operation: . Please wait.", 0)
 		return
 	}
 	if f.pending == "" && time.Now().Before(f.cooldownUntil) {
-		left := time.Until(f.cooldownUntil).Seconds()
-		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{
-			"success": false, "reason": "volume_operation_rejected",
-			"message": fmt.Sprintf("Volume is in cooldown. Try again in %.3f seconds.", left),
-		})
+		left := time.Until(f.cooldownUntil)
+		f.gateRefusal(w, "cooldown", fmt.Sprintf("Volume is in cooldown. Try again in %.3f seconds.", left.Seconds()), left)
 		return
 	}
 	// The Master gate: a pending operation refuses every new mutation.
@@ -225,10 +269,7 @@ func (f *fakeVolumeAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if active == "" {
 			active = "snapshot"
 		}
-		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{
-			"success": false, "reason": "volume_operation_rejected",
-			"message": "Volume is busy with operation: " + active + ". Please wait.",
-		})
+		f.gateRefusal(w, "busy", "Volume is busy with operation: "+active+". Please wait.", 0)
 		return
 	}
 
@@ -833,6 +874,15 @@ func TestUncertain5xxExhausted_NothingRecordedIsNotARefusal(t *testing.T) {
 	if got := f.writes(); got != 1 {
 		t.Fatalf("mutations = %d; want exactly 1", got)
 	}
+}
+
+// cooldownWait reports whether a refusal is the per-volume cooldown and how
+// long the admission loop waits for it (test helper over classify/gateWait).
+func cooldownWait(e *client.APIError) (time.Duration, bool) {
+	if classify(e) != gateCooldown {
+		return 0, false
+	}
+	return gateWait(e, gateCooldown, 0), true
 }
 
 func TestCooldownWait_Parsing(t *testing.T) {

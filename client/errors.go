@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // ipLockHint is appended to all 401/403 error messages.
@@ -36,6 +38,12 @@ type APIError struct {
 	// API sent none. It is the typed refusal callers branch on; never parse
 	// Message for it.
 	Reason string
+	// RetryAfter is the wait the API asked for in a Retry-After response
+	// header (delta-seconds, or an HTTP date converted to the time left), for
+	// example on a volume cooldown (HTTP 429, reason volume_cooldown). Zero
+	// when the header is absent, unparsable, zero or in the past. It is the
+	// raw server value; callers apply their own bounds.
+	RetryAfter time.Duration
 }
 
 // Error implements the error interface.
@@ -77,8 +85,9 @@ func responseError(resp *http.Response, body []byte) error {
 	}
 
 	apiErr := &APIError{
-		Status:    resp.StatusCode,
-		RequestID: resp.Header.Get("X-Request-Id"),
+		Status:     resp.StatusCode,
+		RequestID:  resp.Header.Get("X-Request-Id"),
+		RetryAfter: parseRetryAfter(resp.Header.Get("Retry-After"), time.Now()),
 	}
 
 	// Try to parse the body as JSON to extract message / errors. Most
@@ -135,6 +144,45 @@ func responseError(resp *http.Response, body []byte) error {
 	}
 
 	return apiErr
+}
+
+// maxRetryAfter caps a parsed Retry-After so a hostile or broken value can
+// never overflow a time.Duration; callers bound it further.
+const maxRetryAfter = 24 * time.Hour
+
+// parseRetryAfter reads a Retry-After header value (RFC 9110 section 10.2.3):
+// a non-negative integer number of seconds, or an HTTP date. It returns 0 for
+// an absent, malformed, zero or past value.
+func parseRetryAfter(v string, now time.Time) time.Duration {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return 0
+	}
+	if v[0] >= '0' && v[0] <= '9' {
+		for i := 0; i < len(v); i++ {
+			if v[i] < '0' || v[i] > '9' {
+				return 0
+			}
+		}
+		secs, err := strconv.ParseInt(v, 10, 64)
+		if err != nil || secs > int64(maxRetryAfter/time.Second) {
+			// Out of range for an int64: absurdly large, cap it.
+			return maxRetryAfter
+		}
+		return time.Duration(secs) * time.Second
+	}
+	t, err := http.ParseTime(v)
+	if err != nil {
+		return 0
+	}
+	d := t.Sub(now)
+	if d <= 0 {
+		return 0
+	}
+	if d > maxRetryAfter {
+		return maxRetryAfter
+	}
+	return d
 }
 
 // IsNotFound reports whether err is an *APIError with HTTP status 404.

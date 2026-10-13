@@ -37,9 +37,19 @@
 //   - a busy refusal while the read shows no marker (the API records the
 //     pending operation before it publishes active_operation, or the other
 //     operation just ended): back off and ask again;
-//   - the per-volume cooldown after a completed operation: the API refuses
-//     with a message naming the remaining seconds (or HTTP 429); wait that
-//     long and send again.
+//   - the per-volume cooldown after a completed operation: wait the time the
+//     API names and send again;
+//   - the account in-flight limit (snapshot and backup creation): back off and
+//     send again.
+//
+// Admission refusals are classified from the typed answer first: HTTP 409
+// reason volume_busy, HTTP 429 reason volume_cooldown with a Retry-After
+// header (whole seconds), HTTP 429 reason account_inflight_limit. Older
+// masters answer all three as HTTP 422 reason volume_operation_rejected, so
+// the gate's message text ("busy", "Try again in N seconds", "in-flight") is
+// still read as a fallback when the reason is absent or that legacy code. A
+// wait never outlasts the caller's deadline: when it would, the call ends at
+// once with *PendingError.
 //
 // After ANY refusal the volume is read back first: when it is idle and already
 // in the requested state (a completion raced the refusal), that is success.
@@ -73,6 +83,26 @@ const (
 	Detach Action = "detach"
 	Resize Action = "resize"
 	Delete Action = "delete"
+
+	// Snapshot and Backup name a volume snapshot or backup creation passed to
+	// Admit (the gate's operation names for them).
+	Snapshot Action = "snapshot"
+	Backup   Action = "backup"
+)
+
+// Typed admission refusal reasons of the volume operation gate.
+const (
+	// ReasonBusy: another operation is in flight on the volume (HTTP 409).
+	ReasonBusy = "volume_busy"
+	// ReasonCooldown: the per-volume cooldown after a completed operation
+	// (HTTP 429, Retry-After in whole seconds).
+	ReasonCooldown = "volume_cooldown"
+	// ReasonInflight: too many volume operations in flight on the account
+	// (HTTP 429), only on snapshot and backup creation.
+	ReasonInflight = "account_inflight_limit"
+	// reasonLegacyRejected is what older masters answered for all three
+	// (HTTP 422), with the gate's message text as the only discriminator.
+	reasonLegacyRejected = "volume_operation_rejected"
 )
 
 const (
@@ -91,6 +121,12 @@ var (
 	// cooldownMargin is added to the server's remaining cooldown so a small
 	// clock or rounding difference does not cause one wasted refusal.
 	cooldownMargin = 2 * time.Second
+	// maxGateWait bounds one admission wait named by the server (Retry-After
+	// or the cooldown text). The gate's cooldown is at most 300 seconds; a
+	// larger value is treated as 300 and the next answer names the rest.
+	maxGateWait = 300 * time.Second
+	// minGateWait is the floor for a server-named wait.
+	minGateWait = time.Second
 )
 
 // Options bounds one confirmed operation.
@@ -354,25 +390,22 @@ func run(
 		if desired(v) {
 			return v, nil
 		}
-		if isBusy(apiErr) {
-			// Busy with no visible marker: the API records a pending
-			// operation row BEFORE it publishes active_operation, and an
-			// operation can also end between the refusal and this read. The
-			// refusal was definite (nothing of ours was recorded), so asking
-			// again after a backoff is safe.
-			if err := sleep(ctx, busyBackoff); err != nil {
-				return nil, &PendingError{Action: action, VolumeID: id, Err: fmt.Errorf("volume stayed busy until the deadline: %w", err)}
-			}
+		// A transient gate refusal is definite (nothing of ours was
+		// recorded), so asking again after the wait is safe. Busy with no
+		// visible marker happens because the API records a pending operation
+		// row BEFORE it publishes active_operation, and an operation can also
+		// end between the refusal and this read.
+		kind := classify(apiErr)
+		if kind == gateNone {
+			return nil, &RefusedError{Action: action, VolumeID: id, Status: apiErr.Status, Reason: apiErr.Reason, Err: apiErr}
+		}
+		wait := gateWait(apiErr, kind, busyBackoff)
+		if kind != gateCooldown {
 			busyBackoff = nextBackoff(busyBackoff)
-			continue
 		}
-		if wait, ok := cooldownWait(apiErr); ok {
-			if err := sleep(ctx, wait); err != nil {
-				return nil, &PendingError{Action: action, VolumeID: id, Err: fmt.Errorf("volume cooldown outlasted the deadline: %w", err)}
-			}
-			continue
+		if err := pause(ctx, wait); err != nil {
+			return nil, &PendingError{Action: action, VolumeID: id, Err: fmt.Errorf("%s: %w", kind.describe(wait), err)}
 		}
-		return nil, &RefusedError{Action: action, VolumeID: id, Status: apiErr.Status, Reason: apiErr.Reason, Err: apiErr}
 	}
 
 	// ── completion ───────────────────────────────────────────────────────────
@@ -462,14 +495,175 @@ func read(ctx context.Context, c *client.Client, id string) (map[string]any, err
 	return v, nil
 }
 
-// busyRe matches the API's busy refusal ("Volume is busy with operation: X.
-// Please wait."). The gate's 409 is answered as 422 volume_operation_rejected,
-// so the text is the only discriminator until a typed reason exists; a
-// volume_busy reason is accepted for that future contract.
-var busyRe = regexp.MustCompile(`(?i)\bbusy\b`)
+// Admit sends a volume command that the operation gate may refuse
+// TRANSIENTLY (snapshot or backup creation) and waits out exactly those
+// refusals: busy, cooldown and the account in-flight limit, each a definite
+// refusal that recorded nothing, so sending again is safe. Every other answer
+// is returned as it came: success (nil), any other refusal, and an uncertain
+// answer (HTTP 5xx or a transport error), which is never sent again because
+// the first attempt may already have been recorded. send must perform ONE
+// attempt (the client's single-attempt helpers). When the deadline would end
+// a wait, Admit returns *PendingError at once; nothing was recorded then.
+func Admit(ctx context.Context, id string, action Action, o Options, send func(context.Context) error) error {
+	if o.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, o.Timeout)
+		defer cancel()
+	}
+	backoff := o.Interval
+	if backoff <= 0 {
+		backoff = defaultInterval
+	}
+	for {
+		err := send(ctx)
+		if err == nil {
+			return nil
+		}
+		if ctx.Err() != nil {
+			return err
+		}
+		var apiErr *client.APIError
+		if !errors.As(err, &apiErr) || apiErr.Status >= 500 ||
+			apiErr.Status == http.StatusUnauthorized || apiErr.Status == http.StatusForbidden || apiErr.Status == http.StatusNotFound {
+			return err
+		}
+		kind := classify(apiErr)
+		if kind == gateNone {
+			return err
+		}
+		wait := gateWait(apiErr, kind, backoff)
+		if kind != gateCooldown {
+			backoff = nextBackoff(backoff)
+		}
+		if perr := pause(ctx, wait); perr != nil {
+			return &PendingError{Action: action, VolumeID: id, Err: fmt.Errorf("%s; nothing was recorded (last answer: %v): %w", kind.describe(wait), apiErr, perr)}
+		}
+	}
+}
 
-func isBusy(e *client.APIError) bool {
-	return e.Reason == "volume_busy" || busyRe.MatchString(e.Message)
+// IsUncertain reports whether an error returned by Admit left the outcome of
+// the send unknown: an HTTP 5xx or a transport error (no definite answer).
+// The request may have been recorded and must not be sent again; read the
+// state back. A refusal (4xx) and an Admit deadline (*PendingError) are
+// definite.
+//
+// Use it ONLY on Admit results. It is not a classifier for the errors of the
+// confirmed operations (AttachVolume, ..., DeleteVolume): it answers true for
+// *FailedError and *UnknownOutcomeError, which those already resolved.
+func IsUncertain(err error) bool {
+	if err == nil {
+		return false
+	}
+	var pending *PendingError
+	if errors.As(err, &pending) {
+		return false
+	}
+	var apiErr *client.APIError
+	return !errors.As(err, &apiErr) || apiErr.Status >= 500
+}
+
+// gateKind is a transient admission refusal of the volume operation gate.
+type gateKind int
+
+const (
+	gateNone gateKind = iota
+	gateBusy
+	gateCooldown
+	gateInflight
+)
+
+func (k gateKind) describe(wait time.Duration) string {
+	switch k {
+	case gateBusy:
+		return fmt.Sprintf("the volume stayed busy with another operation (next try in %s)", wait)
+	case gateCooldown:
+		return fmt.Sprintf("the volume cooldown (%s left) outlasts the deadline", wait)
+	case gateInflight:
+		return fmt.Sprintf("the account stayed at its in-flight volume operation limit (next try in %s)", wait)
+	}
+	return "refused"
+}
+
+// Legacy text of the gate's refusals, read only when the answer carries no
+// typed reason (older masters answer 422 volume_operation_rejected):
+//
+//	"Volume is busy with operation: X. Please wait."
+//	"Volume is in cooldown. Try again in 287 seconds." (the number may carry
+//	a fraction)
+//	"Too many in-flight volume operations (3). Wait for some to finish."
+var (
+	busyRe     = regexp.MustCompile(`(?i)\bbusy\b`)
+	cooldownRe = regexp.MustCompile(`(?i)cooldown.*?([0-9]+(?:\.[0-9]+)?)\s*seconds?`)
+	inflightRe = regexp.MustCompile(`(?i)\bin-flight\b`)
+)
+
+// classify decides whether a 4xx refusal is a transient gate refusal. The
+// typed reason decides first; a different typed reason (volume_attached,
+// volume_snapshot_limit, ...) is a definite refusal even when its text says
+// "busy". The text is read only for the legacy shape (no reason, or
+// volume_operation_rejected). Any other HTTP 429 is "try later" by
+// definition and is waited like a cooldown.
+func classify(e *client.APIError) gateKind {
+	switch e.Reason {
+	case ReasonBusy:
+		return gateBusy
+	case ReasonCooldown:
+		return gateCooldown
+	case ReasonInflight:
+		return gateInflight
+	case "", reasonLegacyRejected:
+		switch {
+		case busyRe.MatchString(e.Message):
+			return gateBusy
+		case cooldownRe.MatchString(e.Message):
+			return gateCooldown
+		case inflightRe.MatchString(e.Message):
+			return gateInflight
+		}
+	}
+	if e.Status == http.StatusTooManyRequests {
+		return gateCooldown
+	}
+	return gateNone
+}
+
+// gateWait is how long to wait before asking again. A Retry-After the server
+// sent wins (bounded to minGateWait..maxGateWait). A cooldown without one
+// reads the remaining seconds from the legacy text, else cooldownFallback;
+// busy and in-flight without one use the caller's growing backoff.
+func gateWait(e *client.APIError, kind gateKind, backoff time.Duration) time.Duration {
+	if e.RetryAfter > 0 {
+		d := clampGateWait(e.RetryAfter)
+		if kind == gateCooldown {
+			d += cooldownMargin
+		}
+		return d
+	}
+	if kind != gateCooldown {
+		return backoff
+	}
+	m := cooldownRe.FindStringSubmatch(e.Message)
+	if m == nil {
+		return cooldownFallback
+	}
+	secs, err := strconv.ParseFloat(m[1], 64)
+	if err != nil || secs < 0 {
+		return cooldownFallback
+	}
+	if secs > maxGateWait.Seconds() {
+		secs = maxGateWait.Seconds()
+	}
+	return time.Duration(secs*float64(time.Second)) + cooldownMargin
+}
+
+func clampGateWait(d time.Duration) time.Duration {
+	if d < minGateWait {
+		return minGateWait
+	}
+	if d > maxGateWait {
+		return maxGateWait
+	}
+	return d
 }
 
 // nextBackoff grows a wait by 1.5x, capped at 30 seconds (the waiter's curve).
@@ -484,28 +678,17 @@ func nextBackoff(d time.Duration) time.Duration {
 	return n
 }
 
-// cooldownRe extracts the remaining seconds from the API's cooldown refusal
-// ("Volume is in cooldown. Try again in 287 seconds."; the number can carry a
-// fraction).
-var cooldownRe = regexp.MustCompile(`(?i)cooldown.*?([0-9]+(?:\.[0-9]+)?)\s*seconds?`)
-
-// cooldownWait reports whether a refusal is the per-volume cooldown and how
-// long to wait. The API answers the cooldown as reason
-// volume_operation_rejected with a message naming the remaining seconds (no
-// dedicated reason code exists yet), or as HTTP 429.
-func cooldownWait(e *client.APIError) (time.Duration, bool) {
-	m := cooldownRe.FindStringSubmatch(e.Message)
-	if m == nil {
-		if e.Status == http.StatusTooManyRequests {
-			return cooldownFallback, true
+// pause waits d before an admission retry. When the context's deadline ends
+// before d it returns at once (waiting would only end in the same timeout,
+// later) with context.DeadlineExceeded.
+func pause(ctx context.Context, d time.Duration) error {
+	if dl, ok := ctx.Deadline(); ok && time.Until(dl) < d {
+		if err := ctx.Err(); err != nil {
+			return err
 		}
-		return 0, false
+		return context.DeadlineExceeded
 	}
-	secs, err := strconv.ParseFloat(m[1], 64)
-	if err != nil || secs < 0 {
-		return cooldownFallback, true
-	}
-	return time.Duration(secs*float64(time.Second)) + cooldownMargin, true
+	return sleep(ctx, d)
 }
 
 // sleep waits d or until ctx ends.

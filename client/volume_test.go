@@ -636,3 +636,62 @@ func TestVolumeMutations_SingleAttemptOn5xx(t *testing.T) {
 		srv.Close()
 	}
 }
+
+// TestVolumeGateRefusals_SingleAttemptWithTypedReason pins the 3.3.5 gate
+// contract at the client: the six volume commands the operation gate guards
+// (attach, detach, resize, delete, snapshot create, backup create) are sent
+// ONCE on 409 volume_busy, 429 volume_cooldown, 429 account_inflight_limit
+// and a 5xx (the waiting is volumeop's job, never the transport's replay), and
+// the answer reaches the caller with its reason and Retry-After.
+func TestVolumeGateRefusals_SingleAttemptWithTypedReason(t *testing.T) {
+	cases := []struct {
+		status     int
+		reason     string
+		retryAfter string
+		wantRA     time.Duration
+	}{
+		{http.StatusConflict, "volume_busy", "", 0},
+		{http.StatusTooManyRequests, "volume_cooldown", "287", 287 * time.Second},
+		{http.StatusTooManyRequests, "account_inflight_limit", "", 0},
+		{http.StatusServiceUnavailable, "", "", 0},
+	}
+	for _, tc := range cases {
+		var hits int
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			hits++
+			if tc.retryAfter != "" {
+				w.Header().Set("Retry-After", tc.retryAfter)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(tc.status)
+			_ = json.NewEncoder(w).Encode(map[string]any{"success": false, "reason": tc.reason, "message": "refused"})
+		}))
+		c := New(srv.URL, "tok", 5*time.Second, false)
+		c.retryBaseDelay = time.Millisecond
+		ctx := context.Background()
+
+		calls := map[string]func() error{
+			"attach":   func() error { _, err := c.AttachVolume(ctx, "v1", map[string]any{"instance_id": "i1"}); return err },
+			"detach":   func() error { _, err := c.DetachVolume(ctx, "v1"); return err },
+			"resize":   func() error { _, err := c.ResizeVolume(ctx, "v1", map[string]any{"volume_plan_id": "p2"}); return err },
+			"delete":   func() error { return c.DeleteVolume(ctx, "v1") },
+			"snapshot": func() error { _, err := c.CreateVolumeSnapshot(ctx, "v1", map[string]any{"name": "s"}); return err },
+			"backup":   func() error { _, err := c.CreateVolumeBackup(ctx, "v1", map[string]any{}); return err },
+		}
+		for name, call := range calls {
+			hits = 0
+			err := call()
+			var apiErr *APIError
+			if !errors.As(err, &apiErr) || apiErr.Status != tc.status || apiErr.Reason != tc.reason {
+				t.Fatalf("%s on %d %s: err = %v; want the original APIError with its reason", name, tc.status, tc.reason, err)
+			}
+			if apiErr.RetryAfter != tc.wantRA {
+				t.Fatalf("%s on %d %s: RetryAfter = %v; want %v", name, tc.status, tc.reason, apiErr.RetryAfter, tc.wantRA)
+			}
+			if hits != 1 {
+				t.Fatalf("%s on %d %s: %d requests; a gated volume command must be sent exactly once", name, tc.status, tc.reason, hits)
+			}
+		}
+		srv.Close()
+	}
+}

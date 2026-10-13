@@ -6,14 +6,17 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
+	"github.com/hypervisor-io/terraform-provider-iaas/volumeop"
 	"github.com/hypervisor-io/terraform-provider-iaas/waiter"
 )
 
@@ -67,8 +70,14 @@ func (r *volumeSnapshotResource) Schema(ctx context.Context, _ resource.SchemaRe
 			"volume: its parent volume_id is part of the API path, so changing it forces a " +
 			"new resource. Creation is asynchronous - the snapshot is enqueued and this " +
 			"resource waits for it to become \"available\". Snapshots are immutable (there " +
-			"is no update endpoint); changing the name forces a new snapshot. Import with a " +
-			"composite id: \"<volume_id>/<snapshot_id>\".",
+			"is no update endpoint); changing the name forces a new snapshot. The name must " +
+			"be unique on the volume (it is how the new snapshot is found): a create whose " +
+			"name is already used there is refused. While another " +
+			"operation runs on the volume, during the platform's short per-volume cooldown " +
+			"or while the account is at its in-flight limit, the create waits and asks " +
+			"again (admission, id resolution and the readiness wait share the create " +
+			"timeout); any other refusal fails with its reason code. " +
+			"Import with a composite id: \"<volume_id>/<snapshot_id>\".",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -92,6 +101,9 @@ func (r *volumeSnapshotResource) Schema(ctx context.Context, _ resource.SchemaRe
 					"endpoint returns a job queue, not the snapshot), and there is no " +
 					"snapshot-update endpoint, so changing it forces a new resource. Use a " +
 					"unique name per volume.",
+				// An empty name would make the platform name the snapshot
+				// itself, and it could then never be found by name.
+				Validators: []validator.String{stringvalidator.LengthAtLeast(1)},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -158,39 +170,87 @@ func (r *volumeSnapshotResource) Create(ctx context.Context, req resource.Create
 	volumeID := plan.VolumeID.ValueString()
 	name := plan.Name.ValueString()
 
-	if _, err := r.client.CreateVolumeSnapshot(ctx, volumeID, map[string]any{"name": name}); err != nil {
+	// ONE deadline for the whole create: admission waits, id resolution and
+	// the readiness wait all share the configured create timeout.
+	createCtx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
+
+	// The platform does not enforce unique snapshot names per volume, and the
+	// new snapshot is found by its name. Refuse a name already in use, so the
+	// resource can never adopt (and later destroy) a snapshot it did not create.
+	before, err := volumeop.CheckSnapshotNameFree(createCtx, r.client, volumeID, name)
+	if err != nil {
 		resp.Diagnostics.Append(diagFromErr("Error creating volume snapshot", err))
 		return
 	}
 
-	// Resolve the server-assigned snapshot id by name (the create returned only a
-	// queue). The snapshot row exists immediately after enqueue, so a single
-	// lookup suffices; tolerate a brief lag with the error-tolerant poller.
+	// The create is ONE attempt; volumeop.Admit waits out the gate's transient
+	// refusals (busy, cooldown with Retry-After, account in-flight limit) and
+	// sends again only after such a definite refusal.
+	// Before every repeated send the pre-send set is refreshed, so a same-name
+	// snapshot someone else made during an admission wait is never taken for
+	// ours (volumeop.SnapshotIDsBeforeSend).
+	attempt := 0
+	err = volumeop.Admit(createCtx, volumeID, volumeop.Snapshot,
+		volumeop.Options{Interval: pollInterval()},
+		func(ctx context.Context) error {
+			if attempt > 0 {
+				before = volumeop.SnapshotIDsBeforeSend(ctx, r.client, volumeID, name, before)
+			}
+			attempt++
+			_, err := r.client.CreateVolumeSnapshot(ctx, volumeID, map[string]any{"name": name})
+			return err
+		})
+
 	var snapshotID string
-	resolveErr := waiter.WaitFor(ctx, waiter.Options{
-		Interval: pollInterval(),
-		Timeout:  createTimeout,
-		Refresh: func() (string, bool, error) {
-			s, err := r.client.FindVolumeSnapshotByName(ctx, volumeID, name)
-			if err != nil {
-				if client.IsNotFound(err) {
+	if err != nil {
+		if !volumeop.IsUncertain(err) {
+			resp.Diagnostics.Append(diagFromErr("Error creating volume snapshot", err))
+			return
+		}
+		// No definite answer (5xx, transport): the snapshot row is written in
+		// the create request itself, so a read-back decides. Only a snapshot
+		// of this name that did not exist before the send is adopted; the
+		// request is never sent again.
+		id, aerr := volumeop.AdoptAfterUncertain(ctx, r.client, volumeID, name, before)
+		if aerr != nil {
+			resp.Diagnostics.AddError(
+				"Error creating volume snapshot",
+				fmt.Sprintf("the create request for snapshot %q on volume %s got no definite answer (%s) and was not repeated: %s; "+
+					"check the volume and apply again", name, volumeID, err.Error(), aerr.Error()),
+			)
+			return
+		}
+		snapshotID = id
+	}
+
+	// Resolve the server-assigned snapshot id by name (the create returned only a
+	// queue): the single snapshot of that name that was not there before the
+	// send. The row exists immediately after enqueue; tolerate a brief lag.
+	// Several new same-name snapshots are an error (which one is ours cannot be
+	// told), never a guess.
+	if snapshotID == "" {
+		resolveErr := waiter.WaitFor(createCtx, waiter.Options{
+			Interval: pollInterval(),
+			Refresh: func() (string, bool, error) {
+				id, found, err := volumeop.NewSnapshotID(createCtx, r.client, volumeID, name, before)
+				if err != nil {
+					return "", false, err
+				}
+				if !found {
 					return "", false, nil // not visible yet; keep polling
 				}
-				return "", false, err
-			}
-			if id, ok := s["id"].(string); ok && id != "" {
 				snapshotID = id
 				return "resolved", true, nil
-			}
-			return "", false, nil
-		},
-	})
-	if resolveErr != nil {
-		resp.Diagnostics.AddError(
-			"Error creating volume snapshot",
-			fmt.Sprintf("could not resolve the snapshot %q on volume %s: %s", name, volumeID, resolveErr.Error()),
-		)
-		return
+			},
+		})
+		if resolveErr != nil {
+			resp.Diagnostics.AddError(
+				"Error creating volume snapshot",
+				fmt.Sprintf("could not resolve the snapshot %q on volume %s: %s", name, volumeID, resolveErr.Error()),
+			)
+			return
+		}
 	}
 
 	// Persist both the snapshot id AND the parent volume_id immediately so that
@@ -204,12 +264,11 @@ func (r *volumeSnapshotResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	// Wait for the snapshot to finish capturing.
-	waitErr := waiter.WaitFor(ctx, waiter.Options{
+	// Wait for the snapshot to finish capturing (same create deadline).
+	waitErr := waiter.WaitFor(createCtx, waiter.Options{
 		Interval: pollInterval(),
-		Timeout:  createTimeout,
 		Refresh: waiter.StatePollerWithErrorTolerance(
-			func() (map[string]any, error) { return r.client.GetVolumeSnapshot(ctx, volumeID, snapshotID) },
+			func() (map[string]any, error) { return r.client.GetVolumeSnapshot(createCtx, volumeID, snapshotID) },
 			"status",
 			[]string{"available"},
 			[]string{"failed"},

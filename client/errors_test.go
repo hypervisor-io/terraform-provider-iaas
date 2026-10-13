@@ -372,3 +372,52 @@ func TestDo_CtxCanceledDuringBackoff(t *testing.T) {
 		t.Fatal("do did not return promptly after context cancel during backoff")
 	}
 }
+
+// TestParseRetryAfter pins the Retry-After reader: delta-seconds, an HTTP
+// date (time left), and every malformed, zero, negative or past value as 0.
+func TestParseRetryAfter(t *testing.T) {
+	now := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
+	cases := []struct {
+		in   string
+		want time.Duration
+	}{
+		{"", 0},
+		{"287", 287 * time.Second},
+		{" 5 ", 5 * time.Second},
+		{"1", time.Second},
+		{"300", 300 * time.Second},
+		{"0", 0},
+		{"-5", 0},
+		{"1.5", 0},
+		{"5s", 0},
+		{"soon", 0},
+		{"99999999999999999999999", maxRetryAfter},
+		{"999999", maxRetryAfter},
+		{now.Add(90 * time.Second).Format(http.TimeFormat), 90 * time.Second},
+		{now.Add(-90 * time.Second).Format(http.TimeFormat), 0},
+		{now.Add(48 * time.Hour).Format(http.TimeFormat), maxRetryAfter},
+	}
+	for _, tc := range cases {
+		if got := parseRetryAfter(tc.in, now); got != tc.want {
+			t.Errorf("parseRetryAfter(%q) = %v; want %v", tc.in, got, tc.want)
+		}
+	}
+}
+
+// TestResponseError_RetryAfterHeader verifies the header reaches APIError on a
+// 429 cooldown, with the typed reason, and is absent when not sent.
+func TestResponseError_RetryAfterHeader(t *testing.T) {
+	resp := &http.Response{StatusCode: http.StatusTooManyRequests, Header: http.Header{}}
+	resp.Header.Set("Retry-After", "42")
+	err := responseError(resp, []byte(`{"success":false,"reason":"volume_cooldown","message":"Volume is in cooldown. Try again in 42 seconds."}`))
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) || apiErr.Reason != "volume_cooldown" || apiErr.RetryAfter != 42*time.Second {
+		t.Fatalf("err = %#v; want reason volume_cooldown and RetryAfter 42s", err)
+	}
+
+	resp = &http.Response{StatusCode: http.StatusConflict, Header: http.Header{}}
+	err = responseError(resp, []byte(`{"success":false,"reason":"volume_busy","message":"Volume is busy with operation: attach. Please wait."}`))
+	if !errors.As(err, &apiErr) || apiErr.Reason != "volume_busy" || apiErr.RetryAfter != 0 {
+		t.Fatalf("err = %#v; want reason volume_busy and no RetryAfter", err)
+	}
+}

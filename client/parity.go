@@ -132,8 +132,12 @@ func (c *Client) TestDBBackupPolicyConnection(ctx context.Context, body map[stri
 
 // ── volume backup / snapshot restore (async: returns a "queue" tracker) ──────
 
+// CreateVolumeBackup is sent in ONE attempt (a replay would start a second
+// backup); wrap it in volumeop.Admit to wait out the gate's transient
+// refusals (409 volume_busy, 429 volume_cooldown with Retry-After, 429
+// account_inflight_limit).
 func (c *Client) CreateVolumeBackup(ctx context.Context, volumeID string, body map[string]any) (map[string]any, error) {
-	return c.doItem(ctx, "POST", vol(volumeID)+"/backup", body, "queue")
+	return c.doItemOnce(ctx, "POST", vol(volumeID)+"/backup", body, "queue")
 }
 
 func (c *Client) DeleteVolumeBackup(ctx context.Context, volumeID, backupID string) (map[string]any, error) {

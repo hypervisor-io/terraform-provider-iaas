@@ -23,7 +23,10 @@ import (
 //	DETACH   POST   /storage/volume/{id}/detach           (no body)               → {success,volume}
 //	RESIZE   PATCH  /storage/volume/{id}/resize           body {volume_plan_id (req)} → {success,volume,is_downgrade}
 //	DELETE   DELETE /storage/volume/{id}                  → {success,message}
-//	         (all four: 422 {success:false,reason,message} on a definite refusal)
+//	         (all four: 422 {success:false,reason,message} on a definite refusal;
+//	         the operation gate answers 409 reason volume_busy, and 429 reason
+//	         volume_cooldown with a Retry-After header in whole seconds; older
+//	         masters answered both as 422 reason volume_operation_rejected)
 //
 //	SNAPSHOT-CREATE  POST   /storage/volume/{id}/snapshot            body {name?} → {success,message,queue:{...}}
 //	SNAPSHOT-DELETE  DELETE /storage/volume/{id}/snapshot/{snapId}   → {success,message,queue:{...}}
@@ -142,11 +145,17 @@ func (c *Client) DeleteVolume(ctx context.Context, id string) error {
 // status="pending" and embedded in the parent volume SHOW under snapshots[]. The
 // caller resolves the snapshot id by polling GetVolume and scanning snapshots[]
 // for the newest entry reaching status="available".
+//
+// The create is sent in ONE attempt: a second snapshot would be a second
+// operation, so a 429/5xx or transport error is returned without replay. The
+// gate's transient refusals (409 volume_busy, 429 volume_cooldown with
+// Retry-After, 429 account_inflight_limit) are definite and are waited out by
+// volumeop.Admit, which callers should wrap this call in.
 func (c *Client) CreateVolumeSnapshot(ctx context.Context, volumeID string, body map[string]any) (map[string]any, error) {
 	if volumeID == "" {
 		return nil, fmt.Errorf("CreateVolumeSnapshot: empty volumeID")
 	}
-	return c.doItem(ctx, "POST", "/storage/volume/"+url.PathEscape(volumeID)+"/snapshot", body, "queue")
+	return c.doItemOnce(ctx, "POST", "/storage/volume/"+url.PathEscape(volumeID)+"/snapshot", body, "queue")
 }
 
 // DeleteVolumeSnapshot enqueues deletion of a snapshot. The DELETE route is

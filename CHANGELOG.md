@@ -29,6 +29,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `client.APIError` gains a `Reason` field (the API's typed refusal code), shown in
   `Error()` and in every resource's error diagnostics.
 
+- Volume operation gate refusals are read from their typed answer (Master 3.3.5): busy is
+  HTTP 409 reason `volume_busy`, the per-volume cooldown is HTTP 429 reason
+  `volume_cooldown` with a `Retry-After` header, and the account in-flight limit is HTTP
+  429 reason `account_inflight_limit`. `volumeop` waits out the cooldown for the time
+  `Retry-After` names (bounded to 300 seconds, and ending at once with a still-pending
+  error when the wait cannot fit the deadline) and backs off on busy and in-flight
+  refusals; any other typed reason is a definite refusal even when its text mentions
+  "busy". Older masters' 422 `volume_operation_rejected` answers are still recognised from
+  their message text. `client.APIError` gains `RetryAfter`. `iaas_volume_snapshot` create
+  (and the client's volume backup create) is now sent in exactly one attempt and waits
+  out the same gate refusals through the new `volumeop.Admit`; an uncertain answer (5xx,
+  transport error) is resolved by one read-back on a fresh 30-second context, never by
+  sending the create again, and adopts only a snapshot of that name that did not exist
+  before the send (exactly one; several are reported as ambiguous). Because the platform
+  does not enforce unique snapshot names per volume and the new snapshot is found by its
+  name, `iaas_volume_snapshot` (and the MCP snapshot tool) now refuse a create whose name
+  is already used on the volume, before anything is sent: the resource can no longer
+  adopt, and later destroy, a snapshot it did not create. An empty snapshot name is
+  refused before anything is sent (`name` must be at least 1 character), because the
+  platform would name such a snapshot itself and it could never be found. The set of
+  same-name snapshots seen before a send is refreshed before every repeated send, and the
+  new snapshot's id is resolved as the single same-name snapshot not in that set, so one
+  made by someone else during an admission wait is never taken for ours. Admission, id
+  resolution and the readiness wait now share one create timeout instead of each getting
+  a full one.
+
 - `iaas_certificate`'s `name`, `certificate`, `private_key` and `chain` attributes are no
   longer `RequiresReplace`. Changing any of them now rotates the certificate material IN
   PLACE via `PUT /certificate/{id}`, preserving the resource's `id` (and therefore every
