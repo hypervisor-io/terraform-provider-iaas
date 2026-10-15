@@ -226,3 +226,101 @@ func TestMicrovmImageSchemaMarksCredentialsSensitive(t *testing.T) {
 		}
 	}
 }
+
+func TestMicrovmImageCreateBodyRegistrySecretAuth(t *testing.T) {
+	plan := blankMicrovmImageModel()
+	plan.Name = types.StringValue("private")
+	plan.SourceKind = types.StringValue("oci")
+	plan.SourceImage = types.StringValue("registry.example.test/private:1")
+	plan.LocationID = types.StringValue("group-1")
+	plan.RegistrySecretID = types.StringValue("11111111-1111-1111-1111-111111111111")
+	body, err := microvmImageCreateBody(context.Background(), plan)
+	if err != nil {
+		t.Fatalf("microvmImageCreateBody: %v", err)
+	}
+	auth, ok := body["auth"].(map[string]any)
+	if !ok || len(auth) != 2 || auth["kind"] != "registry_secret" || auth["secret_id"] != "11111111-1111-1111-1111-111111111111" {
+		t.Fatalf("auth = %#v", body["auth"])
+	}
+
+	// The two older families are unchanged.
+	legacy := blankMicrovmImageModel()
+	legacy.Name = types.StringValue("legacy")
+	legacy.SourceKind = types.StringValue("oci")
+	legacy.SourceImage = types.StringValue("registry.example.test/legacy:1")
+	legacy.RegistryUsername = types.StringValue("builder")
+	legacy.RegistryPassword = types.StringValue("pw")
+	body, err = microvmImageCreateBody(context.Background(), legacy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth = body["auth"].(map[string]any)
+	if auth["kind"] != "registry" || auth["username"] != "builder" || auth["password"] != "pw" || len(auth) != 3 {
+		t.Fatalf("legacy auth = %#v", auth)
+	}
+	gitPlan := blankMicrovmImageModel()
+	gitPlan.Name = types.StringValue("git")
+	gitPlan.SourceKind = types.StringValue("git")
+	gitPlan.SourceRepo = types.StringValue("https://example.test/r.git")
+	gitPlan.GitSourceID = types.StringValue("src-1")
+	body, err = microvmImageCreateBody(context.Background(), gitPlan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth = body["auth"].(map[string]any)
+	if auth["kind"] != "git_source" || auth["git_source_id"] != "src-1" || len(auth) != 2 {
+		t.Fatalf("git auth = %#v", auth)
+	}
+
+	none := blankMicrovmImageModel()
+	none.Name = types.StringValue("open")
+	none.SourceKind = types.StringValue("oci")
+	none.SourceImage = types.StringValue("busybox")
+	body, err = microvmImageCreateBody(context.Background(), none)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, exists := body["auth"]; exists {
+		t.Fatalf("no auth expected, got %#v", body["auth"])
+	}
+}
+
+func TestMicrovmImageValidateConfigAuthFamilyExclusivity(t *testing.T) {
+	res := &microvmImageResource{}
+	schemaType := microvmImageSchemaType(t)
+	set := map[string]func(*microvmImageModel){
+		"secret": func(m *microvmImageModel) { m.RegistrySecretID = types.StringValue("s-1") },
+		"user":   func(m *microvmImageModel) { m.RegistryUsername = types.StringValue("u") },
+		"pass":   func(m *microvmImageModel) { m.RegistryPassword = types.StringValue("p") },
+		"git":    func(m *microvmImageModel) { m.GitSourceID = types.StringValue("g-1") },
+	}
+	validate := func(names ...string) bool {
+		m := blankMicrovmImageModel()
+		m.SourceKind = types.StringValue("oci")
+		for _, n := range names {
+			set[n](&m)
+		}
+		resp := &resource.ValidateConfigResponse{}
+		res.ValidateConfig(context.Background(), resource.ValidateConfigRequest{Config: tfsdkConfigFromModel(t, schemaType, m)}, resp)
+		return resp.Diagnostics.HasError()
+	}
+	for _, conflict := range [][]string{{"secret", "user"}, {"secret", "pass"}, {"secret", "git"}, {"user", "git"}, {"pass", "git"}} {
+		if !validate(conflict...) {
+			t.Errorf("%v must conflict", conflict)
+		}
+	}
+	for _, ok := range [][]string{{}, {"secret"}, {"user", "pass"}, {"user"}, {"git"}} {
+		if validate(ok...) {
+			t.Errorf("%v must not conflict", ok)
+		}
+	}
+}
+
+func TestMicrovmImageStateKeepsRegistrySecretID(t *testing.T) {
+	prior := blankMicrovmImageModel()
+	prior.RegistrySecretID = types.StringValue("11111111-1111-1111-1111-111111111111")
+	state := microvmImageStateFromAPI(map[string]any{"id": "img-1", "name": "private"}, prior)
+	if state.RegistrySecretID.ValueString() != "11111111-1111-1111-1111-111111111111" {
+		t.Fatalf("registry_secret_id = %v", state.RegistrySecretID)
+	}
+}

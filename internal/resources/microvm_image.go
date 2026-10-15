@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -46,6 +47,7 @@ type microvmImageModel struct {
 	RegistryUsername   types.String `tfsdk:"registry_username"`
 	RegistryPassword   types.String `tfsdk:"registry_password"`
 	GitSourceID        types.String `tfsdk:"git_source_id"`
+	RegistrySecretID   types.String `tfsdk:"registry_secret_id"`
 	BaseImageID        types.String `tfsdk:"base_image_id"`
 	HypervisorGroupID  types.String `tfsdk:"hypervisor_group_id"`
 	LocationID         types.String `tfsdk:"location_id"`
@@ -85,13 +87,14 @@ func (r *microvmImageResource) Schema(_ context.Context, _ resource.SchemaReques
 				Validators:    []validator.String{stringvalidator.OneOf("dockerfile", "oci", "git")},
 				PlanModifiers: replaceString,
 			},
-			"dockerfile":        schema.StringAttribute{Optional: true, Description: "Dockerfile contents. Required for source_kind = dockerfile.", PlanModifiers: replaceString},
-			"source_image":      schema.StringAttribute{Optional: true, Description: "OCI image reference. Required for source_kind = oci.", PlanModifiers: replaceString},
-			"source_repo":       schema.StringAttribute{Optional: true, Description: "Git repository URL. Required for source_kind = git.", PlanModifiers: replaceString},
-			"source_branch":     schema.StringAttribute{Optional: true, Description: "Git branch. The server default applies when omitted.", PlanModifiers: replaceString},
-			"registry_username": schema.StringAttribute{Optional: true, Description: "Registry username used while building an OCI image.", PlanModifiers: replaceString},
-			"registry_password": schema.StringAttribute{Optional: true, Sensitive: true, Description: "Write-only registry password used while building an OCI image.", PlanModifiers: replaceString},
-			"git_source_id":     schema.StringAttribute{Optional: true, Description: "Owned Git source UUID used to authenticate a Git build.", PlanModifiers: replaceString},
+			"dockerfile":         schema.StringAttribute{Optional: true, Description: "Dockerfile contents. Required for source_kind = dockerfile.", PlanModifiers: replaceString},
+			"source_image":       schema.StringAttribute{Optional: true, Description: "OCI image reference. Required for source_kind = oci.", PlanModifiers: replaceString},
+			"source_repo":        schema.StringAttribute{Optional: true, Description: "Git repository URL. Required for source_kind = git.", PlanModifiers: replaceString},
+			"source_branch":      schema.StringAttribute{Optional: true, Description: "Git branch. The server default applies when omitted.", PlanModifiers: replaceString},
+			"registry_username":  schema.StringAttribute{Optional: true, Description: "Deprecated, removed in 3.3.7: use registry_secret_id. Registry username used while building an OCI image.", PlanModifiers: replaceString},
+			"registry_password":  schema.StringAttribute{Optional: true, Sensitive: true, Description: "Deprecated, removed in 3.3.7: use registry_secret_id. Write-only registry password used while building an OCI image.", PlanModifiers: replaceString},
+			"registry_secret_id": schema.StringAttribute{Optional: true, Description: "UUID of a registry credential stored in the sandbox secrets vault, used to pull a private OCI image. Preferred over registry_username and registry_password. Mutually exclusive with those and with git_source_id.", PlanModifiers: replaceString},
+			"git_source_id":      schema.StringAttribute{Optional: true, Description: "Owned Git source UUID used to authenticate a Git build.", PlanModifiers: replaceString},
 			"base_image_id": schema.StringAttribute{
 				Optional:      true,
 				Description:   "Platform or account image used as the build base (C6). Required when source_kind = dockerfile; the base must be ready and carry features.envd or features.vcagent.",
@@ -159,6 +162,13 @@ func (r *microvmImageResource) ValidateConfig(ctx context.Context, req resource.
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	if families := microvmImageAuthFamilies(config); len(families) > 1 {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("registry_secret_id"),
+			"Conflicting Image Authentication",
+			fmt.Sprintf("Only one authentication family may be set, but the configuration sets: %s. Use registry_secret_id, registry_username with registry_password, or git_source_id.", strings.Join(families, ", ")),
+		)
+	}
 	if microvmImageMissingRequiredBase(config) {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("base_image_id"),
@@ -166,6 +176,24 @@ func (r *microvmImageResource) ValidateConfig(ctx context.Context, req resource.
 			"base_image_id is required when source_kind is \"dockerfile\" (C6: every custom build runs on top of a catalog base).",
 		)
 	}
+}
+
+// microvmImageAuthFamilies lists the image authentication families the
+// configuration sets: registry_secret_id, the deprecated inline registry
+// pair (username and/or password), and git_source_id. An unknown value
+// counts as set, so a conflict is never hidden behind a computed input.
+func microvmImageAuthFamilies(config microvmImageModel) []string {
+	var families []string
+	if !config.RegistrySecretID.IsNull() {
+		families = append(families, "registry_secret_id")
+	}
+	if !config.RegistryUsername.IsNull() || !config.RegistryPassword.IsNull() {
+		families = append(families, "registry_username/registry_password")
+	}
+	if !config.GitSourceID.IsNull() {
+		families = append(families, "git_source_id")
+	}
+	return families
 }
 
 // microvmImageMissingRequiredBase mirrors CreateImageRequest's
@@ -295,7 +323,9 @@ func microvmImageCreateBody(ctx context.Context, plan microvmImageModel) (map[st
 	}
 	putOptionalString(body, "description", plan.Description)
 	putOptionalString(body, "base_image_id", plan.BaseImageID)
-	if !plan.RegistryUsername.IsNull() || !plan.RegistryPassword.IsNull() {
+	if !plan.RegistrySecretID.IsNull() && !plan.RegistrySecretID.IsUnknown() {
+		body["auth"] = map[string]any{"kind": "registry_secret", "secret_id": plan.RegistrySecretID.ValueString()}
+	} else if !plan.RegistryUsername.IsNull() || !plan.RegistryPassword.IsNull() {
 		body["auth"] = map[string]any{"kind": "registry", "username": plan.RegistryUsername.ValueString(), "password": plan.RegistryPassword.ValueString()}
 	} else if !plan.GitSourceID.IsNull() {
 		body["auth"] = map[string]any{"kind": "git_source", "git_source_id": plan.GitSourceID.ValueString()}
