@@ -55,8 +55,12 @@ Read-Only:
 Read-Only:
 
 - `help_url` (String)
+- `icon` (String) Icon key of the row. Null when the kit does not set it.
 - `label` (String)
 - `name` (String)
+- `placeholder` (String) Placeholder text of the launcher field. Null when the kit does not set it.
+- `provider` (String) Provider key the secret belongs to (for example anthropic). Null when the kit does not set it.
+- `role` (String) provider (feeds the secrets token) or repo (the repo access line). Null on a kit published before roles existed.
 
 
 <a id="nestedatt--limits"></a>

@@ -54,7 +54,7 @@ func TestMicrovmCatalogStateMapsNestedCatalog(t *testing.T) {
 	}
 }
 
-const kitJSON = `{"id":"img-1","name":"claude","is_base":false,"status":"ready","source_kind":"dockerfile","template_name":"u-1","exposed_ports":[],"category":"agent","icon":"claude","tagline":"Coding agent","default_plan_vcpu":2,"default_lifetime_seconds":3600,"suggested_secrets":[{"name":"ANTHROPIC_API_KEY","label":"Anthropic API key","help_url":"https://console.anthropic.com/settings/keys"},{"name":"EXTRA"}],"sort_order":10}`
+const kitJSON = `{"id":"img-1","name":"claude","is_base":false,"status":"ready","source_kind":"dockerfile","template_name":"u-1","exposed_ports":[],"category":"agent","icon":"claude","tagline":"Coding agent","default_plan_vcpu":2,"default_lifetime_seconds":3600,"suggested_secrets":[{"name":"ANTHROPIC_API_KEY","provider":"anthropic","label":"Anthropic API key","placeholder":"your Anthropic API key","icon":"anthropic","role":"provider","help_url":"https://console.anthropic.com/settings/keys"},{"name":"EXTRA"}],"sort_order":10}`
 
 func kitImage(t *testing.T, raw string) map[string]any {
 	t.Helper()
@@ -81,9 +81,20 @@ func assertKitAttrs(t *testing.T, attrs map[string]attr.Value) {
 	if first["name"].(types.String).ValueString() != "ANTHROPIC_API_KEY" || first["label"].(types.String).ValueString() != "Anthropic API key" || first["help_url"].(types.String).ValueString() != "https://console.anthropic.com/settings/keys" {
 		t.Fatalf("first secret = %v", first)
 	}
+	// KH-5: the launcher fields reach state; a legacy entry leaves them null.
+	for key, want := range map[string]string{"provider": "anthropic", "placeholder": "your Anthropic API key", "icon": "anthropic", "role": "provider"} {
+		if got := first[key].(types.String); got.IsNull() || got.ValueString() != want {
+			t.Fatalf("first secret %s = %v; want %q", key, first[key], want)
+		}
+	}
 	second := secrets[1].(types.Object).Attributes()
 	if second["name"].(types.String).ValueString() != "EXTRA" || !second["label"].(types.String).IsNull() {
 		t.Fatalf("second secret = %v", second)
+	}
+	for _, key := range []string{"provider", "placeholder", "icon", "role"} {
+		if !second[key].(types.String).IsNull() {
+			t.Fatalf("legacy secret %s = %v; want null", key, second[key])
+		}
 	}
 }
 

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added / Changed
 
+- `iaas_microvm_images` and `iaas_microvm_catalog`: each `suggested_secrets` entry now also
+  exposes the computed `provider`, `placeholder`, `icon` and `role` attributes (null when the
+  Master or the kit does not set them).
 - `iaas_volume` attach, detach, resize and delete are now confirmed operations. The
   platform accepts these requests and the node performs them; the resource waits until
   the volume reports the new attachment, plan and size (or reads 404 after a delete)

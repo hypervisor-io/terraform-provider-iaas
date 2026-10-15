@@ -12,9 +12,13 @@ import (
 // field is null when the Master omits it (older Master).
 
 var microvmSuggestedSecretAttrTypes = map[string]attr.Type{
-	"name":     types.StringType,
-	"label":    types.StringType,
-	"help_url": types.StringType,
+	"name":        types.StringType,
+	"label":       types.StringType,
+	"help_url":    types.StringType,
+	"provider":    types.StringType,
+	"placeholder": types.StringType,
+	"icon":        types.StringType,
+	"role":        types.StringType,
 }
 
 var microvmKitAttrTypes = map[string]attr.Type{
@@ -39,9 +43,13 @@ func microvmKitSchemaAttributes() map[string]schema.Attribute {
 			Computed:    true,
 			Description: "Secrets the kit suggests setting at launch.",
 			NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
-				"name":     schema.StringAttribute{Computed: true},
-				"label":    schema.StringAttribute{Computed: true},
-				"help_url": schema.StringAttribute{Computed: true},
+				"name":        schema.StringAttribute{Computed: true},
+				"label":       schema.StringAttribute{Computed: true},
+				"help_url":    schema.StringAttribute{Computed: true},
+				"provider":    schema.StringAttribute{Computed: true, Description: "Provider key the secret belongs to (for example anthropic). Null when the kit does not set it."},
+				"placeholder": schema.StringAttribute{Computed: true, Description: "Placeholder text of the launcher field. Null when the kit does not set it."},
+				"icon":        schema.StringAttribute{Computed: true, Description: "Icon key of the row. Null when the kit does not set it."},
+				"role":        schema.StringAttribute{Computed: true, Description: "provider (feeds the secrets token) or repo (the repo access line). Null on a kit published before roles existed."},
 			}},
 		},
 		"sort_order": schema.Int64Attribute{Computed: true, Description: "Launcher sort order."},
@@ -67,10 +75,11 @@ func microvmKitValues(obj map[string]any, diags *diag.Diagnostics) map[string]at
 	if raw, ok := obj["suggested_secrets"].([]any); ok {
 		items := make([]attr.Value, 0, len(raw))
 		for _, entry := range raw {
-			var name, label, help any
+			var name, label, help, provider, placeholder, icon, role any
 			switch e := entry.(type) {
 			case map[string]any:
 				name, label, help = e["name"], e["label"], e["help_url"]
+				provider, placeholder, icon, role = e["provider"], e["placeholder"], e["icon"], e["role"]
 			case string:
 				name = e
 			default:
@@ -78,6 +87,8 @@ func microvmKitValues(obj map[string]any, diags *diag.Diagnostics) map[string]at
 			}
 			value, d := types.ObjectValue(microvmSuggestedSecretAttrTypes, map[string]attr.Value{
 				"name": nullableString(name), "label": nullableString(label), "help_url": nullableString(help),
+				"provider": nullableString(provider), "placeholder": nullableString(placeholder),
+				"icon": nullableString(icon), "role": nullableString(role),
 			})
 			diags.Append(d...)
 			items = append(items, value)
