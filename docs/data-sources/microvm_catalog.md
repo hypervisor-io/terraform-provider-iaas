@@ -36,11 +36,27 @@ output "microvm_locations" {
 
 Read-Only:
 
+- `category` (String) Launcher category of the kit.
+- `default_lifetime_seconds` (Number) Suggested sandbox lifetime in seconds.
+- `default_plan_vcpu` (Number) Suggested vCPU count for the default plan.
 - `exposed_ports` (List of Number)
+- `icon` (String) Launcher icon key.
 - `id` (String)
 - `is_base` (Boolean)
 - `name` (String)
+- `sort_order` (Number) Launcher sort order.
 - `status` (String)
+- `suggested_secrets` (Attributes List) Secrets the kit suggests setting at launch. (see [below for nested schema](#nestedatt--images--suggested_secrets))
+- `tagline` (String) Short launcher tagline.
+
+<a id="nestedatt--images--suggested_secrets"></a>
+### Nested Schema for `images.suggested_secrets`
+
+Read-Only:
+
+- `help_url` (String)
+- `label` (String)
+- `name` (String)
 
 
 <a id="nestedatt--limits"></a>

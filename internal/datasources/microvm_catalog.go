@@ -55,13 +55,13 @@ var microvmCatalogLocationAttrTypes = map[string]attr.Type{
 	"plans":     types.ListType{ElemType: types.ObjectType{AttrTypes: microvmCatalogPlanAttrTypes}},
 }
 
-var microvmCatalogImageAttrTypes = map[string]attr.Type{
+var microvmCatalogImageAttrTypes = mergeAttrTypes(map[string]attr.Type{
 	"id":            types.StringType,
 	"name":          types.StringType,
 	"is_base":       types.BoolType,
 	"status":        types.StringType,
 	"exposed_ports": types.ListType{ElemType: types.Int64Type},
-}
+}, microvmKitAttrTypes)
 
 var microvmCatalogNamedAttrTypes = map[string]attr.Type{
 	"id":   types.StringType,
@@ -120,13 +120,13 @@ func (d *microvmCatalogDataSource) Schema(_ context.Context, _ datasource.Schema
 			},
 			"images": schema.ListNestedAttribute{
 				Computed: true,
-				NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
+				NestedObject: schema.NestedAttributeObject{Attributes: mergeSchemaAttrs(map[string]schema.Attribute{
 					"id":            schema.StringAttribute{Computed: true},
 					"name":          schema.StringAttribute{Computed: true},
 					"is_base":       schema.BoolAttribute{Computed: true},
 					"status":        schema.StringAttribute{Computed: true},
 					"exposed_ports": schema.ListAttribute{Computed: true, ElementType: types.Int64Type},
-				}},
+				}, microvmKitSchemaAttributes())},
 			},
 			"security_groups": schema.ListNestedAttribute{
 				Computed: true,
@@ -208,10 +208,10 @@ func microvmCatalogState(catalog map[string]any) (microvmCatalogModel, diag.Diag
 	images := make([]attr.Value, 0)
 	for _, image := range objectSlice(catalog["images"]) {
 		ports := intList(image["exposed_ports"], &diags)
-		value, valueDiags := types.ObjectValue(microvmCatalogImageAttrTypes, map[string]attr.Value{
+		value, valueDiags := types.ObjectValue(microvmCatalogImageAttrTypes, mergeAttrValues(map[string]attr.Value{
 			"id": types.StringValue(strField(image, "id")), "name": types.StringValue(strField(image, "name")), "is_base": types.BoolValue(boolField(image, "is_base")),
 			"status": types.StringValue(strField(image, "status")), "exposed_ports": ports,
-		})
+		}, microvmKitValues(image, &diags)))
 		diags.Append(valueDiags...)
 		images = append(images, value)
 	}

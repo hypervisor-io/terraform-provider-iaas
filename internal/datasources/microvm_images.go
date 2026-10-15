@@ -35,7 +35,7 @@ type microvmImagesModel struct {
 	Images types.List   `tfsdk:"images"`
 }
 
-var microvmImageDataAttrTypes = map[string]attr.Type{
+var microvmImageDataAttrTypes = mergeAttrTypes(map[string]attr.Type{
 	"id":                 types.StringType,
 	"name":               types.StringType,
 	"description":        types.StringType,
@@ -43,7 +43,7 @@ var microvmImageDataAttrTypes = map[string]attr.Type{
 	"status":             types.StringType,
 	"template_name":      types.StringType,
 	"current_version_id": types.StringType,
-}
+}, microvmKitAttrTypes)
 
 func (d *microvmImagesDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_microvm_images"
@@ -58,7 +58,7 @@ func (d *microvmImagesDataSource) Schema(_ context.Context, _ datasource.SchemaR
 			"status": schema.StringAttribute{Optional: true, Description: "Exact image status."},
 			"images": schema.ListNestedAttribute{
 				Computed: true,
-				NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
+				NestedObject: schema.NestedAttributeObject{Attributes: mergeSchemaAttrs(map[string]schema.Attribute{
 					"id":                 schema.StringAttribute{Computed: true},
 					"name":               schema.StringAttribute{Computed: true},
 					"description":        schema.StringAttribute{Computed: true},
@@ -66,7 +66,7 @@ func (d *microvmImagesDataSource) Schema(_ context.Context, _ datasource.SchemaR
 					"status":             schema.StringAttribute{Computed: true},
 					"template_name":      schema.StringAttribute{Computed: true},
 					"current_version_id": schema.StringAttribute{Computed: true},
-				}},
+				}, microvmKitSchemaAttributes())},
 			},
 		},
 	}
@@ -113,7 +113,7 @@ func microvmImagesToList(images []map[string]any, config microvmImagesModel) (ty
 		if !config.Status.IsNull() && strField(image, "status") != config.Status.ValueString() {
 			continue
 		}
-		value, valueDiags := types.ObjectValue(microvmImageDataAttrTypes, map[string]attr.Value{
+		value, valueDiags := types.ObjectValue(microvmImageDataAttrTypes, mergeAttrValues(map[string]attr.Value{
 			"id":                 types.StringValue(strField(image, "id")),
 			"name":               types.StringValue(name),
 			"description":        nullableString(image["description"]),
@@ -121,7 +121,7 @@ func microvmImagesToList(images []map[string]any, config microvmImagesModel) (ty
 			"status":             types.StringValue(strField(image, "status")),
 			"template_name":      types.StringValue(strField(image, "template_name")),
 			"current_version_id": nullableString(image["current_version_id"]),
-		})
+		}, microvmKitValues(image, &diags)))
 		diags.Append(valueDiags...)
 		values = append(values, value)
 	}
