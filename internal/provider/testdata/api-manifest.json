@@ -10877,7 +10877,7 @@
       "method": "GET",
       "path": "/api/microvm/catalog",
       "surface": "user",
-      "contract_notes": "Kit metadata fields (category, icon, tagline, default_plan_vcpu, default_lifetime_seconds, suggested_secrets, sort_order) added 2026-10 are additive; system images are no longer listed in images[]; the iaas_microvm_catalog data source exposes them as Computed attributes (null when an older Master omits them) the MCP server has no catalog tool (endpoint excluded there), and its image tools pass the same fields through unchanged.",
+      "contract_notes": "Kit metadata fields (category, icon, tagline, default_plan_vcpu, default_lifetime_seconds, suggested_secrets, sort_order) added 2026-10 are additive; system images are no longer listed in images[]; the iaas_microvm_catalog data source exposes them as Computed attributes (null when an older Master omits them) the MCP server has no catalog tool (endpoint excluded there), and its image tools pass the same fields through unchanged. suggested_secrets entries also carry provider, placeholder, icon and role when the kit sets them (KH-5); iaas_microvm_catalog exposes them as Computed nested attributes (null when absent); the MCP server has no catalog tool.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_microvm_catalog"
@@ -11914,7 +11914,7 @@
       "method": "GET",
       "path": "/api/microvm/image/{user_microvmImage}",
       "surface": "user",
-      "contract_notes": "Kit metadata fields (category, icon, tagline, default_plan_vcpu, default_lifetime_seconds, suggested_secrets, sort_order) added 2026-10 are additive; the iaas_microvm_images data source exposes them as Computed attributes (null when an older Master omits them) and the MCP image tools pass them through unchanged.",
+      "contract_notes": "Kit metadata fields (category, icon, tagline, default_plan_vcpu, default_lifetime_seconds, suggested_secrets, sort_order) added 2026-10 are additive; the iaas_microvm_images data source exposes them as Computed attributes (null when an older Master omits them) and the MCP image tools pass them through unchanged. suggested_secrets entries also carry provider, placeholder, icon and role when the kit sets them (KH-5); the iaas_microvm_images data source exposes them as Computed nested attributes (null when absent); the MCP image tools pass them through unchanged (pinned by a test).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_microvm_image"
@@ -11943,7 +11943,7 @@
       "method": "GET",
       "path": "/api/microvm/images",
       "surface": "user",
-      "contract_notes": "Kit metadata fields (category, icon, tagline, default_plan_vcpu, default_lifetime_seconds, suggested_secrets, sort_order) added 2026-10 are additive; the iaas_microvm_images data source exposes them as Computed attributes (null when an older Master omits them) and the MCP image tools pass them through unchanged.",
+      "contract_notes": "Kit metadata fields (category, icon, tagline, default_plan_vcpu, default_lifetime_seconds, suggested_secrets, sort_order) added 2026-10 are additive; the iaas_microvm_images data source exposes them as Computed attributes (null when an older Master omits them) and the MCP image tools pass them through unchanged. suggested_secrets entries also carry provider, placeholder, icon and role when the kit sets them (KH-5); iaas_microvm_images exposes them as Computed nested attributes (null when absent); the MCP image tools pass them through unchanged (pinned by a test).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_microvm_images"
@@ -11958,6 +11958,7 @@
       "method": "POST",
       "path": "/api/microvm/images",
       "surface": "user",
+      "contract_notes": "KH-3A (2026-10) adds auth kind registry_secret ({kind: registry_secret, secret_id}: a vault secret of kind registry whose registry matches the image reference; 422 registry_secret_not_found, registry_authority_mismatch). The inline auth {kind: registry, username, password} still works but the response carries deprecation {field: auth, sunset: 3.3.7}. iaas_microvm_image registry_secret_id and the MCP user.microvm.image.create auth_kind registry_secret map to it (provider 708be89, MCP 203c038).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_microvm_image"
@@ -14508,6 +14509,7 @@
       "method": "PUT",
       "path": "/api/microvm/secret/{user_microvmSecret}",
       "surface": "user",
+      "contract_notes": "KH-3A (2026-10): kind is immutable (422 secret_kind_immutable); username rotatable; registry refused 422 registry_in_use while a kit references the row. Response fields additive as on create.",
       "opentofu": {
         "status": "excluded",
         "reason": "planned, follow-up task"
@@ -14522,6 +14524,7 @@
       "method": "GET",
       "path": "/api/microvm/secrets",
       "surface": "user",
+      "contract_notes": "KH-3A (2026-10) adds query kind (env default, registry, all); the default list stays environment secrets only. Rows gain kind, registry, username, images_count (additive).",
       "opentofu": {
         "status": "excluded",
         "reason": "planned, follow-up task"
@@ -14535,6 +14538,133 @@
       "id": "user POST /api/microvm/secrets",
       "method": "POST",
       "path": "/api/microvm/secrets",
+      "surface": "user",
+      "contract_notes": "KH-3A (2026-10) adds optional kind (env default, registry), registry and username; a registry row is refused 422 registry_secrets_not_enabled until microvm:enable-secret-kinds ran, and 422 secret_kind_fields for fields of the other kind. Response gains kind, registry, username, images_count (additive).",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      }
+    },
+    {
+      "id": "user GET /api/microvm/mcp-providers",
+      "method": "GET",
+      "path": "/api/microvm/mcp-providers",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      }
+    },
+    {
+      "id": "user DELETE /api/microvm/mcp-server/{user_microvmMcpServer}",
+      "method": "DELETE",
+      "path": "/api/microvm/mcp-server/{user_microvmMcpServer}",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      }
+    },
+    {
+      "id": "user GET /api/microvm/mcp-server/{user_microvmMcpServer}",
+      "method": "GET",
+      "path": "/api/microvm/mcp-server/{user_microvmMcpServer}",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      }
+    },
+    {
+      "id": "user PUT /api/microvm/mcp-server/{user_microvmMcpServer}",
+      "method": "PUT",
+      "path": "/api/microvm/mcp-server/{user_microvmMcpServer}",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      }
+    },
+    {
+      "id": "user POST /api/microvm/mcp-server/{user_microvmMcpServer}/connect",
+      "method": "POST",
+      "path": "/api/microvm/mcp-server/{user_microvmMcpServer}/connect",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      }
+    },
+    {
+      "id": "user POST /api/microvm/mcp-server/{user_microvmMcpServer}/disconnect",
+      "method": "POST",
+      "path": "/api/microvm/mcp-server/{user_microvmMcpServer}/disconnect",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      }
+    },
+    {
+      "id": "user POST /api/microvm/mcp-server/{user_microvmMcpServer}/rotate-token",
+      "method": "POST",
+      "path": "/api/microvm/mcp-server/{user_microvmMcpServer}/rotate-token",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      }
+    },
+    {
+      "id": "user GET /api/microvm/mcp-servers",
+      "method": "GET",
+      "path": "/api/microvm/mcp-servers",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "planned, follow-up task"
+      }
+    },
+    {
+      "id": "user POST /api/microvm/mcp-servers",
+      "method": "POST",
+      "path": "/api/microvm/mcp-servers",
       "surface": "user",
       "opentofu": {
         "status": "excluded",
@@ -14619,6 +14749,34 @@
       "id": "admin POST /api/v1/microvm/kits/install",
       "method": "POST",
       "path": "/api/v1/microvm/kits/install",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/microvm/kits/catalog",
+      "method": "GET",
+      "path": "/api/v1/microvm/kits/catalog",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/microvm/kits/sync",
+      "method": "POST",
+      "path": "/api/v1/microvm/kits/sync",
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
