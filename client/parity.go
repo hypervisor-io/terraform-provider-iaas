@@ -320,8 +320,53 @@ func (c *Client) CreateInstanceBackup(ctx context.Context, id string, body map[s
 	return c.doVoid(ctx, "POST", inst(id)+"/backups", body)
 }
 
+// MaxBulkBackupIDs is the largest number of backup ids the Master accepts in one
+// POST .../backups/destroy (a bigger list is a 422). The client chunks longer lists.
+const MaxBulkBackupIDs = 100
+
+// BulkDestroyInstanceBackups queues deletion of the ids in body["backups"] (a []string or
+// []any), in requests of at most MaxBulkBackupIDs ids each; every other body key is sent
+// with every chunk. It stops at the first failing chunk and returns that error, so ids in
+// later chunks were not sent.
 func (c *Client) BulkDestroyInstanceBackups(ctx context.Context, id string, body map[string]any) error {
-	return c.doVoid(ctx, "POST", inst(id)+"/backups/destroy", body)
+	ids, ok := backupIDList(body["backups"])
+	if !ok || len(ids) <= MaxBulkBackupIDs {
+		return c.doVoid(ctx, "POST", inst(id)+"/backups/destroy", body)
+	}
+	for start := 0; start < len(ids); start += MaxBulkBackupIDs {
+		end := start + MaxBulkBackupIDs
+		if end > len(ids) {
+			end = len(ids)
+		}
+		chunk := make(map[string]any, len(body))
+		for k, v := range body {
+			chunk[k] = v
+		}
+		chunk["backups"] = ids[start:end]
+		if err := c.doVoid(ctx, "POST", inst(id)+"/backups/destroy", chunk); err != nil {
+			return fmt.Errorf("backups %d-%d of %d: %w", start+1, end, len(ids), err)
+		}
+	}
+	return nil
+}
+
+// backupIDList reads a backup id list given as []string or []any.
+func backupIDList(v any) ([]string, bool) {
+	switch t := v.(type) {
+	case []string:
+		return t, true
+	case []any:
+		out := make([]string, 0, len(t))
+		for _, e := range t {
+			s, ok := e.(string)
+			if !ok {
+				return nil, false
+			}
+			out = append(out, s)
+		}
+		return out, true
+	}
+	return nil, false
 }
 
 func (c *Client) DeleteInstanceBackup(ctx context.Context, id, backupID string) error {
