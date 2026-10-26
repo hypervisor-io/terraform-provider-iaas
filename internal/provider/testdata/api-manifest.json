@@ -2626,6 +2626,34 @@
       }
     },
     {
+      "id": "admin POST /api/v1/instance/backup-queue/job/{instanceBackupQueueId}/cancel",
+      "method": "POST",
+      "path": "/api/v1/instance/backup-queue/job/{instanceBackupQueueId}/cancel",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 operator action on the backup queue; the user-scoped OpenTofu provider does not model it"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin operation that stops a running backup (200 cancelled, 202 cancel_requested, 409 already_terminal or node_cannot_cancel); not in the curated MCP allowlist"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/instance/backup-queue/job/{instanceBackupQueueId}/resolve-unwind",
+      "method": "POST",
+      "path": "/api/v1/instance/backup-queue/job/{instanceBackupQueueId}/resolve-unwind",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 operator action on the backup queue; the user-scoped OpenTofu provider does not model it"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin operation that lifts the hold after an operator finished a node cleanup; not in the curated MCP allowlist"
+      }
+    },
+    {
       "id": "admin GET /api/v1/instance/backup-queue/job/{instanceBackupQueueId}/logs",
       "method": "GET",
       "path": "/api/v1/instance/backup-queue/job/{instanceBackupQueueId}/logs",
@@ -7822,6 +7850,118 @@
       "id": "admin POST /api/v1/vpn-gateway/{vpnGatewayId}/peering",
       "method": "POST",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}/peering",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/vpn-gateway/{vpnGatewayId}/ipsec",
+      "method": "GET",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/vpn-gateway/{vpnGatewayId}/ipsec",
+      "method": "POST",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/vpn-gateway/{vpnGatewayId}/ipsec/install",
+      "method": "POST",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/install",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin DELETE /api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
+      "method": "DELETE",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
+      "method": "GET",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin PATCH /api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
+      "method": "PATCH",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}/remote-settings",
+      "method": "GET",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}/remote-settings",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}/restart",
+      "method": "POST",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}/restart",
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
@@ -14309,6 +14449,105 @@
       }
     },
     {
+      "id": "user GET /api/vpn-gateway/{user_vpnGatewayId}/ipsec",
+      "method": "GET",
+      "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "type": "iaas_vpn_ipsec_connection"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.vpn_ipsec.list"
+      }
+    },
+    {
+      "id": "user POST /api/vpn-gateway/{user_vpnGatewayId}/ipsec",
+      "method": "POST",
+      "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "type": "iaas_vpn_ipsec_connection"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.vpn_ipsec.create"
+      }
+    },
+    {
+      "id": "user DELETE /api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
+      "method": "DELETE",
+      "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "type": "iaas_vpn_ipsec_connection"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.vpn_ipsec.delete"
+      }
+    },
+    {
+      "id": "user GET /api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
+      "method": "GET",
+      "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "type": "iaas_vpn_ipsec_connection"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.vpn_ipsec.get"
+      }
+    },
+    {
+      "id": "user PATCH /api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
+      "method": "PATCH",
+      "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "type": "iaas_vpn_ipsec_connection"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.vpn_ipsec.update"
+      }
+    },
+    {
+      "id": "user GET /api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}/remote-settings",
+      "method": "GET",
+      "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}/remote-settings",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "resource": "iaas_vpn_ipsec_connection",
+        "attribute": "remote_settings"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.vpn_ipsec.remote_settings"
+      }
+    },
+    {
+      "id": "user POST /api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}/restart",
+      "method": "POST",
+      "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}/restart",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "imperative action, not representable as declarative IaC"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.vpn_ipsec.restart"
+      }
+    },
+    {
       "id": "user GET /api/vpn-gateways",
       "method": "GET",
       "path": "/api/vpn-gateways",
@@ -15088,11 +15327,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; this restore requires a KVM agent target (Proxmox returns 422 unsupported_hypervisor), retaining resolvable image metadata for OS seed flavor without installation or changing Windows settings; restore answers 409 backup_being_deleted while a deletion claim is held; unconfirmed deploy retains the new instance and live task, and unconfirmed archive dispatch retains its task, step marker and storage lock until terminal callback or proven-dead reconciliation"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; this restore requires a KVM agent target (Proxmox returns 422 unsupported_hypervisor), retaining resolvable image metadata for OS seed flavor without installation or changing Windows settings; restore answers 409 backup_being_deleted while a deletion claim is held; backups on local, S3 and rclone destinations restore too (one disk per backup row): 422 backup_chain_broken, backup_not_complete, chain_destination_mixed, target_storage_incompatible (also any Ceph snapshot backup, refused before anything is created until the node can verify the image size), 409 destination_mismatch for a different PBS/local destination or local files on another node; 422 backup_not_addressable for a missing/unsupported destination; chain admission requires same source instance/disk, a full root and at most 100 rows; destroyed non-PBS disk size is an allocation estimate requiring Slave virtual-size preflight; not_pbs_backup no longer exists; unconfirmed deploy retains the new instance and live task, and unconfirmed archive dispatch retains its task, step marker and storage lock until terminal callback or proven-dead reconciliation"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); restore answers 409 backup_being_deleted while a deletion claim is held; unconfirmed deploy retains the new instance and live task, and unconfirmed archive dispatch retains its task, step marker and storage lock until terminal callback or proven-dead reconciliation"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); restore answers 409 backup_being_deleted while a deletion claim is held; backups on local, S3 and rclone destinations restore too (one disk per backup row): 422 backup_chain_broken, backup_not_complete, chain_destination_mixed, target_storage_incompatible (also any Ceph snapshot backup, refused before anything is created until the node can verify the image size), 409 destination_mismatch for a different PBS/local destination or local files on another node; 422 backup_not_addressable for a missing/unsupported destination; chain admission requires same source instance/disk, a full root and at most 100 rows; destroyed non-PBS disk size is an allocation estimate requiring Slave virtual-size preflight; not_pbs_backup no longer exists; unconfirmed deploy retains the new instance and live task, and unconfirmed archive dispatch retains its task, step marker and storage lock until terminal callback or proven-dead reconciliation"
       }
     },
     {
@@ -15172,7 +15411,7 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; non-PBS drill eligibility and backup_destination_type remain excluded"
       },
       "mcp": {
         "status": "excluded",
@@ -15186,7 +15425,7 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; non-PBS drill eligibility and backup_destination_type remain excluded"
       },
       "mcp": {
         "status": "excluded",
@@ -15200,7 +15439,7 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; non-PBS drill eligibility and backup_destination_type remain excluded"
       },
       "mcp": {
         "status": "excluded",

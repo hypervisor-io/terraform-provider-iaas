@@ -932,7 +932,7 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
 
       <!-- ============ VPN ============ -->
       <div class="group" data-group-section="vpn">
-        <div class="group-heading">VPN <span class="count">· 3 resources</span></div>
+        <div class="group-heading">VPN <span class="count">· 4 resources</span></div>
         <div class="grid">
 
           <article class="card" data-group="vpn" data-search="iaas_vpn_gateway wireguard endpoint road warrior site to site">
@@ -951,6 +951,11 @@ Apply complete! Resources: <span class="tok-add">2 added</span>, 0 changed, 0 de
           <article class="card" data-group="vpn" data-search="iaas_vpn_peer wireguard peer road warrior site to site third party">
             <div class="card-head"><code class="card-name">iaas_vpn_peer</code><span class="tag">resource</span></div>
             <p class="card-desc">A WireGuard peer on a gateway: a road-warrior client or a third-party site-to-site connection you configure yourself (public_key/endpoint/allowed_ips).</p>
+          </article>
+
+          <article class="card" data-group="vpn" data-search="iaas_vpn_ipsec_connection ipsec site to site ikev2 pre-shared key strongswan tunnel remote network">
+            <div class="card-head"><code class="card-name">iaas_vpn_ipsec_connection</code><span class="tag">resource</span><span class="tag tag-new">NEW</span></div>
+            <p class="card-desc">An IPsec site-to-site connection (IKEv2 or IKEv1, pre-shared key) from a gateway's VPC to a remote network. Create and update wait until the gateway has applied the change; the pre-shared key is write-only and updates in place.</p>
           </article>
 
           <article class="card" data-group="vpn" data-search="iaas_vpn_peering new vpc to vpc peering symmetric pair same account">

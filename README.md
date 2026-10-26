@@ -90,6 +90,7 @@ listed here is registered in [`internal/provider/provider.go`](internal/provider
   Replaces the removed `iaas_lb_certificate` resource - see "Breaking change" below.
 - `iaas_vpn_gateway` - VPN gateway
 - `iaas_vpn_peer` - VPN peer (child of a gateway)
+- `iaas_vpn_ipsec_connection` - IPsec site-to-site connection (child of a gateway)
 - `iaas_dns_zone` - DNS zone
 - `iaas_dns_record_set` - DNS record set
 - `iaas_dns_record` - individual DNS record (with optional inline health check)

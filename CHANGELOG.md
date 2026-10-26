@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added / Changed
 
+- New resource `iaas_vpn_ipsec_connection`: an IPsec site-to-site connection (IKEv2, or IKEv1 with the
+  compat preset; pre-shared key) of a VPN gateway, a child of `iaas_vpn_gateway` like `iaas_vpn_peer`
+  (import `<gateway_id>/<connection_id>`). The pre-shared key `psk` is Sensitive and write-only (the
+  API never returns it): changing it updates the key in place and never replaces the connection, a key
+  changed outside Terraform is detected through the platform's key version and shows as an in-place
+  update back to the configured value, and after an import the next apply sends it. Writes are applied
+  to the gateway asynchronously, so create and update wait until `apply_state` is `applied` (a gateway
+  that reports `failed` fails the apply with its code), delete waits until the gateway has confirmed the
+  removal (a removed connection keeps its networks reserved until then, so a replacement with the same
+  `remote_ts` needs it), and the live tunnel (`sa_state`) is exposed but never waited for. Create is sent
+  in exactly one attempt; an uncertain answer (5xx, transport error) is never replayed and is never
+  adopted either (the API has no request token, so a same-name connection could belong to another
+  writer): the error names the connection that now exists and gives the exact `terraform import`
+  command. Delete keeps waiting for the gateway after a replayed DELETE meets 404, and the apply wait
+  fails fast when the gateway's IPsec install fails. Selector lists must be canonical, non-overlapping
+  and (remote) outside the reserved ranges; empty or padded optional text is refused at plan time;
+  cross-field checks run only on explicitly configured values; a 409 `ipsec_installing` (the gateway is
+  still installing its IPsec packages, for example for a sibling connection created in parallel) is a
+  definite refusal and is waited out within the create or update timeout. Plan-time validation mirrors
+  the server grammars (name, key shape without ever echoing the key, `/8` to `/32` remote networks,
+  IKEv1 needs the compat preset, custom proposals, `any` identity for a responder only, child lifetime
+  not above the IKE lifetime). The computed `remote_settings` attribute is the JSON document of values
+  to enter on the other device (never the key). `restart` is an imperative action and is not modelled.
+  The `client` package gains the IPsec calls (`ListVpnIpsecConnections`, `GetVpnIpsecConnection`,
+  `CreateVpnIpsecConnection`, `UpdateVpnIpsecConnection`, `DeleteVpnIpsecConnection`,
+  `RestartVpnIpsecConnection`, `GetVpnIpsecRemoteSettings`, `GetVpnIpsecRemoteSettingsText`) that the MCP server shares.
+
 - `iaas_microvm_images` and `iaas_microvm_catalog`: each `suggested_secrets` entry now also
   exposes the computed `provider`, `placeholder`, `icon` and `role` attributes (null when the
   Master or the kit does not set them).
