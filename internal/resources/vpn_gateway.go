@@ -103,7 +103,9 @@ func (r *vpnGatewayResource) Schema(ctx context.Context, _ resource.SchemaReques
 			"gateway itself has no in-place updates - every input forces replacement; its peers " +
 			"are managed via separate iaas_vpn_peer resources. The feature must be enabled for " +
 			"the VPC's location; if it is not (or the per-account VPN gateway quota is reached, " +
-			"or no public IP is available) the create fails with a clear message.",
+			"or no public IP is available) the create fails with a clear message. Deletion removes " +
+			"IPsec connections only after instance teardown is accepted. A 409 vpn_gateway_destroy_failed " +
+			"retains the gateway and its connections; retry destroy after resolving the teardown failure.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -388,10 +390,10 @@ func (r *vpnGatewayResource) Update(ctx context.Context, req resource.UpdateRequ
 	resp.Diagnostics.Append(resp.State.Set(ctx, vpnGatewayStateFromAPI(obj, plan))...)
 }
 
-// Delete removes the VPN gateway. The service bills final hours, destroys the
-// backing instance (releasing its public IP), deletes the peers, and soft-deletes
-// the row immediately, so a subsequent SHOW 404s right away - no delete waiter is
-// required.
+// Delete removes the VPN gateway. Only after backing-instance teardown is
+// accepted does the service bill final hours and remove peers and IPsec
+// connections. A 409 vpn_gateway_destroy_failed keeps the gateway and its children
+// on the server and in Terraform state, allowing a later destroy to retry.
 func (r *vpnGatewayResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state vpnGatewayModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -399,10 +401,11 @@ func (r *vpnGatewayResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	if err := r.client.DeleteVpnGateway(ctx, state.ID.ValueString()); err != nil {
+	if err := r.client.DeleteVpnGateway(ctx, state.ID.ValueString()); err != nil && !client.IsNotFound(err) {
 		resp.Diagnostics.Append(diagFromErr("Error deleting VPN gateway", err))
 		return
 	}
+	resp.State.RemoveResource(ctx)
 }
 
 // ImportState implements COMPOSITE import for this child resource. The gateway

@@ -22,8 +22,8 @@ go test ./internal/resources/... ./internal/datasources/... -run TestAcc -count=
 
 ## Coverage
 
-One `TestAcc*` per acceptance-covered resource (**42**) and per data source (**12**) =
-**54** acceptance tests. The data-source acc tests live in
+One `TestAcc*` per acceptance-covered resource (**43**) and per data source (**12**) =
+**55** acceptance tests. The data-source acc tests live in
 `internal/datasources/acc_test.go`.
 
 ## Prerequisites (summary)
@@ -50,7 +50,7 @@ Per-resource / per-data-source extra IDs (tests skip cleanly when unset) - see t
 In brief: `IAAS_TEST_HG_ID`, `IAAS_TEST_VOLUME_PLAN_ID`, `IAAS_TEST_VOLUME_ID`,
 `IAAS_TEST_STATIC_IP_ID`, `IAAS_TEST_LB_LOCATION_ID`, `IAAS_TEST_LB_PLAN_ID`,
 `IAAS_TEST_LB_ID`, `IAAS_TEST_VPC_ID`, `IAAS_TEST_VPC_SUBNET_ID`,
-`IAAS_TEST_VPNGW_PLAN_ID`, `IAAS_TEST_VPN_GATEWAY_ID`, `IAAS_TEST_VPN_PEER_ID`,
+`IAAS_TEST_VPNGW_PLAN_ID`, `IAAS_TEST_VPN_GATEWAY_ID` (also used by the IPsec connection test), `IAAS_TEST_VPN_PEER_ID`,
 `IAAS_TEST_DB_PLAN_ID`, `IAAS_TEST_DB_VPC_ID`, `IAAS_TEST_DB_VPC_SUBNET_ID`,
 `IAAS_TEST_DB_PRIMARY_ID`, `IAAS_TEST_DB_REPLICA_PLAN_ID`, `IAAS_TEST_S3_PLAN_ID`,
 `IAAS_TEST_S3_SERVER_ID`, `IAAS_TEST_MICROVM_HG_ID`,

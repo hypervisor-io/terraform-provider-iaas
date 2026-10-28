@@ -88,6 +88,7 @@ copy the UUID from the panel URL/API.
 | `iaas_nat_gateway` | `TestAccNatGateway_basic` | `IAAS_TEST_VPC_ID` | a VPC in a natgw-enabled location with a private subnet |
 | `iaas_vpn_gateway` | `TestAccVpnGateway_basic` | `IAAS_TEST_VPC_ID`, `IAAS_TEST_VPC_SUBNET_ID`, `IAAS_TEST_VPNGW_PLAN_ID` | VPC + a public subnet with a free IP + an enabled VPN-gateway plan |
 | `iaas_vpn_peer` | `TestAccVpnPeer_basic` | `IAAS_TEST_VPN_GATEWAY_ID` | UUID of an active `iaas_vpn_gateway` |
+| `iaas_vpn_ipsec_connection` | `TestAccVpnIpsecConnection_basic` | `IAAS_TEST_VPN_GATEWAY_ID` | UUID of an active `iaas_vpn_gateway` on a node that supports IPsec; the test waits for the gateway to apply the connection, not for the tunnel (its peer is a TEST-NET address) |
 | `iaas_managed_database` | `TestAccManagedDatabase_basic` | `IAAS_TEST_DB_PLAN_ID`, `IAAS_TEST_DB_VPC_ID`, `IAAS_TEST_DB_VPC_SUBNET_ID` | enabled db plan + VPC in a db-enabled location + a public subnet with a free IP |
 | `iaas_db_replica` | `TestAccDBReplica_basic` | `IAAS_TEST_DB_PRIMARY_ID`, `IAAS_TEST_DB_REPLICA_PLAN_ID`, `IAAS_TEST_DB_VPC_SUBNET_ID` | active primary DB + a db plan (storage ≥ primary's) + a subnet in the primary's VPC |
 | `iaas_s3_bucket` | `TestAccS3Bucket_basic` | `IAAS_TEST_S3_PLAN_ID`, `IAAS_TEST_S3_SERVER_ID` | an enabled S3 plan + an S3 server |
@@ -167,7 +168,7 @@ TF_ACC=1 go test ./internal/resources/ ./internal/datasources/ -run \
 
 # Tier 2 - networking (LB, NAT, VPN, DNS). LB-children + DNS need hand-edited configs.
 TF_ACC=1 go test ./internal/resources/ ./internal/datasources/ -run \
-  'TestAccLoadBalancer_basic|TestAccLB|TestAccNatGateway_basic|TestAccVpnGateway_basic|TestAccVpnPeer_basic|TestAccVpnPeerConfig_basic|TestAccDNS' \
+  'TestAccLoadBalancer_basic|TestAccLB|TestAccNatGateway_basic|TestAccVpnGateway_basic|TestAccVpnPeer_basic|TestAccVpnIpsecConnection_basic|TestAccVpnPeerConfig_basic|TestAccDNS' \
   -v -timeout 60m
 
 # Tier 3 - data/storage/observability
@@ -235,6 +236,7 @@ Fill in `pass` / `fail` / `skipped` and notes. Tiers mirror the build order.
 | `iaas_lb_certificate` | `TestAccLBCertificate_basic` | | placeholder - hand-edit config |
 | `iaas_vpn_gateway` | `TestAccVpnGateway_basic` | | async converge |
 | `iaas_vpn_peer` | `TestAccVpnPeer_basic` | | needs `IAAS_TEST_VPN_GATEWAY_ID` |
+| `iaas_vpn_ipsec_connection` | `TestAccVpnIpsecConnection_basic` | | needs `IAAS_TEST_VPN_GATEWAY_ID`; `psk` write-only (ignored on import); create/update/delete wait for the gateway to apply |
 | `iaas_vpn_peer_config` (DS) | `TestAccVpnPeerConfig_basic` | | `config` Sensitive, road_warrior only |
 | `iaas_dns_zone` | `TestAccDNSZone_basic` | | placeholder - hand-edit config |
 | `iaas_dns_record_set` | `TestAccDNSRecordSet_basic` | | placeholder - hand-edit config |

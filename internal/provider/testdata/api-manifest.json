@@ -2024,6 +2024,20 @@
       }
     },
     {
+      "id": "admin POST /api/v1/hypervisor/group/{hypervisorGroupId}/vxlan-transition/cancel",
+      "method": "POST",
+      "path": "/api/v1/hypervisor/group/{hypervisorGroupId}/vxlan-transition/cancel",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
       "id": "admin POST /api/v1/hypervisor/groups",
       "method": "POST",
       "path": "/api/v1/hypervisor/groups",
@@ -2422,11 +2436,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints, including optional backup_storage_id destination assignment and the now required hypervisor_group_id; creation returns data.hypervisor_id as a named scalar"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints, including optional backup_storage_id destination assignment and the now required hypervisor_group_id; creation returns data.hypervisor_id as a named scalar; KVM link failures create no record: 409 node_already_linked with optional data.linked_panel_ip (strictly validated IP), 502 node_link_refused for other refusals, malformed or non-2xx answers, 503 node_unreachable for transport failure; messages are fixed; successful linkage keeps the row and warns if the first configuration push fails"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin hypervisor creation and optional backup_storage_id destination assignment are excluded from the D3 safe allowlist (see mcp-phase4-excluded.md), and hypervisor_group_id is now required; creation returns data.hypervisor_id as a named scalar"
+        "reason": "admin hypervisor creation and optional backup_storage_id destination assignment are excluded from the D3 safe allowlist (see mcp-phase4-excluded.md), and hypervisor_group_id is now required; creation returns data.hypervisor_id as a named scalar; KVM link failures create no record: 409 node_already_linked with optional data.linked_panel_ip (strictly validated IP), 502 node_link_refused for other refusals, malformed or non-2xx answers, 503 node_unreachable for transport failure; messages are fixed; successful linkage keeps the row and warns if the first configuration push fails"
       }
     },
     {
@@ -2623,6 +2637,34 @@
       "mcp": {
         "status": "excluded",
         "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); live admitted backup operations return 409 backup_operation_live and preserve task or queue evidence"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/instance/backup-queue/job/{instanceBackupQueueId}/cancel",
+      "method": "POST",
+      "path": "/api/v1/instance/backup-queue/job/{instanceBackupQueueId}/cancel",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 operator action on the backup queue; the user-scoped OpenTofu provider does not model it"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin operation that stops a running backup (200 cancelled, 202 cancel_requested, 409 already_terminal or node_cannot_cancel); not in the curated MCP allowlist"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/instance/backup-queue/job/{instanceBackupQueueId}/resolve-unwind",
+      "method": "POST",
+      "path": "/api/v1/instance/backup-queue/job/{instanceBackupQueueId}/resolve-unwind",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 operator action on the backup queue; the user-scoped OpenTofu provider does not model it"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin operation that lifts the hold after an operator finished a node cleanup; not in the curated MCP allowlist"
       }
     },
     {
@@ -7833,6 +7875,118 @@
       }
     },
     {
+      "id": "admin GET /api/v1/vpn-gateway/{vpnGatewayId}/ipsec",
+      "method": "GET",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/vpn-gateway/{vpnGatewayId}/ipsec",
+      "method": "POST",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/vpn-gateway/{vpnGatewayId}/ipsec/install",
+      "method": "POST",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/install",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin DELETE /api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
+      "method": "DELETE",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "destructive/irreversible admin op excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
+      "method": "GET",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin PATCH /api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
+      "method": "PATCH",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}/remote-settings",
+      "method": "GET",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}/remote-settings",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}/restart",
+      "method": "POST",
+      "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}/restart",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
       "id": "admin GET /api/v1/vpn-gateways",
       "method": "GET",
       "path": "/api/v1/vpn-gateways",
@@ -8187,6 +8341,7 @@
       "method": "POST",
       "path": "/api/ai/conversation",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "AI-assistant chat surface, not an infrastructure endpoint"
@@ -8201,6 +8356,7 @@
       "method": "DELETE",
       "path": "/api/ai/conversation/{user_aiConversationId}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "AI-assistant chat surface, not an infrastructure endpoint"
@@ -8215,6 +8371,7 @@
       "method": "POST",
       "path": "/api/ai/conversation/{user_aiConversationId}/message",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "AI-assistant chat surface, not an infrastructure endpoint"
@@ -8229,6 +8386,7 @@
       "method": "GET",
       "path": "/api/ai/conversations",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "AI-assistant chat surface, not an infrastructure endpoint"
@@ -8453,6 +8611,7 @@
       "method": "GET",
       "path": "/api/backup-policy/{user_backupPolicyId}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): the resource's project (a task by its instance, a database backup policy by every database attached to it) is judged against the account owner's per-project permission overrides; a denied project answers 403 {success:false, reason:project_permission_denied} and list/detail responses omit or exclude rows and counts of denied projects. Owners are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change.",
       "opentofu": {
         "status": "excluded",
         "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
@@ -8733,6 +8892,7 @@
       "method": "GET",
       "path": "/api/dashboard",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "live telemetry/metrics read; not declarative IaC"
@@ -8747,6 +8907,7 @@
       "method": "GET",
       "path": "/api/dashboard/search",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "live telemetry/metrics read; not declarative IaC"
@@ -8761,6 +8922,7 @@
       "method": "GET",
       "path": "/api/dashboard/summary",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "live telemetry/metrics read; not declarative IaC"
@@ -9117,6 +9279,7 @@
       "method": "GET",
       "path": "/api/databases",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_managed_database"
@@ -9131,6 +9294,7 @@
       "method": "POST",
       "path": "/api/databases",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_managed_database"
@@ -9636,13 +9800,14 @@
       "method": "POST",
       "path": "/api/instance/{user_instanceId}/backups/destroy",
       "surface": "user",
+      "contract_notes": "Request validation: at most 100 backup ids per request (422 beyond that).",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC; deletion uses the recorded destination, claims before dispatch, and returns typed refusal or unconfirmed-dispatch errors with per-backup results and queued/refused counts on partial failure; unconfirmed Slave dispatch retains the live task/claim until terminal callback or proven-dead reconciliation"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "async dispatch semantics changed: an unconfirmed Slave send leaves the task/claim live until terminal callback or proven-dead reconciliation; consumer user.instance.destroy_backups was previously covered and must be reviewed before reenabling"
+        "status": "covered",
+        "tool": "user.instance.destroy_backups"
       }
     },
     {
@@ -10609,6 +10774,7 @@
       "method": "GET",
       "path": "/api/instances",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_instance"
@@ -11256,6 +11422,7 @@
       "method": "GET",
       "path": "/api/kubernetes/clusters",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_kubernetes_cluster"
@@ -11270,6 +11437,7 @@
       "method": "POST",
       "path": "/api/kubernetes/clusters",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_kubernetes_cluster"
@@ -11676,6 +11844,7 @@
       "method": "GET",
       "path": "/api/load-balancers",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_load_balancer"
@@ -11690,6 +11859,7 @@
       "method": "POST",
       "path": "/api/load-balancers",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_load_balancer"
@@ -11704,6 +11874,7 @@
       "method": "GET",
       "path": "/api/metrics",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "scrape/telemetry endpoint, not IaC state; the provider does not model metrics export"
@@ -11718,6 +11889,7 @@
       "method": "GET",
       "path": "/api/metrics/databases/{id}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "scrape/telemetry endpoint, not IaC state; the provider does not model metrics export"
@@ -11732,6 +11904,7 @@
       "method": "GET",
       "path": "/api/metrics/instances/{id}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "scrape/telemetry endpoint, not IaC state; the provider does not model metrics export"
@@ -11746,6 +11919,7 @@
       "method": "GET",
       "path": "/api/metrics/load-balancers/{id}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "scrape/telemetry endpoint, not IaC state; the provider does not model metrics export"
@@ -12240,6 +12414,7 @@
       "method": "GET",
       "path": "/api/monitoring",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "live telemetry/metrics read; not declarative IaC"
@@ -12254,6 +12429,7 @@
       "method": "GET",
       "path": "/api/monitoring/metrics/{type}/{id}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "live telemetry/metrics read; not declarative IaC"
@@ -12268,6 +12444,7 @@
       "method": "GET",
       "path": "/api/monitoring/summary",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "live telemetry/metrics read; not declarative IaC"
@@ -12282,6 +12459,7 @@
       "method": "GET",
       "path": "/api/networking/db-backup-policies",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): the resource's project (a task by its instance, a database backup policy by every database attached to it) is judged against the account owner's per-project permission overrides; a denied project answers 403 {success:false, reason:project_permission_denied} and list/detail responses omit or exclude rows and counts of denied projects. Owners are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_db_backup_policy"
@@ -12324,6 +12502,7 @@
       "method": "DELETE",
       "path": "/api/networking/db-backup-policy/{user_dbBackupPolicyId}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): the resource's project (a task by its instance, a database backup policy by every database attached to it) is judged against the account owner's per-project permission overrides; a denied project answers 403 {success:false, reason:project_permission_denied} and list/detail responses omit or exclude rows and counts of denied projects. Owners are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_db_backup_policy"
@@ -12338,6 +12517,7 @@
       "method": "GET",
       "path": "/api/networking/db-backup-policy/{user_dbBackupPolicyId}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): the resource's project (a task by its instance, a database backup policy by every database attached to it) is judged against the account owner's per-project permission overrides; a denied project answers 403 {success:false, reason:project_permission_denied} and list/detail responses omit or exclude rows and counts of denied projects. Owners are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_db_backup_policy"
@@ -12660,6 +12840,7 @@
       "method": "GET",
       "path": "/api/object-storage/buckets",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_s3_bucket"
@@ -12674,6 +12855,7 @@
       "method": "POST",
       "path": "/api/object-storage/buckets",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_s3_bucket"
@@ -12786,6 +12968,7 @@
       "method": "POST",
       "path": "/api/project/assign-resource",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_project_assignment"
@@ -12800,6 +12983,7 @@
       "method": "POST",
       "path": "/api/project/bulk-assign",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_project_assignment"
@@ -12814,6 +12998,7 @@
       "method": "DELETE",
       "path": "/api/project/{user_projectId}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_project"
@@ -12828,6 +13013,7 @@
       "method": "GET",
       "path": "/api/project/{user_projectId}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_project"
@@ -12842,6 +13028,7 @@
       "method": "PATCH",
       "path": "/api/project/{user_projectId}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_project"
@@ -12856,6 +13043,7 @@
       "method": "GET",
       "path": "/api/project/{user_projectId}/available-resources",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "UI form-data / browse helper, not a management action"
@@ -12870,6 +13058,7 @@
       "method": "GET",
       "path": "/api/projects",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_project"
@@ -12884,6 +13073,7 @@
       "method": "POST",
       "path": "/api/projects",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_project"
@@ -13248,6 +13438,7 @@
       "method": "GET",
       "path": "/api/ssh-keys",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_ssh_key"
@@ -13262,6 +13453,7 @@
       "method": "POST",
       "path": "/api/ssh-keys",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_ssh_key"
@@ -13514,6 +13706,7 @@
       "method": "POST",
       "path": "/api/storage/volume/{user_volumeId}/attach",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_volume"
@@ -13528,6 +13721,7 @@
       "method": "POST",
       "path": "/api/storage/volume/{user_volumeId}/backup",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -13542,6 +13736,7 @@
       "method": "DELETE",
       "path": "/api/storage/volume/{user_volumeId}/backup/{user_volumeBackupId}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -13556,6 +13751,7 @@
       "method": "POST",
       "path": "/api/storage/volume/{user_volumeId}/backup/{user_volumeBackupId}/restore",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -13598,6 +13794,7 @@
       "method": "POST",
       "path": "/api/storage/volume/{user_volumeId}/snapshot",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_volume_snapshot"
@@ -13612,6 +13809,7 @@
       "method": "DELETE",
       "path": "/api/storage/volume/{user_volumeId}/snapshot/{user_volumeSnapshotId}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_volume_snapshot"
@@ -13626,6 +13824,7 @@
       "method": "POST",
       "path": "/api/storage/volume/{user_volumeId}/snapshot/{user_volumeSnapshotId}/restore",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -13640,6 +13839,7 @@
       "method": "GET",
       "path": "/api/storage/volumes",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_volume"
@@ -13654,6 +13854,7 @@
       "method": "POST",
       "path": "/api/storage/volumes",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_volume"
@@ -13668,6 +13869,7 @@
       "method": "GET",
       "path": "/api/storage/volumes/create",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "UI form-data / browse helper, not a management action"
@@ -13682,6 +13884,7 @@
       "method": "DELETE",
       "path": "/api/task/{user_taskId}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): the resource's project (a task by its instance, a database backup policy by every database attached to it) is judged against the account owner's per-project permission overrides; a denied project answers 403 {success:false, reason:project_permission_denied} and list/detail responses omit or exclude rows and counts of denied projects. Owners are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC; live admitted backup operations return 409 backup_operation_live and preserve task or queue evidence"
@@ -13696,6 +13899,7 @@
       "method": "GET",
       "path": "/api/task/{user_taskId}/logs",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): the resource's project (a task by its instance, a database backup policy by every database attached to it) is judged against the account owner's per-project permission overrides; a denied project answers 403 {success:false, reason:project_permission_denied} and list/detail responses omit or exclude rows and counts of denied projects. Owners are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change.",
       "opentofu": {
         "status": "excluded",
         "reason": "live telemetry/metrics read; not declarative IaC"
@@ -13710,6 +13914,7 @@
       "method": "GET",
       "path": "/api/tasks",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): the resource's project (a task by its instance, a database backup policy by every database attached to it) is judged against the account owner's per-project permission overrides; a denied project answers 403 {success:false, reason:project_permission_denied} and list/detail responses omit or exclude rows and counts of denied projects. Owners are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change.",
       "opentofu": {
         "status": "excluded",
         "reason": "live telemetry/metrics read; not declarative IaC"
@@ -13879,6 +14084,7 @@
       "method": "GET",
       "path": "/api/user-scripts",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_user_script"
@@ -13893,6 +14099,7 @@
       "method": "POST",
       "path": "/api/user-scripts",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_user_script"
@@ -14159,6 +14366,7 @@
       "method": "GET",
       "path": "/api/vpcs",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpc"
@@ -14173,6 +14381,7 @@
       "method": "POST",
       "path": "/api/vpcs",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpc"
@@ -14309,10 +14518,110 @@
       }
     },
     {
+      "id": "user GET /api/vpn-gateway/{user_vpnGatewayId}/ipsec",
+      "method": "GET",
+      "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "type": "iaas_vpn_ipsec_connection"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.vpn_ipsec.list"
+      }
+    },
+    {
+      "id": "user POST /api/vpn-gateway/{user_vpnGatewayId}/ipsec",
+      "method": "POST",
+      "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "type": "iaas_vpn_ipsec_connection"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.vpn_ipsec.create"
+      }
+    },
+    {
+      "id": "user DELETE /api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
+      "method": "DELETE",
+      "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "type": "iaas_vpn_ipsec_connection"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.vpn_ipsec.delete"
+      }
+    },
+    {
+      "id": "user GET /api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
+      "method": "GET",
+      "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "type": "iaas_vpn_ipsec_connection"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.vpn_ipsec.get"
+      }
+    },
+    {
+      "id": "user PATCH /api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
+      "method": "PATCH",
+      "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "type": "iaas_vpn_ipsec_connection"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.vpn_ipsec.update"
+      }
+    },
+    {
+      "id": "user GET /api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}/remote-settings",
+      "method": "GET",
+      "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}/remote-settings",
+      "surface": "user",
+      "opentofu": {
+        "status": "covered",
+        "resource": "iaas_vpn_ipsec_connection",
+        "attribute": "remote_settings"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.vpn_ipsec.remote_settings"
+      }
+    },
+    {
+      "id": "user POST /api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}/restart",
+      "method": "POST",
+      "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}/restart",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "imperative action, not representable as declarative IaC"
+      },
+      "mcp": {
+        "status": "covered",
+        "tool": "user.vpn_ipsec.restart"
+      }
+    },
+    {
       "id": "user GET /api/vpn-gateways",
       "method": "GET",
       "path": "/api/vpn-gateways",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpn_gateway"
@@ -14439,6 +14748,7 @@
       "method": "DELETE",
       "path": "/api/backup/{user_backupId}",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC; deletion uses the recorded destination, claims before dispatch, and returns typed refusal or unconfirmed-dispatch errors"
@@ -14453,6 +14763,7 @@
       "method": "GET",
       "path": "/api/backups",
       "surface": "user",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -14467,6 +14778,7 @@
       "method": "POST",
       "path": "/api/backups/destroy",
       "surface": "user",
+      "contract_notes": "Request validation: at most 100 backup ids per request (422 beyond that). Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC; deletion uses the recorded destination, claims before dispatch, and returns typed refusal or unconfirmed-dispatch errors with per-backup results and queued/refused counts on partial failure"
@@ -15088,11 +15400,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; this restore requires a KVM agent target (Proxmox returns 422 unsupported_hypervisor), retaining resolvable image metadata for OS seed flavor without installation or changing Windows settings; restore answers 409 backup_being_deleted while a deletion claim is held; unconfirmed deploy retains the new instance and live task, and unconfirmed archive dispatch retains its task, step marker and storage lock until terminal callback or proven-dead reconciliation"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; this restore requires a KVM agent target (Proxmox returns 422 unsupported_hypervisor), retaining resolvable image metadata for OS seed flavor without installation or changing Windows settings; restore answers 409 backup_being_deleted while a deletion claim is held; backups on local, S3 and rclone destinations restore too (one disk per backup row): 422 backup_chain_broken, backup_not_complete, chain_destination_mixed, target_storage_incompatible (also any Ceph snapshot backup, refused before anything is created until the node can verify the image size), 409 destination_mismatch for a different PBS/local destination or local files on another node; 422 backup_not_addressable for a missing/unsupported destination; chain admission requires same source instance/disk, a full root and at most 100 rows; destroyed non-PBS disk size is an allocation estimate requiring Slave virtual-size preflight; not_pbs_backup no longer exists; unconfirmed deploy retains the new instance and live task, and unconfirmed archive dispatch retains its task, step marker and storage lock until terminal callback or proven-dead reconciliation"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); restore answers 409 backup_being_deleted while a deletion claim is held; unconfirmed deploy retains the new instance and live task, and unconfirmed archive dispatch retains its task, step marker and storage lock until terminal callback or proven-dead reconciliation"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); restore answers 409 backup_being_deleted while a deletion claim is held; backups on local, S3 and rclone destinations restore too (one disk per backup row): 422 backup_chain_broken, backup_not_complete, chain_destination_mixed, target_storage_incompatible (also any Ceph snapshot backup, refused before anything is created until the node can verify the image size), 409 destination_mismatch for a different PBS/local destination or local files on another node; 422 backup_not_addressable for a missing/unsupported destination; chain admission requires same source instance/disk, a full root and at most 100 rows; destroyed non-PBS disk size is an allocation estimate requiring Slave virtual-size preflight; not_pbs_backup no longer exists; unconfirmed deploy retains the new instance and live task, and unconfirmed archive dispatch retains its task, step marker and storage lock until terminal callback or proven-dead reconciliation"
       }
     },
     {
@@ -15172,7 +15484,7 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; non-PBS drill eligibility and backup_destination_type remain excluded"
       },
       "mcp": {
         "status": "excluded",
@@ -15186,7 +15498,7 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; non-PBS drill eligibility and backup_destination_type remain excluded"
       },
       "mcp": {
         "status": "excluded",
@@ -15200,7 +15512,7 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; non-PBS drill eligibility and backup_destination_type remain excluded"
       },
       "mcp": {
         "status": "excluded",
