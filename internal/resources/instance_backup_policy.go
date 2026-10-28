@@ -4,13 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -52,7 +56,7 @@ func NewInstanceBackupPolicyResource() resource.Resource {
 //	SHOW    GET    /backup-policy/{id}           (singular)
 //	                → {policy:{...,instances:[{id,...}]},available_instances:[...]}
 //	UPDATE  PATCH  /backup-policy/{id}           (singular)
-//	                body same as CREATE (all required)
+//	                body contains only changed fields (partial PATCH)
 //	                → {success,message,policy:{...}}
 //	DELETE  DELETE /backup-policy/{id}           (singular)
 //	                → {success,message}
@@ -75,6 +79,14 @@ type instanceBackupPolicyModel struct {
 	FullBackupDay       types.Int64  `tfsdk:"full_backup_day"`
 	MaxIncrementalChain types.Int64  `tfsdk:"max_incremental_chain"`
 	RetentionCount      types.Int64  `tfsdk:"retention_count"`
+	RetentionMode       types.String `tfsdk:"retention_mode"`
+	Timezone            types.String `tfsdk:"timezone"`
+	KeepLast            types.Int64  `tfsdk:"keep_last"`
+	KeepWithinDays      types.Int64  `tfsdk:"keep_within_days"`
+	KeepDaily           types.Int64  `tfsdk:"keep_daily"`
+	KeepWeekly          types.Int64  `tfsdk:"keep_weekly"`
+	KeepMonthly         types.Int64  `tfsdk:"keep_monthly"`
+	KeepYearly          types.Int64  `tfsdk:"keep_yearly"`
 	BackupDevice        types.String `tfsdk:"backup_device"`
 	Status              types.String `tfsdk:"status"`
 	InstanceIDs         types.Set    `tfsdk:"instance_ids"`
@@ -89,10 +101,10 @@ func (r *instanceBackupPolicyResource) Metadata(_ context.Context, req resource.
 func (r *instanceBackupPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Manages an instance backup policy - a named schedule and retention " +
-			"configuration for KVM instance backups. Instances are attached to the policy " +
+			"configuration for instance backups. Instances are attached to the policy " +
 			"one at a time via the `instance_ids` set attribute. Changes to that set " +
 			"attach or detach the corresponding instances in place. " +
-			"All schedule fields are stored and returned in UTC.",
+			"Schedules use the explicit policy timezone, or the account owner timezone when unset.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -110,10 +122,8 @@ func (r *instanceBackupPolicyResource) Schema(_ context.Context, _ resource.Sche
 				Description: "How often a full backup is taken: \"daily\" or \"weekly\".",
 			},
 			"full_backup_time": schema.StringAttribute{
-				Required: true,
-				Description: "Time of day for the full backup in HH:MM format (UTC). " +
-					"The server accepts the value in the user's local timezone and " +
-					"stores it internally as UTC; the provider passes UTC directly.",
+				Required:    true,
+				Description: "Time of day in HH:MM in the explicit policy timezone, or the account owner timezone when timezone is null. The provider does not convert the clock.",
 			},
 			"full_backup_day": schema.Int64Attribute{
 				Optional: true,
@@ -129,9 +139,25 @@ func (r *instanceBackupPolicyResource) Schema(_ context.Context, _ resource.Sche
 					"backups (0-30). Zero disables incrementals.",
 			},
 			"retention_count": schema.Int64Attribute{
-				Required:    true,
-				Description: "Number of full backups to retain (1-365). Older backups are pruned.",
+				Validators: []validator.Int64{int64validator.Between(1, 365)},
+				Optional:   true, Computed: true,
+				Description: "Number of backup chains or PBS snapshots to retain (1-365). Required when creating count retention; optional for GFS.",
 			},
+			"retention_mode": schema.StringAttribute{
+				Validators: []validator.String{stringvalidator.OneOf("count", "gfs")},
+				Optional:   true, Computed: true, Default: stringdefault.StaticString("count"),
+				Description: "Retention mode: count (default) or gfs. GFS requires at least one positive keep rule; protected backups are always retained.",
+			},
+			"timezone": schema.StringAttribute{
+				Optional:    true,
+				Description: "Named IANA schedule and GFS timezone, for example Europe/Amsterdam. Null uses the account owner timezone with legacy UTC storage. Removing a configured zone clears it; unchanged values are omitted on update. Changing timezone resubmits the configured clock/day to preserve the declared local schedule. Fixed offsets and legacy aliases are rejected with invalid_timezone.",
+			},
+			"keep_last":        schema.Int64Attribute{Validators: []validator.Int64{int64validator.Between(0, 365)}, Optional: true, Description: "GFS newest backups to retain (0-365). Zero or null disables this rule; removing a configured value clears it."},
+			"keep_within_days": schema.Int64Attribute{Validators: []validator.Int64{int64validator.Between(0, 3650)}, Optional: true, Description: "GFS days of all recent backups to retain (0-3650). Zero or null disables this rule; removing a configured value clears it."},
+			"keep_daily":       schema.Int64Attribute{Validators: []validator.Int64{int64validator.Between(0, 365)}, Optional: true, Description: "GFS calendar days to retain (0-365). Zero or null disables this rule; removing a configured value clears it."},
+			"keep_weekly":      schema.Int64Attribute{Validators: []validator.Int64{int64validator.Between(0, 520)}, Optional: true, Description: "GFS ISO weeks to retain (0-520). Zero or null disables this rule; removing a configured value clears it."},
+			"keep_monthly":     schema.Int64Attribute{Validators: []validator.Int64{int64validator.Between(0, 120)}, Optional: true, Description: "GFS calendar months to retain (0-120). Zero or null disables this rule; removing a configured value clears it."},
+			"keep_yearly":      schema.Int64Attribute{Validators: []validator.Int64{int64validator.Between(0, 30)}, Optional: true, Description: "GFS calendar years to retain (0-30). Zero or null disables this rule; removing a configured value clears it."},
 			"backup_device": schema.StringAttribute{
 				Required: true,
 				Description: "Which disk device(s) to include in the backup: \"primary\" " +
@@ -260,7 +286,7 @@ func (r *instanceBackupPolicyResource) Read(ctx context.Context, req resource.Re
 	resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
 }
 
-// Update applies the planned changes: patches all schedule/retention fields,
+// Update applies the planned changes: patches changed schedule/retention fields,
 // then diffs the instance_ids set (attach added / detach removed).
 func (r *instanceBackupPolicyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state instanceBackupPolicyModel
@@ -272,11 +298,14 @@ func (r *instanceBackupPolicyResource) Update(ctx context.Context, req resource.
 
 	id := state.ID.ValueString()
 
-	// Always PATCH the scalar fields (all required by the controller).
-	body := ibpCreateBody(plan)
-	if _, err := r.client.UpdateInstanceBackupPolicy(ctx, id, body); err != nil {
-		resp.Diagnostics.Append(diagFromErr("Error updating instance backup policy", err))
-		return
+	// Send changed fields. A timezone change also sends the declared clock/day
+	// so account-timezone conversion does not change Terraform's known plan values.
+	body := ibpUpdateBody(plan, state)
+	if len(body) > 0 {
+		if _, err := r.client.UpdateInstanceBackupPolicy(ctx, id, body); err != nil {
+			resp.Diagnostics.Append(diagFromErr("Error updating instance backup policy", err))
+			return
+		}
 	}
 
 	// Diff the instance_ids set: attach added, detach removed.
@@ -340,20 +369,93 @@ func (r *instanceBackupPolicyResource) ImportState(ctx context.Context, req reso
 // Helpers
 // ---------------------------------------------------------------------------
 
-// ibpCreateBody builds the body map for CREATE and UPDATE (same shape).
+// ibpCreateBody sends the required create fields and known optional values.
 func ibpCreateBody(plan instanceBackupPolicyModel) map[string]any {
 	body := map[string]any{
 		"name":                  plan.Name.ValueString(),
 		"full_backup_frequency": plan.FullBackupFrequency.ValueString(),
 		"full_backup_time":      plan.FullBackupTime.ValueString(),
 		"max_incremental_chain": plan.MaxIncrementalChain.ValueInt64(),
-		"retention_count":       plan.RetentionCount.ValueInt64(),
 		"backup_device":         plan.BackupDevice.ValueString(),
 	}
 	if !plan.FullBackupDay.IsNull() && !plan.FullBackupDay.IsUnknown() {
 		body["full_backup_day"] = plan.FullBackupDay.ValueInt64()
 	}
+	for key, v := range ibpOptionalInts(plan) {
+		if !v.IsNull() && !v.IsUnknown() {
+			body[key] = v.ValueInt64()
+		}
+	}
+	if !plan.RetentionMode.IsNull() && !plan.RetentionMode.IsUnknown() {
+		body["retention_mode"] = plan.RetentionMode.ValueString()
+	}
+	if !plan.Timezone.IsNull() && !plan.Timezone.IsUnknown() {
+		body["timezone"] = plan.Timezone.ValueString()
+	}
 	return body
+}
+
+func ibpOptionalInts(m instanceBackupPolicyModel) map[string]types.Int64 {
+	return map[string]types.Int64{"retention_count": m.RetentionCount, "keep_last": m.KeepLast, "keep_within_days": m.KeepWithinDays, "keep_daily": m.KeepDaily, "keep_weekly": m.KeepWeekly, "keep_monthly": m.KeepMonthly, "keep_yearly": m.KeepYearly}
+}
+
+func ibpUpdateBody(plan, prior instanceBackupPolicyModel) map[string]any {
+	body := map[string]any{}
+	strings := map[string][2]types.String{
+		"name": {plan.Name, prior.Name}, "full_backup_frequency": {plan.FullBackupFrequency, prior.FullBackupFrequency},
+		"full_backup_time": {plan.FullBackupTime, prior.FullBackupTime}, "backup_device": {plan.BackupDevice, prior.BackupDevice},
+		"retention_mode": {plan.RetentionMode, prior.RetentionMode}, "timezone": {plan.Timezone, prior.Timezone},
+	}
+	for key, pair := range strings {
+		if pair[0].IsUnknown() || pair[0].Equal(pair[1]) {
+			continue
+		}
+		if pair[0].IsNull() {
+			body[key] = nil
+		} else {
+			body[key] = pair[0].ValueString()
+		}
+	}
+	ints, old := ibpOptionalInts(plan), ibpOptionalInts(prior)
+	ints["full_backup_day"], old["full_backup_day"] = plan.FullBackupDay, prior.FullBackupDay
+	ints["max_incremental_chain"], old["max_incremental_chain"] = plan.MaxIncrementalChain, prior.MaxIncrementalChain
+	for key, value := range ints {
+		if value.IsUnknown() || value.Equal(old[key]) {
+			continue
+		}
+		if value.IsNull() {
+			body[key] = nil
+		} else {
+			body[key] = value.ValueInt64()
+		}
+	}
+	// A declarative zone change retains the configured local clock, unlike an
+	// imperative timezone-only PATCH (which preserves the raw stored clock).
+	if !plan.Timezone.IsUnknown() && !plan.Timezone.Equal(prior.Timezone) {
+		if !plan.FullBackupTime.IsNull() && !plan.FullBackupTime.IsUnknown() {
+			body["full_backup_time"] = plan.FullBackupTime.ValueString()
+		}
+		if plan.FullBackupFrequency.ValueString() == "weekly" && !plan.FullBackupDay.IsNull() && !plan.FullBackupDay.IsUnknown() {
+			body["full_backup_day"] = plan.FullBackupDay.ValueInt64()
+		}
+	}
+	return body
+}
+
+// The API normalizes disabled GFS rules (zero) to null. Preserve a known
+// configured zero to avoid producing a different value from Terraform's plan.
+func ibpKeepFromAPI(obj map[string]any, key string, prior types.Int64) types.Int64 {
+	raw, ok := obj[key]
+	if !ok {
+		return prior
+	}
+	if raw == nil {
+		if !prior.IsNull() && !prior.IsUnknown() && prior.ValueInt64() == 0 {
+			return prior
+		}
+		return types.Int64Null()
+	}
+	return optionalInt64FromAPI(obj, key)
 }
 
 // readState GETs the policy and builds a full model from it, rebuilding the
@@ -385,7 +487,15 @@ func ibpStateFromAPI(obj map[string]any, prior instanceBackupPolicyModel) (insta
 		FullBackupDay:       optionalInt64FromAPI(obj, "full_backup_day"),
 		MaxIncrementalChain: requiredInt64FromAPI(obj, "max_incremental_chain", prior.MaxIncrementalChain),
 		RetentionCount:      requiredInt64FromAPI(obj, "retention_count", prior.RetentionCount),
+		RetentionMode:       stringFromAPI(obj, "retention_mode", types.StringValue("count")),
+		Timezone:            ibpTimezoneFromAPI(obj, prior.Timezone),
 		BackupDevice:        stringFromAPI(obj, "backup_device", prior.BackupDevice),
+		KeepLast:            ibpKeepFromAPI(obj, "keep_last", prior.KeepLast),
+		KeepWithinDays:      ibpKeepFromAPI(obj, "keep_within_days", prior.KeepWithinDays),
+		KeepDaily:           ibpKeepFromAPI(obj, "keep_daily", prior.KeepDaily),
+		KeepWeekly:          ibpKeepFromAPI(obj, "keep_weekly", prior.KeepWeekly),
+		KeepMonthly:         ibpKeepFromAPI(obj, "keep_monthly", prior.KeepMonthly),
+		KeepYearly:          ibpKeepFromAPI(obj, "keep_yearly", prior.KeepYearly),
 		Status:              stringFromAPI(obj, "status", prior.Status),
 	}
 
@@ -421,4 +531,11 @@ func ibpDiffIDs(plannedIDs, stateIDs []string) (toAttach, toDetach []string) {
 		}
 	}
 	return
+}
+
+func ibpTimezoneFromAPI(obj map[string]any, prior types.String) types.String {
+	if value, exists := obj["timezone"]; exists && value == nil && !prior.IsNull() && !prior.IsUnknown() && prior.ValueString() == "" {
+		return prior // Master accepts empty as clear and normalizes it to null.
+	}
+	return optionalStringFromAPI(obj, "timezone", prior)
 }

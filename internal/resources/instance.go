@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -15,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -98,6 +101,7 @@ type instanceModel struct {
 	// Metadata (mutable via PATCH; Computed because the server may auto-assign).
 	Hostname    types.String `tfsdk:"hostname"`
 	DisplayName types.String `tfsdk:"display_name"`
+	Tags        types.String `tfsdk:"tags"`
 
 	// Computed read-only.
 	CPUCores         types.Int64  `tfsdk:"cpu_cores"`
@@ -233,6 +237,12 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Computed: true,
 				Description: "Hostname of the instance. The server auto-generates one when omitted. " +
 					"This field is updatable in place (PATCH) and is NOT RequiresReplace.",
+			},
+			"tags": schema.StringAttribute{
+				Optional: true, Computed: true,
+				Validators:    []validator.String{stringvalidator.LengthAtMost(255)},
+				Description:   "Comma- or semicolon-separated Proxmox VM tags (maximum 255 characters). Omit to leave tags unmanaged; set an empty string to clear. Applied after deployment and refreshed from the instance. KVM instances reject nonempty tags.",
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"display_name": schema.StringAttribute{
 				Optional: true,
@@ -489,6 +499,13 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		}
 	}
 
+	if !plan.Tags.IsUnknown() && !plan.Tags.IsNull() && plan.Tags.ValueString() != "" {
+		if err := r.applyInstanceTags(ctx, id, plan.Tags.ValueString()); err != nil {
+			resp.Diagnostics.Append(diagFromErr("Error setting instance tags", err))
+			return
+		}
+	}
+
 	// ── hydrate state from the now-deployed instance ─────────────────────────
 	obj, err := r.client.GetInstance(ctx, id)
 	if err != nil {
@@ -595,6 +612,13 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 	}
 
+	if !plan.Tags.IsUnknown() && !plan.Tags.IsNull() && !plan.Tags.Equal(state.Tags) {
+		if err := r.applyInstanceTags(ctx, state.ID.ValueString(), plan.Tags.ValueString()); err != nil {
+			resp.Diagnostics.Append(diagFromErr("Error setting instance tags", err))
+			return
+		}
+	}
+
 	// Refresh via SHOW (full model) to rehydrate computed fields.
 	obj, err := r.client.GetInstance(ctx, state.ID.ValueString())
 	if err != nil {
@@ -685,6 +709,7 @@ func instanceStateFromAPI(obj map[string]any, prior instanceModel) instanceModel
 		// Metadata.
 		Hostname:    stringFromAPI(obj, "hostname", prior.Hostname),
 		DisplayName: stringFromAPI(obj, "display_name", prior.DisplayName),
+		Tags:        instanceTagsFromAPI(obj, prior.Tags),
 
 		// Computed read-only.
 		CPUCores:         int64FromAPI(obj, "cpu_cores", prior.CPUCores),
@@ -829,4 +854,38 @@ func stringListValues(l types.List) []string {
 		return nil
 	}
 	return out
+}
+
+// Proxmox LifecycleHandler::tags writes config and the Master row synchronously.
+// Its task completes with status "done", not the deploy waiter's "completed".
+func (r *instanceResource) applyInstanceTags(ctx context.Context, id, tags string) error {
+	_, err := r.client.SetInstanceTags(ctx, id, tags)
+	return err
+}
+
+// Match the server's trim and comma-to-semicolon normalization.
+func normalizedInstanceTags(tags string) string {
+	return strings.ReplaceAll(strings.Trim(tags, " \t\n\r\v\x00"), ",", ";")
+}
+
+func instanceTagsFromAPI(obj map[string]any, prior types.String) types.String {
+	raw, exists := obj["tags"]
+	if !exists {
+		if prior.IsUnknown() || prior.IsNull() {
+			return types.StringValue("")
+		}
+		return prior
+	}
+	if raw == nil {
+		return types.StringValue("")
+	}
+	if tags, ok := raw.(string); ok {
+		// Retain equivalent configured spelling, including commas, so API
+		// normalization cannot make apply inconsistent with the known plan.
+		if !prior.IsNull() && !prior.IsUnknown() && normalizedInstanceTags(tags) == normalizedInstanceTags(prior.ValueString()) {
+			return prior
+		}
+		return types.StringValue(strings.ReplaceAll(tags, ";", ","))
+	}
+	return prior
 }

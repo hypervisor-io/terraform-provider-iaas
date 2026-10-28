@@ -3,6 +3,7 @@ package resources_test
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -101,6 +102,8 @@ func TestUnitInstance_lifecycle(t *testing.T) {
 
 	// Stateful server-side fields.
 	currentDisplay := createName
+	var currentTags atomic.Value
+	currentTags.Store("")
 	var deleted atomic.Bool
 	var rescueActive atomic.Bool
 
@@ -124,6 +127,7 @@ func TestUnitInstance_lifecycle(t *testing.T) {
 			"image_id":          imageID,
 			"hostname":          createName,
 			"display_name":      currentDisplay,
+			"tags":              currentTags.Load().(string),
 			"cpu_cores":         2,
 			"ram":               2048,
 			"status":            1,
@@ -190,6 +194,17 @@ func TestUnitInstance_lifecycle(t *testing.T) {
 		})
 	})
 
+	srv.Handle("POST", "/instance/"+instanceID+"/tags", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		tags, ok := body["tags"].(string)
+		if !ok {
+			t.Errorf("tags body: %#v", body)
+		}
+		currentTags.Store(strings.ReplaceAll(strings.TrimSpace(tags), ",", ";"))
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "Tags updated"})
+	})
+
 	// RESCUE - enter/exit toggle (NUI-V-R18-RESCUE1-TRISYNC); stateful so SHOW
 	// reflects it, and each direction dispatches its own task id so the two
 	// GET task handlers below stay distinguishable in the request log.
@@ -243,6 +258,7 @@ resource "iaas_instance" "test" {
   plan_id     = "` + planID + `"
   image_id    = "` + imageID + `"
   ssh_keys    = ["` + sshKeyID + `"]
+  tags = "web,prod"
 }
 `
 	updateCfg := providerCfg + `
@@ -252,6 +268,7 @@ resource "iaas_instance" "test" {
   image_id     = "` + imageID + `"
   ssh_keys     = ["` + sshKeyID + `"]
   display_name = "` + updateName + `"
+  tags = ""
 }
 `
 	rescueEnterCfg := providerCfg + `
@@ -293,6 +310,7 @@ resource "iaas_instance" "test" {
 					resource.TestCheckResourceAttr("iaas_instance.test", "primary_public_ip", publicIP),
 					resource.TestCheckResourceAttr("iaas_instance.test", "vnc_password", vncPass),
 					resource.TestCheckResourceAttr("iaas_instance.test", "ssh_keys.0", sshKeyID),
+					resource.TestCheckResourceAttr("iaas_instance.test", "tags", "web,prod"),
 				),
 			},
 			// Import - write-only deploy fields can't be read back, so ignore them.
@@ -309,6 +327,7 @@ resource "iaas_instance" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("iaas_instance.test", "id", instanceID),
 					resource.TestCheckResourceAttr("iaas_instance.test", "display_name", updateName),
+					resource.TestCheckResourceAttr("iaas_instance.test", "tags", ""),
 					resource.TestCheckResourceAttr("iaas_instance.test", "rescue_mode", "false"),
 					resource.TestCheckResourceAttr("iaas_instance.test", "rescue_active", "false"),
 				),
@@ -337,6 +356,11 @@ resource "iaas_instance" "test" {
 			},
 		},
 	})
+
+	// Set on create, clear on update; later omitted tags must be a no-op.
+	if calls := srv.Requests("POST", "/instance/"+instanceID+"/tags"); len(calls) != 2 {
+		t.Fatalf("tag writes=%d; want create and clear only", len(calls))
+	}
 
 	// Assert both rescue toggles hit the endpoint with the right body, in order.
 	rescueCalls := srv.Requests("POST", "/instance/"+instanceID+"/rescue")

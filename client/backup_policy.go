@@ -37,7 +37,7 @@ import (
 //	                           instances:[{id,hostname,...}]},
 //	                   available_instances:[...]}
 //	UPDATE  PATCH  /backup-policy/{id}                       (SINGULAR)
-//	                body same shape as CREATE (all fields required)
+//	                body contains only supplied fields (partial PATCH)
 //	                → {success,message,policy:{...}}
 //	DELETE  DELETE /backup-policy/{id}                       (SINGULAR)
 //	                → {success,message}
@@ -50,9 +50,12 @@ import (
 //
 // Notes:
 //   - All writes are SYNCHRONOUS (no task/waiter).
-//   - The service converts the user's local time → UTC on store/update and
-//     converts UTC → user's local time for display on SHOW. The provider
-//     stores and sends UTC times directly (no timezone conversion).
+//   - Clock/day values use the explicit policy timezone, otherwise the account
+//     owner timezone. The API handles storage conversion; clients pass clocks through.
+//   - retention_mode is count (default) or gfs; keep_* fields are nullable
+//     integers (zero/null disables a rule). GFS needs a positive effective rule.
+//   - timezone is a nullable named IANA zone. PATCH omission preserves; null
+//     clears. A timezone-only PATCH does not convert the stored clock/day.
 //   - success:false at HTTP 200 = error (C3) - handled by doItem/doVoid.
 //   - There is no billing gate (routes are NOT wrapped in billing.enabled).
 //   - testConnection is NOT modelled (not IaC state).
@@ -146,8 +149,7 @@ func (c *Client) GetInstanceBackupPolicy(ctx context.Context, id string) (map[st
 }
 
 // UpdateInstanceBackupPolicy patches the mutable fields of an instance backup
-// policy. The UPDATE route is SINGULAR. All fields are required by the
-// controller (same rules as create). The response carries the updated policy
+// policy. The UPDATE route is SINGULAR. Omitted fields preserve stored values. Explicit null timezone clears the zone. The response carries the updated policy
 // under the "policy" key.
 func (c *Client) UpdateInstanceBackupPolicy(ctx context.Context, id string, body map[string]any) (map[string]any, error) {
 	if id == "" {

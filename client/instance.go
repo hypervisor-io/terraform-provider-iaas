@@ -41,8 +41,9 @@ import (
 //	                 resource converges by polling SHOW until 404. A failure (e.g.
 //	                 protection_enabled) is signalled with success:false at 200.
 //
-// Every write path returns HTTP 200 even on failure and branches on the "success"
-// flag, so doItem/doVoid (which surface success:false as an error) are reused.
+// Writes may return typed non-2xx refusals, including 422 capacity errors
+// carrying a machine-readable reason. Legacy success:false envelopes are also
+// rejected by doItem/doVoid. APIError preserves the reason for both consumers.
 
 // ListCSInstances returns every instance visible to the token. The INDEX route
 // GET /instances returns a raw Laravel paginator ({data:[...], current_page,
