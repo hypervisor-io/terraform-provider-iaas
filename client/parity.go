@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 )
@@ -320,8 +321,87 @@ func (c *Client) CreateInstanceBackup(ctx context.Context, id string, body map[s
 	return c.doVoid(ctx, "POST", inst(id)+"/backups", body)
 }
 
+// MaxBulkBackupIDs is the largest number of backup ids the Master accepts in one
+// POST .../backups/destroy (a bigger list is a 422). The client chunks longer lists.
+const MaxBulkBackupIDs = 100
+
+// BulkDestroyInstanceBackups queues deletion of the ids in body["backups"] (a []string or
+// []any), in requests of at most MaxBulkBackupIDs ids each; every other body key is sent
+// with every chunk. It stops at the first failing chunk and returns that error, so ids in
+// later chunks were not sent. A failing chunk can already have queued some deletes;
+// inspect backup state before retrying. Each chunk is sent only once.
 func (c *Client) BulkDestroyInstanceBackups(ctx context.Context, id string, body map[string]any) error {
-	return c.doVoid(ctx, "POST", inst(id)+"/backups/destroy", body)
+	ids, ok := backupIDList(body["backups"])
+	if !ok || len(ids) <= MaxBulkBackupIDs {
+		return c.destroyBackupChunk(ctx, id, body)
+	}
+	for start := 0; start < len(ids); start += MaxBulkBackupIDs {
+		end := start + MaxBulkBackupIDs
+		if end > len(ids) {
+			end = len(ids)
+		}
+		chunk := make(map[string]any, len(body))
+		for k, v := range body {
+			chunk[k] = v
+		}
+		chunk["backups"] = ids[start:end]
+		if err := c.destroyBackupChunk(ctx, id, chunk); err != nil {
+			return fmt.Errorf("backups %d-%d of %d: %w", start+1, end, len(ids), err)
+		}
+	}
+	return nil
+}
+
+// destroyBackupChunk never replays an uncertain dispatch. Preserve the per-backup
+// typed refusal fields in the API error; the aggregate envelope has no reason.
+func (c *Client) destroyBackupChunk(ctx context.Context, id string, body map[string]any) error {
+	resp, raw, err := c.doWithAttempts(ctx, "POST", inst(id)+"/backups/destroy", body, nil, 1)
+	if err != nil {
+		return err
+	}
+	if err := responseError(resp, raw); err != nil {
+		if apiErr, ok := err.(*APIError); ok {
+			var envelope struct {
+				Data struct {
+					Results []struct {
+						ID      string `json:"id"`
+						Status  int    `json:"status"`
+						Success bool   `json:"success"`
+						Reason  string `json:"reason"`
+					} `json:"results"`
+				} `json:"data"`
+			}
+			if json.Unmarshal(raw, &envelope) == nil {
+				for _, result := range envelope.Data.Results {
+					if !result.Success && result.Reason != "" {
+						apiErr.Message += fmt.Sprintf("; backup %s: %d (reason: %s)", result.ID, result.Status, result.Reason)
+					}
+				}
+			}
+		}
+		return err
+	}
+	_, err = decodeItem(raw, "")
+	return err
+}
+
+// backupIDList reads a backup id list given as []string or []any.
+func backupIDList(v any) ([]string, bool) {
+	switch t := v.(type) {
+	case []string:
+		return t, true
+	case []any:
+		out := make([]string, 0, len(t))
+		for _, e := range t {
+			s, ok := e.(string)
+			if !ok {
+				return nil, false
+			}
+			out = append(out, s)
+		}
+		return out, true
+	}
+	return nil, false
 }
 
 func (c *Client) DeleteInstanceBackup(ctx context.Context, id, backupID string) error {
