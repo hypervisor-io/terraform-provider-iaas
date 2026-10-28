@@ -60,3 +60,8 @@ resource "iaas_instance" "web" {
 output "instance_public_ip" {
   value = iaas_instance.web.primary_public_ip
 }
+
+# For a Proxmox-backed instance, add tags = "web,prod" to its resource.
+# Omitted tags leave the remote tags unmanaged; tags = "" clears them.
+# A create capacity refusal includes its machine-readable reason in the
+# diagnostic, such as ipv6_not_available or storage_backend_not_offered.

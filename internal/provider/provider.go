@@ -218,6 +218,8 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewIPSetResource,
 		resources.NewSecurityGroupResource,
 		resources.NewVolumeResource,
+		resources.NewVolumeProtectionPolicyResource,
+		resources.NewVolumeProtectionPolicyAttachmentResource,
 		resources.NewVolumeSnapshotResource,
 		resources.NewNATGatewayResource,
 		resources.NewLoadBalancerResource,
@@ -260,6 +262,8 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewMicrovmResource,
 		resources.NewMicrovmConnectorResource,
 		resources.NewMicrovmSettingsResource,
+		resources.NewMicrovmSecretResource,
+		resources.NewMicrovmMcpServerResource,
 	}
 }
 

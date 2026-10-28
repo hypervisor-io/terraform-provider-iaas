@@ -8570,12 +8570,12 @@
       "path": "/api/backup-policies",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
+        "status": "covered",
+        "type": "iaas_instance_backup_policy"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
+        "status": "covered",
+        "tool": "user.instance_backup_policy.list"
       }
     },
     {
@@ -8584,12 +8584,12 @@
       "path": "/api/backup-policies",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
+        "status": "covered",
+        "type": "iaas_instance_backup_policy"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
+        "status": "covered",
+        "tool": "user.instance_backup_policy.create"
       }
     },
     {
@@ -8613,12 +8613,12 @@
       "surface": "user",
       "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): the resource's project (a task by its instance, a database backup policy by every database attached to it) is judged against the account owner's per-project permission overrides; a denied project answers 403 {success:false, reason:project_permission_denied} and list/detail responses omit or exclude rows and counts of denied projects. Owners are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change.",
       "opentofu": {
-        "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
+        "status": "covered",
+        "type": "iaas_instance_backup_policy"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
+        "status": "covered",
+        "tool": "user.instance_backup_policy.get"
       }
     },
     {
@@ -8627,12 +8627,12 @@
       "path": "/api/backup-policy/{user_backupPolicyId}",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
+        "status": "covered",
+        "type": "iaas_instance_backup_policy"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "optional retention_mode (count or gfs) and keep_last, keep_within_days, keep_daily, keep_weekly, keep_monthly and keep_yearly request and response fields (age-window and GFS retention) are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; count retention through retention_count remains available; optional nullable IANA timezone input/output is not modeled by this consumer; explicit zones keep time/day as DST-aware local wall clock and set the GFS calendar; omission on update preserves the zone, null clears to legacy account-owner conversion and UTC storage; invalid zones return 422 invalid_timezone"
+        "status": "covered",
+        "tool": "user.instance_backup_policy.update"
       }
     },
     {
@@ -8809,12 +8809,12 @@
       "path": "/api/cloud-service/instances",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "Create may answer 422 with a machine-readable capacity reason; OpenTofu client parity is pending. A no-media placeholder leaves VNC off; a boot ISO auto-enables it."
+        "status": "covered",
+        "type": "iaas_instance"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "Create may answer 422 with a machine-readable capacity reason; MCP client/tool parity is pending. A no-media placeholder leaves VNC off; a boot ISO auto-enables it."
+        "status": "covered",
+        "tool": "user.instance.create"
       }
     },
     {
@@ -9127,11 +9127,11 @@
       "contract_notes": "Body: exactly one of backup_id (a completed full or incremental S3 backup of this database; a PostgreSQL 17+ incremental restores with its whole chain) or target_time (inside the point-in-time window); optional name, db_plan_id, vpc_id, vpc_subnet_id. 202 success:true with data {managed_database_id, task_id, status: restoring}; the new database becomes active, and billed, only when the restore has finished. Refusals carry success:false, reason and message: 422 restore_point_required, restore_point_ambiguous, backup_not_found, backup_not_complete, backup_not_restorable, invalid_target_time, target_time_out_of_range, pitr_not_available, pitr_history_reset, backup_version_unrecorded, plan_not_available, plan_engine_unsupported, plan_storage_too_small, backup_size_unknown, vpc_required, vpc_not_found, vpc_location_mismatch, quota_exceeded; 409 replica_restore_not_supported, backup_chain_broken, pitr_plan_changed, pitr_archive_pruned, backup_destination_unavailable, engine_version_unavailable, location_unavailable, no_hypervisor_available, vpc_subnet_full, nat_gateway_required, public_ip_unavailable, account_busy; 503 deploy_dispatch_unconfirmed with data {managed_database_id, task_id}: the new database is kept and reconciled, do not retry. The source database is never changed.",
       "opentofu": {
         "status": "excluded",
-        "reason": "imperative action, not representable as declarative IaC; planned, follow-up task"
+        "reason": "Restore into a new database is an imperative operation, not a declarative resource lifecycle."
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.managed_database.restore_to_new"
       }
     },
     {
@@ -10537,8 +10537,9 @@
       "path": "/api/instance/{user_instanceId}/tags",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "candidate attribute on iaas_instance; tracked follow-up"
+        "status": "covered",
+        "resource": "iaas_instance",
+        "attribute": "tags"
       },
       "mcp": {
         "status": "covered",
@@ -13568,11 +13569,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "planned, follow-up task"
+        "reason": "Inventory list has no provider data source; policy resources refresh through the detail endpoint."
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.volume_policy.list"
       }
     },
     {
@@ -13581,12 +13582,12 @@
       "path": "/api/storage/volume-policies",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_volume_protection_policy"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.volume_policy.create"
       }
     },
     {
@@ -13595,12 +13596,12 @@
       "path": "/api/storage/volume-policy/{user_volumeProtectionPolicyId}",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_volume_protection_policy"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.volume_policy.delete"
       }
     },
     {
@@ -13609,12 +13610,12 @@
       "path": "/api/storage/volume-policy/{user_volumeProtectionPolicyId}",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_volume_protection_policy"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.volume_policy.get"
       }
     },
     {
@@ -13623,12 +13624,12 @@
       "path": "/api/storage/volume-policy/{user_volumeProtectionPolicyId}",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_volume_protection_policy"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.volume_policy.update"
       }
     },
     {
@@ -13637,12 +13638,12 @@
       "path": "/api/storage/volume-policy/{user_volumeProtectionPolicyId}/attach",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_volume_protection_policy_attachment"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.volume_policy.attach"
       }
     },
     {
@@ -13651,12 +13652,12 @@
       "path": "/api/storage/volume-policy/{user_volumeProtectionPolicyId}/detach",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_volume_protection_policy_attachment"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.volume_policy.detach"
       }
     },
     {
@@ -13666,11 +13667,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "planned, follow-up task"
+        "reason": "Imperative failure-counter reset is not represented as declarative IaC."
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.volume_policy.reset_failures"
       }
     },
     {
@@ -14808,12 +14809,12 @@
       "path": "/api/microvm/secret/{user_microvmSecret}",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_microvm_secret"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.microvm_secret.delete"
       }
     },
     {
@@ -14823,12 +14824,12 @@
       "surface": "user",
       "contract_notes": "KH-3A (2026-10): kind is immutable (422 secret_kind_immutable); username rotatable; registry refused 422 registry_in_use while a kit references the row. Response fields additive as on create.",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_microvm_secret"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.microvm_secret.update"
       }
     },
     {
@@ -14838,12 +14839,12 @@
       "surface": "user",
       "contract_notes": "KH-3A (2026-10) adds query kind (env default, registry, all); the default list stays environment secrets only. Rows gain kind, registry, username, images_count (additive).",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_microvm_secret"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.microvm_secret.list"
       }
     },
     {
@@ -14853,12 +14854,12 @@
       "surface": "user",
       "contract_notes": "KH-3A (2026-10) adds optional kind (env default, registry), registry and username; a registry row is refused 422 registry_secrets_not_enabled until microvm:enable-secret-kinds ran, and 422 secret_kind_fields for fields of the other kind. Response gains kind, registry, username, images_count (additive).",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_microvm_secret"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.microvm_secret.create"
       }
     },
     {
@@ -14868,11 +14869,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "planned, follow-up task"
+        "reason": "Catalog/inventory endpoint has no provider data source; MCP server resources use detail reads."
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.microvm_mcp_server.providers"
       }
     },
     {
@@ -14881,12 +14882,12 @@
       "path": "/api/microvm/mcp-server/{user_microvmMcpServer}",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_microvm_mcp_server"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.microvm_mcp_server.delete"
       }
     },
     {
@@ -14895,12 +14896,12 @@
       "path": "/api/microvm/mcp-server/{user_microvmMcpServer}",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_microvm_mcp_server"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.microvm_mcp_server.get"
       }
     },
     {
@@ -14909,12 +14910,12 @@
       "path": "/api/microvm/mcp-server/{user_microvmMcpServer}",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_microvm_mcp_server"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.microvm_mcp_server.update"
       }
     },
     {
@@ -14924,11 +14925,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "planned, follow-up task"
+        "reason": "Per-user OAuth browser sign-in and disconnect are imperative actions outside declarative server configuration."
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.microvm_mcp_server.connect"
       }
     },
     {
@@ -14938,11 +14939,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "planned, follow-up task"
+        "reason": "Per-user OAuth browser sign-in and disconnect are imperative actions outside declarative server configuration."
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.microvm_mcp_server.disconnect"
       }
     },
     {
@@ -14951,12 +14952,12 @@
       "path": "/api/microvm/mcp-server/{user_microvmMcpServer}/rotate-token",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_microvm_mcp_server"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.microvm_mcp_server.rotate_token"
       }
     },
     {
@@ -14966,11 +14967,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "planned, follow-up task"
+        "reason": "Catalog/inventory endpoint has no provider data source; MCP server resources use detail reads."
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.microvm_mcp_server.list"
       }
     },
     {
@@ -14979,12 +14980,12 @@
       "path": "/api/microvm/mcp-servers",
       "surface": "user",
       "opentofu": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "type": "iaas_microvm_mcp_server"
       },
       "mcp": {
-        "status": "excluded",
-        "reason": "planned, follow-up task"
+        "status": "covered",
+        "tool": "user.microvm_mcp_server.create"
       }
     },
     {
