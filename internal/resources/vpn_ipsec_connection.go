@@ -93,35 +93,45 @@ type vpnIpsecConnectionResource struct {
 }
 
 type vpnIpsecConnectionModel struct {
-	ID               types.String   `tfsdk:"id"`
-	VPNGatewayID     types.String   `tfsdk:"vpn_gateway_id"`
-	Name             types.String   `tfsdk:"name"`
-	RemoteAddress    types.String   `tfsdk:"remote_address"`
-	LocalIDType      types.String   `tfsdk:"local_id_type"`
-	LocalID          types.String   `tfsdk:"local_id"`
-	RemoteIDType     types.String   `tfsdk:"remote_id_type"`
-	RemoteID         types.String   `tfsdk:"remote_id"`
-	PSK              types.String   `tfsdk:"psk"`
-	IKEVersion       types.Int64    `tfsdk:"ike_version"`
-	ProposalPreset   types.String   `tfsdk:"proposal_preset"`
-	IKEProposal      types.String   `tfsdk:"ike_proposal"`
-	ESPProposal      types.String   `tfsdk:"esp_proposal"`
-	LocalTS          types.Set      `tfsdk:"local_ts"`
-	RemoteTS         types.Set      `tfsdk:"remote_ts"`
-	Role             types.String   `tfsdk:"role"`
-	DPDDelay         types.Int64    `tfsdk:"dpd_delay"`
-	DPDAction        types.String   `tfsdk:"dpd_action"`
-	IKELifetime      types.Int64    `tfsdk:"ike_lifetime"`
-	ChildLifetime    types.Int64    `tfsdk:"child_lifetime"`
-	UDPEncapsulation types.Bool     `tfsdk:"udp_encapsulation"`
-	Enabled          types.Bool     `tfsdk:"enabled"`
-	ConnName         types.String   `tfsdk:"conn_name"`
-	SAState          types.String   `tfsdk:"sa_state"`
-	ApplyState       types.String   `tfsdk:"apply_state"`
-	LastErrorCode    types.String   `tfsdk:"last_error_code"`
-	LastError        types.String   `tfsdk:"last_error"`
-	RemoteSettings   types.String   `tfsdk:"remote_settings"`
-	Timeouts         timeouts.Value `tfsdk:"timeouts"`
+	ID                   types.String   `tfsdk:"id"`
+	VPNGatewayID         types.String   `tfsdk:"vpn_gateway_id"`
+	Name                 types.String   `tfsdk:"name"`
+	RemoteAddress        types.String   `tfsdk:"remote_address"`
+	LocalIDType          types.String   `tfsdk:"local_id_type"`
+	LocalID              types.String   `tfsdk:"local_id"`
+	RemoteIDType         types.String   `tfsdk:"remote_id_type"`
+	RemoteID             types.String   `tfsdk:"remote_id"`
+	PSK                  types.String   `tfsdk:"psk"`
+	IKEVersion           types.Int64    `tfsdk:"ike_version"`
+	ProposalPreset       types.String   `tfsdk:"proposal_preset"`
+	IKEProposal          types.String   `tfsdk:"ike_proposal"`
+	ESPProposal          types.String   `tfsdk:"esp_proposal"`
+	LocalTS              types.Set      `tfsdk:"local_ts"`
+	RemoteTS             types.Set      `tfsdk:"remote_ts"`
+	Role                 types.String   `tfsdk:"role"`
+	DPDDelay             types.Int64    `tfsdk:"dpd_delay"`
+	DPDAction            types.String   `tfsdk:"dpd_action"`
+	IKELifetime          types.Int64    `tfsdk:"ike_lifetime"`
+	ChildLifetime        types.Int64    `tfsdk:"child_lifetime"`
+	UDPEncapsulation     types.Bool     `tfsdk:"udp_encapsulation"`
+	Enabled              types.Bool     `tfsdk:"enabled"`
+	ConnName             types.String   `tfsdk:"conn_name"`
+	SAState              types.String   `tfsdk:"sa_state"`
+	ApplyState           types.String   `tfsdk:"apply_state"`
+	LastErrorCode        types.String   `tfsdk:"last_error_code"`
+	LastError            types.String   `tfsdk:"last_error"`
+	ChildrenExpected     types.Int64    `tfsdk:"children_expected"`
+	ChildrenInstalled    types.Int64    `tfsdk:"children_installed"`
+	RemoteHost           types.String   `tfsdk:"remote_host"`
+	EstablishedAt        types.String   `tfsdk:"established_at"`
+	BytesIn              types.Int64    `tfsdk:"bytes_in"`
+	BytesOut             types.Int64    `tfsdk:"bytes_out"`
+	LastErrorAt          types.String   `tfsdk:"last_error_at"`
+	StatusCheckedAt      types.String   `tfsdk:"status_checked_at"`
+	GatewayLastErrorCode types.String   `tfsdk:"gateway_last_error_code"`
+	GatewayLastErrorAt   types.String   `tfsdk:"gateway_last_error_at"`
+	RemoteSettings       types.String   `tfsdk:"remote_settings"`
+	Timeouts             timeouts.Value `tfsdk:"timeouts"`
 }
 
 func (r *vpnIpsecConnectionResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -391,14 +401,56 @@ func (r *vpnIpsecConnectionResource) Schema(ctx context.Context, _ resource.Sche
 			},
 			"last_error": schema.StringAttribute{
 				Computed:    true,
-				Description: "Text of the last tunnel error observed on the gateway (null when none).",
+				Description: "Fixed diagnostic sentence for last_error_code, never raw guest output (null when none).",
+			},
+			"children_expected": schema.Int64Attribute{
+				Computed:    true,
+				Description: "Number of child SAs expected for this connection.",
+			},
+			"children_installed": schema.Int64Attribute{
+				Computed:    true,
+				Description: "Number of child SAs currently installed. Zero while no tunnel is established.",
+			},
+			"remote_host": schema.StringAttribute{
+				Computed:    true,
+				Description: "Observed peer address, including a dynamic responder peer (null when unavailable).",
+			},
+			"established_at": schema.StringAttribute{
+				Computed:    true,
+				Description: "Time the tunnel was established, in RFC 3339 format (null when unavailable).",
+			},
+			"bytes_in": schema.Int64Attribute{
+				Computed:    true,
+				Description: "Bytes received through the currently observed child SAs.",
+			},
+			"bytes_out": schema.Int64Attribute{
+				Computed:    true,
+				Description: "Bytes sent through the currently observed child SAs.",
+			},
+			"last_error_at": schema.StringAttribute{
+				Computed:    true,
+				Description: "Time of the last connection diagnosis, in RFC 3339 format (null when none).",
+			},
+			"status_checked_at": schema.StringAttribute{
+				Computed:    true,
+				Description: "Time the live tunnel status was checked, in RFC 3339 format (null when unavailable).",
+			},
+			"gateway_last_error_code": schema.StringAttribute{
+				Computed:    true,
+				Description: "Typed gateway diagnosis when an error cannot be attributed to one connection (null when none).",
+			},
+			"gateway_last_error_at": schema.StringAttribute{
+				Computed:    true,
+				Description: "Time of the gateway diagnosis, in RFC 3339 format (null when none).",
 			},
 			"remote_settings": schema.StringAttribute{
 				Computed: true,
 				Description: "The values to enter on the other device, as a JSON document (use jsondecode()): " +
 					"our_public_ip, our_identity, your_identity, ike_version, ike_proposals, esp_proposals, " +
 					"local_networks, remote_networks, ike_lifetime, child_lifetime, pfs, dpd, nat_traversal, " +
-					"instance_route_hint and vendor_notes. It never contains the pre-shared key. Refreshed on " +
+					"instance_route_hint and vendor_notes. instance_route_hint.commands contains subnet, cidr, " +
+					"gateway and command for each remote network and VPC subnet; use the instance's own subnet gateway. " +
+					"It never contains the pre-shared key. Refreshed on " +
 					"every read; a failure to fetch it is a warning, not an error.",
 			},
 		},
@@ -533,7 +585,7 @@ func (r *vpnIpsecConnectionResource) Create(ctx context.Context, req resource.Cr
 	}
 
 	// The set of connection ids that exist before the send: an uncertain answer is
-	// resolved by adopting a same-name connection that is NOT in this set.
+	// used to identify new same-name connections for an explicit import suggestion.
 	before, _, err := r.client.ListVpnIpsecConnections(ctx, gwID)
 	if err != nil {
 		resp.Diagnostics.Append(diagFromErr("Error creating VPN IPsec connection", err))
@@ -567,6 +619,8 @@ func (r *vpnIpsecConnectionResource) Create(ctx context.Context, req resource.Cr
 	// failed apply or a timeout still tracks the connection for a destroy.
 	state := vpnIpsecStateFromAPI(conn, plan)
 	state.RemoteSettings = types.StringNull()
+	state.GatewayLastErrorCode = types.StringNull()
+	state.GatewayLastErrorAt = types.StringNull()
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 	setPSKVersion(ctx, resp.Private, conn, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -575,8 +629,9 @@ func (r *vpnIpsecConnectionResource) Create(ctx context.Context, req resource.Cr
 
 	final, err := r.waitApplied(ctx, gwID, id)
 	if final != nil {
-		state = vpnIpsecStateFromAPI(final, plan)
+		state = vpnIpsecStateFromAPI(final, state)
 	}
+	r.gatewayDiagnostics(ctx, gwID, &state, &resp.Diagnostics)
 	state.RemoteSettings = r.remoteSettings(ctx, gwID, id, types.StringNull(), &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 	if err != nil {
@@ -615,6 +670,7 @@ func (r *vpnIpsecConnectionResource) Read(ctx context.Context, req resource.Read
 		}
 	}
 
+	r.gatewayDiagnostics(ctx, gwID, &next, &resp.Diagnostics)
 	next.RemoteSettings = r.remoteSettings(ctx, gwID, id, state.RemoteSettings, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, next)...)
 }
@@ -665,6 +721,9 @@ func (r *vpnIpsecConnectionResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 	next := vpnIpsecStateFromAPI(final, plan)
+	next.GatewayLastErrorCode = state.GatewayLastErrorCode
+	next.GatewayLastErrorAt = state.GatewayLastErrorAt
+	r.gatewayDiagnostics(ctx, gwID, &next, &resp.Diagnostics)
 	next.RemoteSettings = r.remoteSettings(ctx, gwID, id, state.RemoteSettings, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, next)...)
 	if err != nil {
@@ -758,7 +817,7 @@ func (r *vpnIpsecConnectionResource) updateWithInstallWait(ctx context.Context, 
 
 func isInstalling(err error) bool {
 	var apiErr *client.APIError
-	return errors.As(err, &apiErr) && apiErr.Reason == client.ReasonIpsecInstalling
+	return errors.As(err, &apiErr) && apiErr.Status == http.StatusConflict && apiErr.Reason == client.ReasonIpsecInstalling
 }
 
 // vpnIpsecMaxRetryWait bounds one server-named wait (Retry-After).
@@ -774,7 +833,7 @@ func retryWait(err error) (time.Duration, bool) {
 		return 0, false
 	}
 	switch {
-	case apiErr.Reason == client.ReasonIpsecInstalling:
+	case apiErr.Status == http.StatusConflict && apiErr.Reason == client.ReasonIpsecInstalling:
 		return pollInterval(), true
 	case apiErr.Status == http.StatusTooManyRequests:
 		d := apiErr.RetryAfter
@@ -926,6 +985,19 @@ func numberOf(v any) (int64, bool) {
 		return int64(n), true
 	}
 	return 0, false
+}
+
+// gatewayDiagnostics reads diagnoses that cannot be attributed to one connection.
+// A successful poll with null values clears old diagnoses. A failed poll preserves
+// the last known values and surfaces a warning rather than inventing live status.
+func (r *vpnIpsecConnectionResource) gatewayDiagnostics(ctx context.Context, gwID string, state *vpnIpsecConnectionModel, diags *diag.Diagnostics) {
+	_, gw, err := r.client.ListVpnIpsecConnections(ctx, gwID)
+	if err != nil {
+		diags.AddWarning("Could not read VPN IPsec gateway diagnostics", err.Error())
+		return
+	}
+	state.GatewayLastErrorCode = optionalStringFromAPI(gw, "ipsec_last_error_code", types.StringNull())
+	state.GatewayLastErrorAt = optionalStringFromAPI(gw, "ipsec_last_error_at", types.StringNull())
 }
 
 // remoteSettings fetches the remote settings as a canonical JSON string. A
@@ -1116,35 +1188,45 @@ func vpnIpsecUpdateBody(ctx context.Context, plan, state vpnIpsecConnectionModel
 
 func vpnIpsecStateFromAPI(obj map[string]any, prior vpnIpsecConnectionModel) vpnIpsecConnectionModel {
 	m := vpnIpsecConnectionModel{
-		ID:               stringFromAPI(obj, "id", prior.ID),
-		VPNGatewayID:     prior.VPNGatewayID, // from the path
-		Name:             stringFromAPI(obj, "name", prior.Name),
-		RemoteAddress:    optionalStringFromAPI(obj, "remote_address", prior.RemoteAddress),
-		LocalIDType:      stringFromAPI(obj, "local_id_type", prior.LocalIDType),
-		LocalID:          optionalStringFromAPI(obj, "local_id", prior.LocalID),
-		RemoteIDType:     stringFromAPI(obj, "remote_id_type", prior.RemoteIDType),
-		RemoteID:         optionalStringFromAPI(obj, "remote_id", prior.RemoteID),
-		PSK:              prior.PSK, // write-only; never in a response
-		IKEVersion:       int64FromAPI(obj, "ike_version", prior.IKEVersion),
-		ProposalPreset:   stringFromAPI(obj, "proposal_preset", prior.ProposalPreset),
-		IKEProposal:      optionalStringFromAPI(obj, "ike_proposal", prior.IKEProposal),
-		ESPProposal:      optionalStringFromAPI(obj, "esp_proposal", prior.ESPProposal),
-		LocalTS:          stringSetFromAPI(obj, "local_ts", prior.LocalTS),
-		RemoteTS:         stringSetFromAPI(obj, "remote_ts", prior.RemoteTS),
-		Role:             stringFromAPI(obj, "role", prior.Role),
-		DPDDelay:         int64FromAPI(obj, "dpd_delay", prior.DPDDelay),
-		DPDAction:        stringFromAPI(obj, "dpd_action", prior.DPDAction),
-		IKELifetime:      int64FromAPI(obj, "ike_lifetime", prior.IKELifetime),
-		ChildLifetime:    int64FromAPI(obj, "child_lifetime", prior.ChildLifetime),
-		UDPEncapsulation: boolFromIntAPI(obj, "udp_encapsulation", prior.UDPEncapsulation),
-		Enabled:          boolFromIntAPI(obj, "enabled", prior.Enabled),
-		ConnName:         stringFromAPI(obj, "conn_name", prior.ConnName),
-		SAState:          stringFromAPI(obj, "sa_state", prior.SAState),
-		ApplyState:       stringFromAPI(obj, "apply_state", prior.ApplyState),
-		LastErrorCode:    optionalStringFromAPI(obj, "last_error_code", types.StringNull()),
-		LastError:        optionalStringFromAPI(obj, "last_error", types.StringNull()),
-		RemoteSettings:   prior.RemoteSettings,
-		Timeouts:         prior.Timeouts,
+		ID:                   stringFromAPI(obj, "id", prior.ID),
+		VPNGatewayID:         prior.VPNGatewayID, // from the path
+		Name:                 stringFromAPI(obj, "name", prior.Name),
+		RemoteAddress:        optionalStringFromAPI(obj, "remote_address", prior.RemoteAddress),
+		LocalIDType:          stringFromAPI(obj, "local_id_type", prior.LocalIDType),
+		LocalID:              optionalStringFromAPI(obj, "local_id", prior.LocalID),
+		RemoteIDType:         stringFromAPI(obj, "remote_id_type", prior.RemoteIDType),
+		RemoteID:             optionalStringFromAPI(obj, "remote_id", prior.RemoteID),
+		PSK:                  prior.PSK, // write-only; never in a response
+		IKEVersion:           int64FromAPI(obj, "ike_version", prior.IKEVersion),
+		ProposalPreset:       stringFromAPI(obj, "proposal_preset", prior.ProposalPreset),
+		IKEProposal:          optionalStringFromAPI(obj, "ike_proposal", prior.IKEProposal),
+		ESPProposal:          optionalStringFromAPI(obj, "esp_proposal", prior.ESPProposal),
+		LocalTS:              stringSetFromAPI(obj, "local_ts", prior.LocalTS),
+		RemoteTS:             stringSetFromAPI(obj, "remote_ts", prior.RemoteTS),
+		Role:                 stringFromAPI(obj, "role", prior.Role),
+		DPDDelay:             int64FromAPI(obj, "dpd_delay", prior.DPDDelay),
+		DPDAction:            stringFromAPI(obj, "dpd_action", prior.DPDAction),
+		IKELifetime:          int64FromAPI(obj, "ike_lifetime", prior.IKELifetime),
+		ChildLifetime:        int64FromAPI(obj, "child_lifetime", prior.ChildLifetime),
+		UDPEncapsulation:     boolFromIntAPI(obj, "udp_encapsulation", prior.UDPEncapsulation),
+		Enabled:              boolFromIntAPI(obj, "enabled", prior.Enabled),
+		ConnName:             stringFromAPI(obj, "conn_name", prior.ConnName),
+		SAState:              stringFromAPI(obj, "sa_state", prior.SAState),
+		ApplyState:           stringFromAPI(obj, "apply_state", prior.ApplyState),
+		LastErrorCode:        optionalStringFromAPI(obj, "last_error_code", types.StringNull()),
+		LastError:            optionalStringFromAPI(obj, "last_error", types.StringNull()),
+		ChildrenExpected:     int64FromAPI(obj, "children_expected", types.Int64Null()),
+		ChildrenInstalled:    int64FromAPI(obj, "children_installed", types.Int64Null()),
+		RemoteHost:           optionalStringFromAPI(obj, "remote_host", types.StringNull()),
+		EstablishedAt:        optionalStringFromAPI(obj, "established_at", types.StringNull()),
+		BytesIn:              int64FromAPI(obj, "bytes_in", types.Int64Null()),
+		BytesOut:             int64FromAPI(obj, "bytes_out", types.Int64Null()),
+		LastErrorAt:          optionalStringFromAPI(obj, "last_error_at", types.StringNull()),
+		StatusCheckedAt:      optionalStringFromAPI(obj, "status_checked_at", types.StringNull()),
+		GatewayLastErrorCode: prior.GatewayLastErrorCode,
+		GatewayLastErrorAt:   prior.GatewayLastErrorAt,
+		RemoteSettings:       prior.RemoteSettings,
+		Timeouts:             prior.Timeouts,
 	}
 	return m
 }

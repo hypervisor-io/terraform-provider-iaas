@@ -64,6 +64,19 @@ output "office_our_public_ip" {
   value = jsondecode(iaas_vpn_ipsec_connection.office.remote_settings).our_public_ip
 }
 
+# Each entry names the VPC subnet, its CIDR and gateway, and the route command.
+# Use the entry for the instance's own subnet, including subnets other than the
+# gateway appliance's subnet. The API also supplies a note about route delivery.
+output "office_instance_route_hints" {
+  value = jsondecode(iaas_vpn_ipsec_connection.office.remote_settings).instance_route_hint
+}
+
+# Unattributed responder failures appear at gateway level when multiple tunnels
+# could match; connection and gateway diagnoses both carry their observation time.
+output "office_gateway_error" {
+  value = iaas_vpn_ipsec_connection.office.gateway_last_error_code
+}
+
 output "office_tunnel_state" {
   value = iaas_vpn_ipsec_connection.office.sa_state
 }
@@ -119,12 +132,23 @@ output "office_tunnel_state" {
 
 ### Read-Only
 
+- `children_expected` (Number) Number of child SAs expected for this connection.
+- `children_installed` (Number) Number of child SAs currently installed. Zero while no tunnel is established.
+- `remote_host` (String) Observed peer address, including a dynamic responder peer (null when unavailable).
+- `established_at` (String) Time the tunnel was established, in RFC 3339 format (null when unavailable).
+- `bytes_in` (Number) Bytes received through the currently observed child SAs.
+- `bytes_out` (Number) Bytes sent through the currently observed child SAs.
+- `last_error_at` (String) Time of the last connection diagnosis, in RFC 3339 format (null when none).
+- `status_checked_at` (String) Time the live tunnel status was checked, in RFC 3339 format (null when unavailable).
+- `gateway_last_error_code` (String) Typed gateway diagnosis when an error cannot be attributed to one connection (null when none).
+- `gateway_last_error_at` (String) Time of the gateway diagnosis, in RFC 3339 format (null when none).
+
 - `apply_state` (String) Whether the gateway has applied the latest change: pending, applied or failed. Create and update wait for applied.
 - `conn_name` (String) Technical connection name used on the gateway (vc- followed by 12 hex digits).
 - `id` (String) UUID of the connection, assigned by the API.
-- `last_error` (String) Text of the last tunnel error observed on the gateway (null when none).
+- `last_error` (String) Fixed diagnostic sentence for last_error_code, never raw guest output (null when none).
 - `last_error_code` (String) Machine code of the last tunnel error observed on the gateway, for example authentication_failed, no_proposal_chosen, ts_unacceptable or peer_unreachable (null when none).
-- `remote_settings` (String) The values to enter on the other device, as a JSON document (use jsondecode()): our_public_ip, our_identity, your_identity, ike_version, ike_proposals, esp_proposals, local_networks, remote_networks, ike_lifetime, child_lifetime, pfs, dpd, nat_traversal, instance_route_hint and vendor_notes. It never contains the pre-shared key. Refreshed on every read; a failure to fetch it is a warning, not an error.
+- `remote_settings` (String) The values to enter on the other device, as a JSON document (use jsondecode()): our_public_ip, our_identity, your_identity, ike_version, ike_proposals, esp_proposals, local_networks, remote_networks, ike_lifetime, child_lifetime, pfs, dpd, nat_traversal, instance_route_hint and vendor_notes. instance_route_hint.commands contains subnet, cidr, gateway and command for each remote network and VPC subnet; use the instance's own subnet gateway. It never contains the pre-shared key. Refreshed on every read; a failure to fetch it is a warning, not an error.
 - `sa_state` (String) Live tunnel state: unknown, down, connecting, partial (IKE up, a child SA missing), or established. It depends on the remote peer and is refreshed on every read.
 
 <a id="nestedblock--timeouts"></a>

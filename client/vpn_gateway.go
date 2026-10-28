@@ -59,9 +59,10 @@ import (
 //     gateway's own "status" field, polled via the SHOW endpoint. GetVpnGateway IS
 //     the poll. Ready value is "active"; the fail value is "error" (a failed
 //     gateway can be retried via the /retry endpoint).
-//   - DELETE bills final hours, destroys the backing instance (releasing its public
-//     IP), deletes peers, and SOFT-DELETES the row, so a subsequent SHOW 404s right
-//     away - no delete waiter is required.
+//   - DELETE attempts backing-instance teardown first. Only after acceptance
+//     does it bill final hours, release the public IP, delete peers and IPsec
+//     connections and SOFT-DELETE the row. A 409 vpn_gateway_destroy_failed
+//     retains the gateway, children and routes; a later DELETE retries teardown.
 //   - Peer add/update/remove are SYNCHRONOUS: the service mutates the peer row and
 //     pushes the regenerated WireGuard config to the gateway VM in-line (best
 //     effort; a push failure is logged, not fatal). The peer create returns the
@@ -108,11 +109,13 @@ func (c *Client) GetVpnGateway(ctx context.Context, id string) (map[string]any, 
 	return c.doItem(ctx, "GET", "/vpn-gateway/"+url.PathEscape(id), nil, "gateway")
 }
 
-// DeleteVpnGateway deletes the VPN gateway: the service bills final hours,
-// destroys the backing instance (releasing its public IP), deletes the peers, and
-// soft-deletes the row immediately, so a subsequent SHOW 404s right away - no
-// delete waiter is required. A failure is signalled with success:false at HTTP
-// 200, so doVoid checks the flag.
+// ReasonVpnGatewayDestroyFailed is the typed 409 teardown refusal. The gateway,
+// IPsec connections and managed routes remain intact; retry DELETE to try again.
+const ReasonVpnGatewayDestroyFailed = "vpn_gateway_destroy_failed"
+
+// DeleteVpnGateway deletes the gateway and its children only after instance
+// teardown is accepted. A 409 ReasonVpnGatewayDestroyFailed retains the gateway
+// and IPsec connections. Callers must retain their state on this refusal.
 func (c *Client) DeleteVpnGateway(ctx context.Context, id string) error {
 	if id == "" {
 		return fmt.Errorf("DeleteVpnGateway: empty id")

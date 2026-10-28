@@ -49,6 +49,19 @@ output "office_our_public_ip" {
   value = jsondecode(iaas_vpn_ipsec_connection.office.remote_settings).our_public_ip
 }
 
+# Each entry names the VPC subnet, its CIDR and gateway, and the route command.
+# Use the entry for the instance's own subnet, including subnets other than the
+# gateway appliance's subnet. The API also supplies a note about route delivery.
+output "office_instance_route_hints" {
+  value = jsondecode(iaas_vpn_ipsec_connection.office.remote_settings).instance_route_hint
+}
+
+# Unattributed responder failures appear at gateway level when multiple tunnels
+# could match; connection and gateway diagnoses both carry their observation time.
+output "office_gateway_error" {
+  value = iaas_vpn_ipsec_connection.office.gateway_last_error_code
+}
+
 output "office_tunnel_state" {
   value = iaas_vpn_ipsec_connection.office.sa_state
 }

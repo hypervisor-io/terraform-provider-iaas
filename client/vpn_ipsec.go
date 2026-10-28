@@ -54,7 +54,9 @@ func vpnIpsecBase(gatewayID string) string {
 }
 
 // ListVpnIpsecConnections returns the gateway's live connections and the gateway
-// IPsec state block (install state, apply state, generations). Tombstoned
+// IPsec state block (install state, apply state, generations, and unattributed
+// ipsec_last_error_code/ipsec_last_error_at). User ipsec_error and ipsec_version
+// are null; connection last_error is a fixed typed sentence, never guest prose. Tombstoned
 // (deleted) connections are not listed.
 func (c *Client) ListVpnIpsecConnections(ctx context.Context, gatewayID string) ([]map[string]any, map[string]any, error) {
 	if gatewayID == "" {
@@ -156,7 +158,9 @@ func (c *Client) RestartVpnIpsecConnection(ctx context.Context, gatewayID, id st
 }
 
 // GetVpnIpsecRemoteSettings returns the values to enter on the other device
-// (identities, proposals, networks, lifetimes, NAT traversal, route hint). The
+// (identities, proposals, networks, lifetimes, NAT traversal, route hints).
+// instance_route_hint.commands is an array of objects with subnet, cidr, gateway
+// and command, using each instance subnet's own gateway. The
 // pre-shared key is never part of it.
 func (c *Client) GetVpnIpsecRemoteSettings(ctx context.Context, gatewayID, id string) (map[string]any, error) {
 	if gatewayID == "" {
