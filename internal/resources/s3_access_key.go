@@ -34,9 +34,10 @@ import (
 //   - The CREATE response carries no record id, so the id is discovered by a
 //     list-and-match on the just-issued access_key (C4 readback).
 //
-// There is NO user-API delete route for access keys (only index/store/update),
-// so Delete is a state-only removal that warns the operator to delete the key in
-// the panel - Terraform stops tracking it but cannot tear it down server-side.
+// DELETE /object-storage/access-key/{id} (SINGULAR) removes the key and its remote
+// user on the storage servers; an unreachable server keeps the key and answers a
+// typed 502, so a destroy can be repeated. (Before 341-S3B the user API had no
+// delete route and Delete was a state-only removal with a warning.)
 var (
 	_ resource.Resource                = &s3AccessKeyResource{}
 	_ resource.ResourceWithConfigure   = &s3AccessKeyResource{}
@@ -97,9 +98,9 @@ func (r *s3AccessKeyResource) Schema(_ context.Context, _ resource.SchemaRequest
 			"returned ONLY once, at creation, and is captured into the (sensitive) secret_key " +
 			"attribute and preserved in state thereafter - no read or import can recover it, so a " +
 			"key imported into Terraform will have an empty secret_key. The key can be renamed and " +
-			"activated/deactivated in place. The platform's user API exposes no delete endpoint for " +
-			"access keys, so destroying this resource only removes it from Terraform state (a warning " +
-			"is emitted); delete the key in the control panel to remove it server-side.",
+			"activated/deactivated in place. Destroying the resource deletes the key and removes its " +
+			"credentials from the storage servers; if a storage server cannot be reached the destroy " +
+			"fails and can simply be repeated.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -314,16 +315,22 @@ func (r *s3AccessKeyResource) Update(ctx context.Context, req resource.UpdateReq
 	resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
 }
 
-// Delete removes the access key from Terraform state only. The user API exposes
-// no delete endpoint for access keys, so the key continues to exist server-side
-// until removed in the control panel; a warning makes this explicit.
-func (r *s3AccessKeyResource) Delete(_ context.Context, _ resource.DeleteRequest, resp *resource.DeleteResponse) {
-	resp.Diagnostics.AddWarning(
-		"S3 access key not deleted server-side",
-		"The platform's user API does not expose a delete endpoint for S3 access keys, so this "+
-			"key has only been removed from Terraform state and still exists on the server. Delete "+
-			"it from the control panel to remove it completely.",
-	)
+// Delete deletes the access key server-side. The platform removes the key's remote
+// user on its storage servers first and keeps the key (HTTP 502) when it cannot, so
+// a failed destroy is repeatable. A key that is already gone (404) is a success.
+func (r *s3AccessKeyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state s3AccessKeyModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if err := r.client.DeleteS3AccessKey(ctx, state.ID.ValueString()); err != nil {
+		if client.IsNotFound(err) {
+			return
+		}
+		resp.Diagnostics.Append(diagFromErr("Error deleting S3 access key", err))
+		return
+	}
 }
 
 // ImportState lets `terraform import iaas_s3_access_key.x <uuid>` adopt an

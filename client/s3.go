@@ -153,9 +153,11 @@ func (c *Client) SetS3BucketACL(ctx context.Context, id, action string) error {
 // DeleteS3Bucket deletes a bucket by id (the service bills the final hours then
 // dispatches an async DeleteS3Bucket job that removes the bucket, its policies
 // and users on the S3 server before soft-deleting the row). The API call is
-// synchronous {success,message}; a subsequent SHOW 404s. The DELETE route is
-// SINGULAR. A failure is signalled with success:false at HTTP 200, so doVoid
-// checks the flag.
+// asynchronous: it answers 202 {success,status:"deleting"} (341-S3B; it answered
+// 200 before), and a failed job leaves the bucket with delete_state "failed" and a
+// typed delete_error, so DELETE again retries it. A delete already running answers
+// 409. A subsequent SHOW 404s once the row is removed. The DELETE route is
+// SINGULAR. doVoid accepts any 2xx and still checks a success:false flag.
 func (c *Client) DeleteS3Bucket(ctx context.Context, id string) error {
 	if id == "" {
 		return fmt.Errorf("DeleteS3Bucket: empty id")
@@ -278,6 +280,18 @@ func (c *Client) GetS3AccessKeyByAccessKey(ctx context.Context, accessKey string
 		}
 	}
 	return nil, &APIError{Status: 404, Message: "S3 access key not found"}
+}
+
+// DeleteS3AccessKey deletes an access key by id via DELETE /object-storage/access-key/{id}
+// (SINGULAR). The platform first removes the key's user on its storage servers and
+// keeps the key with a typed HTTP 502 (storage_unreachable / remote_delete_failed)
+// when it cannot, so a failed delete is safe to repeat. A missing key is a 404
+// (client.IsNotFound).
+func (c *Client) DeleteS3AccessKey(ctx context.Context, id string) error {
+	if id == "" {
+		return fmt.Errorf("DeleteS3AccessKey: empty id")
+	}
+	return c.doVoid(ctx, "DELETE", "/object-storage/access-key/"+url.PathEscape(id), nil)
 }
 
 // UpdateS3AccessKey patches an access key's mutable fields (name and/or active)

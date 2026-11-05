@@ -250,7 +250,7 @@ Fill in `pass` / `fail` / `skipped` and notes. Tiers mirror the build order.
 | `iaas_db_replica` | `TestAccDBReplica_basic` | | needs primary/plan/subnet |
 | `iaas_db_parameter_group` | `TestAccDBParameterGroup_basic` | | suffix-param rejection (watch-item) |
 | `iaas_s3_bucket` | `TestAccS3Bucket_basic` | | needs plan/server |
-| `iaas_s3_access_key` | `TestAccS3AccessKey_basic` | | secret-key shown-once; Delete state-only |
+| `iaas_s3_access_key` | `TestAccS3AccessKey_basic` | | secret-key shown-once; Delete removes the key server-side |
 | `iaas_instance_backup_policy` | `TestAccInstanceBackupPolicy_basic` | | |
 | `iaas_db_backup_policy` | `TestAccDBBackupPolicy_basic` | | billing; credential preservation (watch-item) |
 | `iaas_notification_channel` | `TestAccNotificationChannel_basic` | | hidden config write-only |

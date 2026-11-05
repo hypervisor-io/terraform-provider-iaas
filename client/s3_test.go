@@ -475,3 +475,78 @@ func TestUpdateS3AccessKey_EmptyID(t *testing.T) {
 		t.Fatal("expected error for empty id")
 	}
 }
+
+// TestDeleteS3AccessKey_* cover DELETE /object-storage/access-key/{id}: success, a typed 502 from a storage server that
+// could not be reached (the key is kept, the error carries the status), a 404 for a missing key, and an empty id.
+func TestDeleteS3AccessKey_Success(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"message":"Access key deleted successfully!"}`))
+	}))
+	defer srv.Close()
+	if err := s3TestClient(srv.URL).DeleteS3AccessKey(context.Background(), "k1"); err != nil {
+		t.Fatalf("DeleteS3AccessKey error: %v", err)
+	}
+	if gotMethod != http.MethodDelete {
+		t.Errorf("method = %s; want DELETE", gotMethod)
+	}
+	if gotPath != "/api/object-storage/access-key/k1" {
+		t.Errorf("path = %s; want singular /api/object-storage/access-key/k1", gotPath)
+	}
+}
+
+func TestDeleteS3AccessKey_StorageUnreachableIsAnError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+		_, _ = w.Write([]byte(`{"success":false,"reason":"storage_unreachable","message":"A storage server is not reachable right now, so the key was not deleted. Try again."}`))
+	}))
+	defer srv.Close()
+	err := s3TestClient(srv.URL).DeleteS3AccessKey(context.Background(), "k1")
+	if err == nil {
+		t.Fatal("expected an error for a 502: the key was kept")
+	}
+	if IsNotFound(err) {
+		t.Errorf("a 502 must not read as not-found: %v", err)
+	}
+}
+
+func TestDeleteS3AccessKey_NotFound(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"message":"S3 Access Key not found"}`))
+	}))
+	defer srv.Close()
+	err := s3TestClient(srv.URL).DeleteS3AccessKey(context.Background(), "k1")
+	if err == nil || !IsNotFound(err) {
+		t.Fatalf("expected a not-found error, got %v", err)
+	}
+}
+
+func TestDeleteS3AccessKey_EmptyID(t *testing.T) {
+	if err := (&Client{}).DeleteS3AccessKey(context.Background(), ""); err == nil {
+		t.Fatal("expected error for empty id")
+	}
+}
+
+// TestDeleteS3Bucket_Accepted202 pins the 341-S3B contract: the asynchronous delete answers 202 {status:"deleting"}, which
+// is a success; a 409 delete_in_progress is an error.
+func TestDeleteS3Bucket_Accepted202(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = w.Write([]byte(`{"success":true,"status":"deleting","message":"Bucket deletion has been queued."}`))
+	}))
+	defer srv.Close()
+	if err := s3TestClient(srv.URL).DeleteS3Bucket(context.Background(), "b1"); err != nil {
+		t.Fatalf("a 202 deleting answer is a success: %v", err)
+	}
+	srv2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"success":false,"status":"deleting","reason":"delete_in_progress","message":"This bucket is already being deleted."}`))
+	}))
+	defer srv2.Close()
+	if err := s3TestClient(srv2.URL).DeleteS3Bucket(context.Background(), "b1"); err == nil {
+		t.Fatal("a 409 delete_in_progress must be an error")
+	}
+}

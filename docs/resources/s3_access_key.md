@@ -3,12 +3,12 @@
 page_title: "iaas_s3_access_key Resource - iaas"
 subcategory: ""
 description: |-
-  Manages a standalone S3 access key that can be attached to buckets (via the iaas_s3_bucket attached_keys set) with a per-bucket permission. The secret key is returned ONLY once, at creation, and is captured into the (sensitive) secret_key attribute and preserved in state thereafter - no read or import can recover it, so a key imported into Terraform will have an empty secret_key. The key can be renamed and activated/deactivated in place. The platform's user API exposes no delete endpoint for access keys, so destroying this resource only removes it from Terraform state (a warning is emitted); delete the key in the control panel to remove it server-side.
+  Manages a standalone S3 access key that can be attached to buckets (via the iaas_s3_bucket attached_keys set) with a per-bucket permission. The secret key is returned ONLY once, at creation, and is captured into the (sensitive) secret_key attribute and preserved in state thereafter - no read or import can recover it, so a key imported into Terraform will have an empty secret_key. The key can be renamed and activated/deactivated in place. Destroying the resource deletes the key and removes its credentials from the storage servers; if a storage server cannot be reached the destroy fails and can simply be repeated.
 ---
 
 # iaas_s3_access_key (Resource)
 
-Manages a standalone S3 access key that can be attached to buckets (via the iaas_s3_bucket attached_keys set) with a per-bucket permission. The secret key is returned ONLY once, at creation, and is captured into the (sensitive) secret_key attribute and preserved in state thereafter - no read or import can recover it, so a key imported into Terraform will have an empty secret_key. The key can be renamed and activated/deactivated in place. The platform's user API exposes no delete endpoint for access keys, so destroying this resource only removes it from Terraform state (a warning is emitted); delete the key in the control panel to remove it server-side.
+Manages a standalone S3 access key that can be attached to buckets (via the iaas_s3_bucket attached_keys set) with a per-bucket permission. The secret key is returned ONLY once, at creation, and is captured into the (sensitive) secret_key attribute and preserved in state thereafter - no read or import can recover it, so a key imported into Terraform will have an empty secret_key. The key can be renamed and activated/deactivated in place. Destroying the resource deletes the key and removes its credentials from the storage servers; if a storage server cannot be reached the destroy fails and can simply be repeated.
 
 ## Example Usage
 
@@ -16,9 +16,8 @@ Manages a standalone S3 access key that can be attached to buckets (via the iaas
 # A standalone S3 access key. The secret is returned ONLY once, at creation, and
 # is captured into the (sensitive) secret_key attribute and preserved in state.
 # A key imported into Terraform will have an empty secret_key (it cannot be
-# recovered). The user API exposes no delete endpoint for access keys, so
-# destroying this resource only removes it from Terraform state - delete the key
-# in the control panel to remove it server-side.
+# recovered). Destroying the resource deletes the key and removes its credentials
+# from the storage servers.
 resource "iaas_s3_access_key" "app" {
   name = "app-key"
 

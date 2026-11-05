@@ -61,6 +61,7 @@ type s3KeyMock struct {
 	active      int
 	createCalls int
 	updateCalls int
+	deleteCalls int
 }
 
 func (s *s3KeyMock) listPaginator() map[string]any {
@@ -156,6 +157,14 @@ func TestUnitS3AccessKey_lifecycle(t *testing.T) {
 		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "updated"})
 	})
 
+	// DELETE - DELETE /object-storage/access-key/{id}: 341-S3B. Destroy must reach the server (it used to be state-only).
+	srv.Handle("DELETE", "/object-storage/access-key/"+keyID, func(w http.ResponseWriter, r *http.Request) {
+		store.mu.Lock()
+		defer store.mu.Unlock()
+		store.deleteCalls++
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "Access key deleted successfully!"})
+	})
+
 	providerCfg := acctest.ProviderConfig(srv.Endpoint())
 
 	createCfg := providerCfg + `
@@ -245,5 +254,8 @@ resource "iaas_s3_access_key" "test" {
 	defer store.mu.Unlock()
 	if store.createCalls != 1 {
 		t.Errorf("createCalls = %d; want 1", store.createCalls)
+	}
+	if store.deleteCalls != 1 {
+		t.Errorf("deleteCalls = %d; want 1: destroy must call DELETE /object-storage/access-key/{id}", store.deleteCalls)
 	}
 }
