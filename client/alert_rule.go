@@ -25,7 +25,7 @@ import (
 //	                                     load_balancer|vpn_gateway),
 //	                      resource_id   (nullable|uuid - omit to match ALL
 //	                                     resources of the given type),
-//	                      metric        (required|string, e.g. cpu_pct),
+//	                      metric        (required|string, catalog id such as cpu; legacy alias cpu_pct also accepted),
 //	                      operator      (required,in:gt|lt|gte|lte|eq),
 //	                      threshold     (required|numeric),
 //	                      duration      (nullable|integer|min:0, seconds),

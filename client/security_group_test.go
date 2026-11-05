@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -556,5 +557,65 @@ func TestListSecurityGroups_Success(t *testing.T) {
 	}
 	if items[0]["id"] != "sg-uuid-1" {
 		t.Errorf("items[0][id] = %v; want sg-uuid-1", items[0]["id"])
+	}
+}
+
+// ---------------------------------------------------------------------------
+// AddSecurityGroupRuleWithWarning (341-CONSUMERS)
+// ---------------------------------------------------------------------------
+
+// A 200 success carrying warning/warning_reason config_push_failed is a saved
+// rule, not an error: the rule is returned together with the warning text.
+func TestAddSecurityGroupRuleWithWarning_PushFailedIsNotAnError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"message":"Rule added successfully","rule":{"id":"rule-1"},` +
+			`"warning":"The rule is saved and must not be added again.","warning_reason":"config_push_failed"}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	rule, warning, err := c.AddSecurityGroupRuleWithWarning(context.Background(), "sg-1", map[string]any{"direction": "ingress"})
+	if err != nil {
+		t.Fatalf("warning response must not be an error: %v", err)
+	}
+	if rule["id"] != "rule-1" {
+		t.Errorf("rule id = %v; want rule-1", rule["id"])
+	}
+	if warning == "" {
+		t.Error("warning should be returned")
+	}
+}
+
+// A plain success returns no warning.
+func TestAddSecurityGroupRuleWithWarning_NoWarning(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"success":true,"rule":{"id":"rule-2"}}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	rule, warning, err := c.AddSecurityGroupRuleWithWarning(context.Background(), "sg-1", map[string]any{})
+	if err != nil || warning != "" || rule["id"] != "rule-2" {
+		t.Fatalf("got rule=%v warning=%q err=%v", rule, warning, err)
+	}
+}
+
+// A refusal answers 422 and surfaces as an *APIError with the message and field errors.
+func TestAddSecurityGroupRuleWithWarning_422IsAnError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"success":false,"message":"Duplicate rule","errors":{"port_range_min":["inverted"]}}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	_, _, err := c.AddSecurityGroupRuleWithWarning(context.Background(), "sg-1", map[string]any{})
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) || apiErr.Status != http.StatusUnprocessableEntity {
+		t.Fatalf("want 422 *APIError, got %v", err)
+	}
+	if apiErr.Message != "Duplicate rule" || len(apiErr.FieldErrors["port_range_min"]) != 1 {
+		t.Errorf("message/field errors lost: %+v", apiErr)
 	}
 }

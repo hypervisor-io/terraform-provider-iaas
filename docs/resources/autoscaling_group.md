@@ -85,6 +85,7 @@ resource "iaas_autoscaling_group" "api" {
 - `security_group_ids` (Set of String) UUIDs of the security groups attached to every new instance, as an order-independent set. Updatable in place: the full desired set is sent and the server replaces the attachment (pass an empty set to clear).
 - `ssh_keys` (List of String) Optional list of SSH key UUIDs injected into every new instance. WRITE-ONLY create-only: the update endpoint does not accept it, so changing it forces a new resource, and it is echoed from configuration rather than refreshed from the server.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `user_scripts` (List of String) Optional list of user script UUIDs (scripts owned by the account) run via cloud-init on every new instance. WRITE-ONLY create-only: the update endpoint does not accept it, so changing it forces a new resource, and it is echoed from configuration rather than refreshed from the server. The API refuses ids that are not found or not owned by the account.
 - `vpc_id` (String) Optional UUID of a VPC to place instances in. Must be set together with vpc_subnet_id. Part of the launch placement; changing it forces a new resource.
 - `vpc_subnet_id` (String) Optional UUID of a VPC subnet (within vpc_id) to place instances in. Must be set together with vpc_id. Changing it forces a new resource.
 

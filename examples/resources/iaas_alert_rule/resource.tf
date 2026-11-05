@@ -12,7 +12,7 @@ resource "iaas_alert_rule" "high_cpu" {
   name          = "High CPU on web-01"
   resource_type = "instance"
   resource_id   = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
-  metric        = "cpu_pct"
+  metric        = "cpu"
   operator      = "gt"
   threshold     = 80
   duration      = 300
@@ -23,7 +23,7 @@ resource "iaas_alert_rule" "high_cpu" {
 resource "iaas_alert_rule" "global_mem" {
   name          = "High Memory (all instances)"
   resource_type = "instance"
-  metric        = "mem_pct"
+  metric        = "memory"
   operator      = "gt"
   threshold     = 90
   duration      = 60
@@ -37,7 +37,7 @@ resource "iaas_alert_rule" "db_disk" {
   name          = "DB disk warning"
   resource_type = "managed_database"
   resource_id   = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
-  metric        = "disk_pct"
+  metric        = "disk"
   operator      = "gte"
   threshold     = 75
   enabled       = false

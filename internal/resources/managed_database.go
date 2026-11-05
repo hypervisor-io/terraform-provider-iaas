@@ -88,6 +88,11 @@ type managedDatabaseModel struct {
 	HypervisorGroupID types.String `tfsdk:"hypervisor_group_id"`
 	LocationID        types.String `tfsdk:"location_id"`
 
+	// ParameterGroupID is an optional parameter group of the account (same
+	// engine) applied at create and changeable in place (PATCH
+	// /database/{id}/parameter-group). Clearing is not supported by the API.
+	ParameterGroupID types.String `tfsdk:"parameter_group_id"`
+
 	// Action triggers (write-only): changing either re-runs the corresponding
 	// action. ResetPassword → reset-password; ResyncReplicas (T9) →
 	// resync-replicas.
@@ -223,6 +228,19 @@ func (r *managedDatabaseResource) Schema(ctx context.Context, _ resource.SchemaR
 				PlanModifiers: []planmodifier.String{
 					locationIDFromAliasModifier{},
 					stringplanmodifier.RequiresReplaceIfConfigured(),
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"parameter_group_id": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "Optional UUID of one of your parameter groups (iaas_db_parameter_group) with the " +
+					"same engine as the database. It is applied at create (POST /databases accepts " +
+					"parameter_group_id) and can be changed in place later (PATCH /database/{id}/parameter-group). " +
+					"The API answers 404 for an unknown or foreign group and 422 for an engine mismatch. " +
+					"Detaching is not supported by the API: removing the argument from configuration leaves the " +
+					"applied group in place.",
+				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
@@ -389,6 +407,9 @@ func (r *managedDatabaseResource) Create(ctx context.Context, req resource.Creat
 	if hg := effectiveLocationID(plan.LocationID, plan.HypervisorGroupID); hg != "" {
 		body["location_id"] = hg
 	}
+	if !plan.ParameterGroupID.IsNull() && !plan.ParameterGroupID.IsUnknown() && plan.ParameterGroupID.ValueString() != "" {
+		body["parameter_group_id"] = plan.ParameterGroupID.ValueString()
+	}
 
 	created, err := r.client.CreateManagedDatabase(ctx, body)
 	if err != nil {
@@ -507,6 +528,16 @@ func (r *managedDatabaseResource) Update(ctx context.Context, req resource.Updat
 		}
 		if err := r.upgradeEngineVersion(ctx, id, plan.EngineVersion.ValueString(), updateTimeout); err != nil {
 			resp.Diagnostics.AddError("Error upgrading managed database version", err.Error())
+			return
+		}
+	}
+
+	// Apply a different parameter group in place. The API cannot detach a
+	// group, so only a non-empty configured value that differs from state is sent.
+	if !plan.ParameterGroupID.IsNull() && !plan.ParameterGroupID.IsUnknown() &&
+		plan.ParameterGroupID.ValueString() != "" && !plan.ParameterGroupID.Equal(state.ParameterGroupID) {
+		if err := r.client.ApplyDatabaseParameterGroup(ctx, id, map[string]any{"parameter_group_id": plan.ParameterGroupID.ValueString()}); err != nil {
+			resp.Diagnostics.Append(diagFromErr("Error applying managed database parameter group", err))
 			return
 		}
 	}
@@ -675,6 +706,7 @@ func managedDatabaseStateFromAPI(obj map[string]any, prior managedDatabaseModel)
 		VPCSubnetID:       optionalStringFromAPI(obj, "vpc_subnet_id", prior.VPCSubnetID),
 		HypervisorGroupID: hypervisorGroupIDFromAPI(obj, prior.HypervisorGroupID),
 		LocationID:        locationIDOptionalFromAPI(obj, prior.LocationID),
+		ParameterGroupID:  parameterGroupIDFromAPI(obj, prior.ParameterGroupID),
 
 		// Write-only triggers - never in SHOW; preserve prior verbatim.
 		ResetPassword:  prior.ResetPassword,
@@ -699,6 +731,19 @@ func managedDatabaseStateFromAPI(obj map[string]any, prior managedDatabaseModel)
 
 		Timeouts: prior.Timeouts,
 	}
+}
+
+// parameterGroupIDFromAPI reads parameter_group_id from SHOW. A null or absent value yields
+// a known null (never unknown) when there is no prior value, so a database without a group
+// does not leave the Optional+Computed attribute unknown after apply.
+func parameterGroupIDFromAPI(obj map[string]any, prior types.String) types.String {
+	if s, ok := obj["parameter_group_id"].(string); ok && s != "" {
+		return types.StringValue(s)
+	}
+	if prior.IsUnknown() {
+		return types.StringNull()
+	}
+	return prior
 }
 
 var restoredFromAttrTypes = map[string]attr.Type{

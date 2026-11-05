@@ -113,12 +113,18 @@ func TestUnitManagedDatabase_lifecycle(t *testing.T) {
 	deleted := false
 	curPlan := planID
 	curVersion := "8.0"
+	curPG := ""
 
 	showDB := func() map[string]any {
 		mu.Lock()
 		p := curPlan
 		v := curVersion
+		pg := curPG
 		mu.Unlock()
+		var pgVal any
+		if pg != "" {
+			pgVal = pg
+		}
 		return map[string]any{
 			"id":                  dbID,
 			"name":                dbName,
@@ -132,6 +138,7 @@ func TestUnitManagedDatabase_lifecycle(t *testing.T) {
 			"port":                float64(3306),
 			"admin_user":          "dbadmin",
 			"role":                "primary",
+			"parameter_group_id":  pgVal,
 			"public_ip":           map[string]any{"id": "ip-1", "ip": pubIP},
 			// last_error/error_acknowledged (T9): healthy defaults, matching the
 			// real column defaults (last_error nullable/null, error_acknowledged
@@ -152,6 +159,13 @@ func TestUnitManagedDatabase_lifecycle(t *testing.T) {
 
 	// CREATE - record the row; create response carries status "deploying".
 	srv.Handle("POST", basePath, func(w http.ResponseWriter, r *http.Request) {
+		var in map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&in)
+		if g, ok := in["parameter_group_id"].(string); ok && g != "" {
+			mu.Lock()
+			curPG = g
+			mu.Unlock()
+		}
 		writeJSON(w, http.StatusOK, map[string]any{
 			"success": true,
 			"message": "Managed database deployment initiated.",
@@ -191,6 +205,18 @@ func TestUnitManagedDatabase_lifecycle(t *testing.T) {
 		})
 	})
 
+	// APPLY PARAMETER GROUP - PATCH /database/{id}/parameter-group.
+	srv.Handle("PATCH", itemPath+"/parameter-group", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if g, ok := body["parameter_group_id"].(string); ok && g != "" {
+			mu.Lock()
+			curPG = g
+			mu.Unlock()
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "Parameter group applied."})
+	})
+
 	// SHOW - 404 once delete has been enqueued.
 	srv.Handle("GET", itemPath, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
@@ -222,6 +248,7 @@ resource "iaas_managed_database" "test" {
   vpc_id         = "` + vpcID + `"
   vpc_subnet_id  = "` + subnetID + `"
   reset_password = "v1"
+  parameter_group_id = "11111111-1111-1111-1111-111111111111"
 }
 `
 	updateCfg := providerCfg + `
@@ -233,6 +260,7 @@ resource "iaas_managed_database" "test" {
   vpc_id         = "` + vpcID + `"
   vpc_subnet_id  = "` + subnetID + `"
   reset_password = "v2"
+  parameter_group_id = "22222222-2222-2222-2222-222222222222"
 }
 `
 
@@ -269,6 +297,7 @@ resource "iaas_managed_database" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("iaas_managed_database.test", "db_plan_id", plan2ID),
 					resource.TestCheckResourceAttr("iaas_managed_database.test", "password", "rotated-secret-pw"),
+					resource.TestCheckResourceAttr("iaas_managed_database.test", "parameter_group_id", "22222222-2222-2222-2222-222222222222"),
 				),
 			},
 		},
@@ -292,6 +321,14 @@ resource "iaas_managed_database" "test" {
 		if _, present := createBody[stray]; present {
 			t.Errorf("create body must NOT include %q; got %v", stray, createBody)
 		}
+	}
+
+	if g := createBody["parameter_group_id"]; g != "11111111-1111-1111-1111-111111111111" {
+		t.Errorf("create body[parameter_group_id] = %v; want the configured group", g)
+	}
+	pgs := srv.Requests("PATCH", itemPath+"/parameter-group")
+	if len(pgs) != 1 {
+		t.Fatalf("expected exactly 1 PATCH %s/parameter-group (the in-place change), got %d", itemPath, len(pgs))
 	}
 
 	// Assert exactly one resize PATCH fired with the new plan.

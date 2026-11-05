@@ -298,11 +298,13 @@ func (r *securityGroupResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 	for _, rl := range plannedRules {
-		if err := r.addRule(ctx, id, rl); err != nil {
+		warning, err := r.addRule(ctx, id, rl)
+		if err != nil {
 			resp.Diagnostics.Append(diagFromErr("Error adding security group rule", err))
 			persistMinimal()
 			return
 		}
+		addRuleWarning(&resp.Diagnostics, warning)
 	}
 
 	// Attach the configured instances.
@@ -439,10 +441,12 @@ func (r *securityGroupResource) Update(ctx context.Context, req resource.UpdateR
 		if _, exists := stateByKey[key]; exists {
 			continue
 		}
-		if err := r.addRule(ctx, id, rl); err != nil {
+		warning, err := r.addRule(ctx, id, rl)
+		if err != nil {
 			resp.Diagnostics.Append(diagFromErr("Error adding security group rule", err))
 			return
 		}
+		addRuleWarning(&resp.Diagnostics, warning)
 	}
 
 	// Diff the instance_ids set: attach added, detach removed.
@@ -525,7 +529,11 @@ func (r *securityGroupResource) ImportState(ctx context.Context, req resource.Im
 
 // addRule POSTs a single rule, omitting any unset optional field so the server
 // stores null rather than "" / 0.
-func (r *securityGroupResource) addRule(ctx context.Context, sgID string, rl securityGroupRuleModel) error {
+//
+// The returned string is the API's optional warning (HTTP 200 success with the rule
+// saved but the node push failed, warning_reason "config_push_failed"); it is empty
+// when there is none and is never an error.
+func (r *securityGroupResource) addRule(ctx context.Context, sgID string, rl securityGroupRuleModel) (string, error) {
 	body := map[string]any{
 		"direction":  rl.Direction.ValueString(),
 		"protocol":   rl.Protocol.ValueString(),
@@ -549,8 +557,17 @@ func (r *securityGroupResource) addRule(ctx context.Context, sgID string, rl sec
 	if !rl.Description.IsNull() && !rl.Description.IsUnknown() {
 		body["description"] = rl.Description.ValueString()
 	}
-	_, err := r.client.AddSecurityGroupRule(ctx, sgID, body)
-	return err
+	_, warning, err := r.client.AddSecurityGroupRuleWithWarning(ctx, sgID, body)
+	return warning, err
+}
+
+// addRuleWarning surfaces the API's rule-add warning as a Terraform warning
+// diagnostic. The rule is saved, so the apply continues and the rule is tracked.
+func addRuleWarning(diags *diag.Diagnostics, warning string) {
+	if warning == "" {
+		return
+	}
+	diags.AddWarning("Security group rule saved, node push failed", warning)
 }
 
 // readState GETs the security group envelope and builds a full model from it,

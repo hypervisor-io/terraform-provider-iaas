@@ -75,6 +75,7 @@ type autoscalingGroupModel struct {
 
 	CloudInit        types.String `tfsdk:"cloud_init"`
 	SSHKeys          types.List   `tfsdk:"ssh_keys"`
+	UserScripts      types.List   `tfsdk:"user_scripts"`
 	SecurityGroupIDs types.Set    `tfsdk:"security_group_ids"`
 
 	// paused: toggled via pause/resume; mirrors server status.
@@ -216,6 +217,18 @@ func (r *autoscalingGroupResource) Schema(ctx context.Context, _ resource.Schema
 					listplanmodifier.RequiresReplace(),
 				},
 			},
+			"user_scripts": schema.ListAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+				Description: "Optional list of user script UUIDs (scripts owned by the account) run via " +
+					"cloud-init on every new instance. WRITE-ONLY create-only: the update endpoint does not " +
+					"accept it, so changing it forces a new resource, and it is echoed from configuration " +
+					"rather than refreshed from the server. The API refuses ids that are not found or not " +
+					"owned by the account.",
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.RequiresReplace(),
+				},
+			},
 			"security_group_ids": schema.SetAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
@@ -314,6 +327,9 @@ func (r *autoscalingGroupResource) Create(ctx context.Context, req resource.Crea
 	}
 	if keys := stringListValues(plan.SSHKeys); keys != nil {
 		body["ssh_keys"] = keys
+	}
+	if scripts := stringListValues(plan.UserScripts); scripts != nil {
+		body["user_scripts"] = scripts
 	}
 	if sgs := stringSetValues(plan.SecurityGroupIDs); sgs != nil {
 		body["security_group_ids"] = sgs
@@ -513,8 +529,9 @@ func autoscalingGroupStateFromAPI(obj map[string]any, prior autoscalingGroupMode
 		MaxInstances: int64FromAPI(obj, "max_instances", prior.MaxInstances),
 
 		// WRITE-ONLY / config-authoritative - preserve prior verbatim.
-		CloudInit: prior.CloudInit,
-		SSHKeys:   prior.SSHKeys,
+		CloudInit:   prior.CloudInit,
+		SSHKeys:     prior.SSHKeys,
+		UserScripts: prior.UserScripts,
 
 		// security_group_ids is mutable and returned by SHOW (json array); refresh.
 		SecurityGroupIDs: stringSetFromAPI(obj, "security_group_ids", prior.SecurityGroupIDs),

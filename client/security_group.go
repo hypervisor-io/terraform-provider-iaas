@@ -154,6 +154,28 @@ func (c *Client) AddSecurityGroupRule(ctx context.Context, sgID string, body map
 	return c.doItem(ctx, "POST", path, body, "rule")
 }
 
+// AddSecurityGroupRuleWithWarning is AddSecurityGroupRule plus the optional
+// top-level warning of the response. The Master answers HTTP 200 success:true
+// with the saved rule and a warning (warning_reason "config_push_failed") when the
+// rule was stored but the configuration push to the node failed; that is NOT an
+// error and the rule must not be posted again (the periodic reconcile applies it).
+// Refusals (foreign remote group or IP set, inverted ports, duplicate) are HTTP
+// 422 and surface as an *APIError carrying the message and field errors.
+// The returned warning is empty when the response carried none.
+func (c *Client) AddSecurityGroupRuleWithWarning(ctx context.Context, sgID string, body map[string]any) (map[string]any, string, error) {
+	if sgID == "" {
+		return nil, "", fmt.Errorf("AddSecurityGroupRule: empty sgID")
+	}
+	path := "/security-group/" + url.PathEscape(sgID) + "/rules"
+	env, err := c.doItem(ctx, "POST", path, body, "")
+	if err != nil {
+		return nil, "", err
+	}
+	rule, _ := env["rule"].(map[string]any)
+	warning, _ := env["warning"].(string)
+	return rule, warning, nil
+}
+
 // DeleteSecurityGroupRule removes a single rule from a security group by rule id.
 // The route is DELETE /security-group/{sgID}/rule/{ruleID} (singular "rule"). A
 // failure is signalled with success:false at HTTP 200, so doVoid checks the flag.

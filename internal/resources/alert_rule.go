@@ -138,8 +138,17 @@ func (r *alertRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			},
 			"metric": schema.StringAttribute{
 				Required: true,
-				Description: "Metric key to monitor, e.g. `cpu_pct`, `mem_pct`, `disk_pct`, " +
-					"`bandwidth_in`, `bandwidth_out`. Updatable in place.",
+				Description: "Metric id to monitor. Use the catalog ids offered for the resource type: " +
+					"`instance` (`status`, `cpu`, `memory`, `disk`, `network_rx`, `network_tx`, `disk_read_iops`, " +
+					"`disk_write_iops`), `managed_database` (`status`, `cpu`, `memory`, `disk`, `connections`, " +
+					"`queries_per_sec`, `slow_queries`, `replication_lag`, `cache_hit_ratio`, `deadlocks`), " +
+					"`load_balancer` (`status`, `cpu`, `memory`, `frontend_req_rate`, `frontend_sessions`, " +
+					"`frontend_conn_rate`, `backend_response_time`, `backend_queue`, `backend_conn_errors`, " +
+					"`http_4xx`, `http_5xx`), `vpn_gateway` (`status`, `cpu`, `memory`, `network_rx`, `network_tx`), " +
+					"`certificate` (`days_until_expiry`, `status`). The legacy aliases `cpu_pct`, `mem_pct`, " +
+					"`memory_pct` and `disk_pct` are still accepted for compatibility where the type has the " +
+					"matching id; prefer the catalog ids. The API stores the metric exactly as sent and returns " +
+					"it unchanged, so an existing configuration using an alias stays stable. Updatable in place.",
 			},
 			"operator": schema.StringAttribute{
 				Required: true,

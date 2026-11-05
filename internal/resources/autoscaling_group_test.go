@@ -236,6 +236,7 @@ resource "iaas_autoscaling_group" "test" {
   min_instances       = 2
   max_instances       = 6
   ssh_keys            = ["` + sg1 + `"]
+  user_scripts        = ["9c1722f7-ce6a-454e-ba00-441c02e9b2b1"]
 }
 `
 
@@ -249,6 +250,7 @@ resource "iaas_autoscaling_group" "test" {
   min_instances       = 3
   max_instances       = 4
   ssh_keys            = ["` + sg1 + `"]
+  user_scripts        = ["9c1722f7-ce6a-454e-ba00-441c02e9b2b1"]
   security_group_ids  = ["` + sg1 + `"]
   paused              = true
 }
@@ -276,7 +278,7 @@ resource "iaas_autoscaling_group" "test" {
 				ImportState:             true,
 				ImportStateId:           groupID,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssh_keys", "cloud_init"},
+				ImportStateVerifyIgnore: []string{"ssh_keys", "user_scripts", "cloud_init"},
 			},
 			// 3. Update: resize + pause.
 			{
@@ -313,6 +315,9 @@ resource "iaas_autoscaling_group" "test" {
 	}
 	if _, ok := createBody["ssh_keys"]; !ok {
 		t.Errorf("create body should carry ssh_keys; got %v", createBody)
+	}
+	if scripts, ok := createBody["user_scripts"].([]any); !ok || len(scripts) != 1 || scripts[0] != "9c1722f7-ce6a-454e-ba00-441c02e9b2b1" {
+		t.Errorf("create body[user_scripts] = %v; want the configured script id", createBody["user_scripts"])
 	}
 	// paused must NOT be in the create body (it is toggled via pause/resume only).
 	if _, present := createBody["paused"]; present {

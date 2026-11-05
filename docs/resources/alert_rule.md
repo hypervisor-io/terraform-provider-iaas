@@ -33,7 +33,7 @@ resource "iaas_alert_rule" "high_cpu" {
   name          = "High CPU on web-01"
   resource_type = "instance"
   resource_id   = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
-  metric        = "cpu_pct"
+  metric        = "cpu"
   operator      = "gt"
   threshold     = 80
   duration      = 300
@@ -44,7 +44,7 @@ resource "iaas_alert_rule" "high_cpu" {
 resource "iaas_alert_rule" "global_mem" {
   name          = "High Memory (all instances)"
   resource_type = "instance"
-  metric        = "mem_pct"
+  metric        = "memory"
   operator      = "gt"
   threshold     = 90
   duration      = 60
@@ -58,7 +58,7 @@ resource "iaas_alert_rule" "db_disk" {
   name          = "DB disk warning"
   resource_type = "managed_database"
   resource_id   = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
-  metric        = "disk_pct"
+  metric        = "disk"
   operator      = "gte"
   threshold     = 75
   enabled       = false
@@ -81,7 +81,7 @@ resource "iaas_alert_rule" "cert_expiry" {
 
 ### Required
 
-- `metric` (String) Metric key to monitor, e.g. `cpu_pct`, `mem_pct`, `disk_pct`, `bandwidth_in`, `bandwidth_out`. Updatable in place.
+- `metric` (String) Metric id to monitor. Use the catalog ids offered for the resource type: `instance` (`status`, `cpu`, `memory`, `disk`, `network_rx`, `network_tx`, `disk_read_iops`, `disk_write_iops`), `managed_database` (`status`, `cpu`, `memory`, `disk`, `connections`, `queries_per_sec`, `slow_queries`, `replication_lag`, `cache_hit_ratio`, `deadlocks`), `load_balancer` (`status`, `cpu`, `memory`, `frontend_req_rate`, `frontend_sessions`, `frontend_conn_rate`, `backend_response_time`, `backend_queue`, `backend_conn_errors`, `http_4xx`, `http_5xx`), `vpn_gateway` (`status`, `cpu`, `memory`, `network_rx`, `network_tx`), `certificate` (`days_until_expiry`, `status`). The legacy aliases `cpu_pct`, `mem_pct`, `memory_pct` and `disk_pct` are still accepted for compatibility where the type has the matching id; prefer the catalog ids. The API stores the metric exactly as sent and returns it unchanged, so an existing configuration using an alias stays stable. Updatable in place.
 - `name` (String) Friendly label for the alert rule. Maximum 255 characters. Updatable in place.
 - `operator` (String) Comparison operator: `gt` (>), `lt` (<), `gte` (>=), `lte` (<=), or `eq` (=). Updatable in place.
 - `resource_type` (String) The type of resource this rule monitors. One of: `instance`, `managed_database`, `load_balancer`, `vpn_gateway`, `certificate`. Updatable in place.

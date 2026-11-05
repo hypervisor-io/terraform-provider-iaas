@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added / Changed
 
+- `iaas_managed_database` gains optional `parameter_group_id` (a parameter group of the account with the
+  same engine), sent on create and changed in place through the apply-parameter-group endpoint. The API
+  cannot detach a group, so removing the argument leaves the applied group in place.
+- `iaas_autoscaling_group` gains optional `user_scripts` (user script ids owned by the account, run via
+  cloud-init on every new instance). Create-only like `ssh_keys`: changing it forces a new group.
+- `iaas_alert_rule` documentation names the monitoring catalog ids (`cpu`, `memory`, `disk`, ...) as the
+  canonical `metric` values and the legacy `cpu_pct`, `mem_pct`, `memory_pct`, `disk_pct` as accepted
+  aliases. The stored value is unchanged, so existing configurations stay stable.
+- `iaas_security_group`: a rule add that the API answers with success plus the warning
+  `config_push_failed` (rule saved, node push failed) is shown as a warning, not an error; the rule is
+  tracked and is not posted again. Refusals (HTTP 422) are errors with the API message.
 - New resource `iaas_vpn_ipsec_connection`: an IPsec site-to-site connection (IKEv2, or IKEv1 with the
   compat preset; pre-shared key) of a VPN gateway, a child of `iaas_vpn_gateway` like `iaas_vpn_peer`
   (import `<gateway_id>/<connection_id>`). The pre-shared key `psk` is Sensitive and write-only (the

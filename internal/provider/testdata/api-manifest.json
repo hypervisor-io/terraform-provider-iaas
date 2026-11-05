@@ -16,6 +16,90 @@
   },
   "endpoints": [
     {
+      "id": "admin GET /api/v1/placement-policies",
+      "method": "GET",
+      "path": "/api/v1/placement-policies",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/placement-policies",
+      "method": "POST",
+      "path": "/api/v1/placement-policies",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin POST /api/v1/placement-policies/dry-run",
+      "method": "POST",
+      "path": "/api/v1/placement-policies/dry-run",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/placement-policies/{placementPolicyId}",
+      "method": "GET",
+      "path": "/api/v1/placement-policies/{placementPolicyId}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
+      }
+    },
+    {
+      "id": "admin PUT /api/v1/placement-policies/{placementPolicyId}",
+      "method": "PUT",
+      "path": "/api/v1/placement-policies/{placementPolicyId}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin DELETE /api/v1/placement-policies/{placementPolicyId}",
+      "method": "DELETE",
+      "path": "/api/v1/placement-policies/{placementPolicyId}",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
       "id": "admin DELETE /api/v1/ai/conversation/{aiConversationId}",
       "method": "DELETE",
       "path": "/api/v1/ai/conversation/{aiConversationId}",
@@ -976,7 +1060,7 @@
       "method": "PATCH",
       "path": "/api/v1/database/{managedDatabaseId}/parameter-group",
       "surface": "admin",
-      "contract_notes": "409 restore_not_activated with success:false, reason and message while a restore-to-new database has not activated, including a failed restore; no task, configuration, plan or password change starts. Wait for successful activation before retrying.",
+      "contract_notes": "409 restore_not_activated with success:false, reason and message while a restore-to-new database has not activated, including a failed restore; no task, configuration, plan or password change starts. Wait for successful activation before retrying. 340-FORMS r3: the parameter group must belong to the database owner (a foreign or unknown id answers 404 success:false); an empty parameter_group_id or an engine mismatch answers 422 (clearing is not supported).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -1176,11 +1260,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Deferred consumer sync: creating while the account's quota check lock is held by a concurrent request now answers 409 reason account_busy, and a genuine quota breach answers 422 reason quota_exceeded, instead of HTTP 200 success:false; the consumers do not branch on these reasons yet."
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Deferred consumer sync: creating while the account's quota check lock is held by a concurrent request now answers 409 reason account_busy, and a genuine quota breach answers 422 reason quota_exceeded, instead of HTTP 200 success:false; the consumers do not branch on these reasons yet. Deferred consumer sync: the request body gained optional parameter_group_id (a db_parameter_group of the owner, same engine; refused otherwise) which is stored on the new database; the tool/provider do not send it yet."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md). Deferred consumer sync: creating while the account's quota check lock is held by a concurrent request now answers 409 reason account_busy, and a genuine quota breach answers 422 reason quota_exceeded, instead of HTTP 200 success:false; the consumers do not branch on these reasons yet."
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md). Deferred consumer sync: creating while the account's quota check lock is held by a concurrent request now answers 409 reason account_busy, and a genuine quota breach answers 422 reason quota_exceeded, instead of HTTP 200 success:false; the consumers do not branch on these reasons yet. Deferred consumer sync: the request body gained optional parameter_group_id (a db_parameter_group of the owner, same engine; refused otherwise) which is stored on the new database; the tool/provider do not send it yet."
       }
     },
     {
@@ -1818,6 +1902,7 @@
       "method": "DELETE",
       "path": "/api/v1/hypervisor/backup-storage/{hypervisorBackupStorageId}",
       "surface": "admin",
+      "contract_notes": "339-LIVE-C-DEFECTS: a destination any live instance or volume backup row uses (including the surviving backup of a deleted volume, whose file is there) answers 409 reason backup_storage_in_use with the backup count in data (before, 400 with the message only); a destination only deleted backup rows used is deleted and those rows release the link; a database refusal is a typed 409 or 500, never SQL text. No request field changed; admin endpoint, excluded from the provider and MCP.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -1916,6 +2001,7 @@
       "method": "DELETE",
       "path": "/api/v1/hypervisor/group/{hypervisorGroupId}",
       "surface": "admin",
+      "contract_notes": "339-LIVE-C-DEFECTS: a group live volumes use answers 409 reason group_has_volumes, a group that still has hypervisors 409 group_has_hypervisors (the node link is NOT NULL, so this never succeeded), each with the count in data; both used to answer 200 with success false and raw SQL text. Deleted volumes do not block and release their link. The delete is one transaction, so a refusal leaves the group intact; a database refusal is a typed 409 group_in_use or 500 group_delete_failed. No request field changed; admin endpoint, excluded from the provider and MCP.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -1946,11 +2032,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; new request fields l2_interface, vxlan_mode, lb_image_id and image_storages are not modelled"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; new request fields l2_interface, vxlan_mode, lb_image_id, image_storages and allow_guest_nesting (node security policy, default off) are not modelled"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); new request fields l2_interface, vxlan_mode, lb_image_id and image_storages stay excluded, as for the endpoint"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); new request fields l2_interface, vxlan_mode, lb_image_id, image_storages and allow_guest_nesting stay excluded, as for the endpoint"
       }
     },
     {
@@ -2044,11 +2130,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; request fields l2_interface, vxlan_mode, lb_image_id and image_storages are not modelled"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; request fields l2_interface, vxlan_mode, lb_image_id, image_storages and allow_guest_nesting (node security policy, default off) are not modelled"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); request fields l2_interface, vxlan_mode, lb_image_id and image_storages stay excluded, as for the endpoint"
+        "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md); request fields l2_interface, vxlan_mode, lb_image_id, image_storages and allow_guest_nesting stay excluded, as for the endpoint"
       }
     },
     {
@@ -2056,6 +2142,7 @@
       "method": "DELETE",
       "path": "/api/v1/hypervisor/storage/{hypervisorStorageId}",
       "surface": "admin",
+      "contract_notes": "339-LIVE-C-DEFECTS: a storage that live volumes use answers 409 reason storage_has_volumes with the live count in data, with or without ?force=1 (force still only clears instance disks); a storage only deleted volumes used is deleted and those rows release the link; a database refusal is a typed 409 storage_in_use or 500 storage_delete_failed, never SQL text. No request field changed; admin endpoint, excluded from the provider and MCP.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -5931,6 +6018,7 @@
       "method": "PATCH",
       "path": "/api/v1/s3/server/{s3ServerId}",
       "surface": "admin",
+      "contract_notes": "vm_password: null or blank keeps the stored Victoria password. Changing vm_url or vm_username to a non-empty destination without a freshly supplied vm_password answers 422 with errors.vm_password; emptying vm_url drops the stored password.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -7179,6 +7267,7 @@
       "method": "DELETE",
       "path": "/api/v1/volume/plan/{volumePlanId}",
       "surface": "admin",
+      "contract_notes": "339-LIVE-C-DEFECTS: a plan that live volumes use answers 409 reason volume_plan_in_use with the live count in data (before, 200 with success false); a plan only deleted volumes used is deleted and those rows release the link; a database refusal is a typed 409/500, never SQL text. No request field changed; admin endpoint, excluded from the provider and MCP.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -7277,6 +7366,7 @@
       "method": "DELETE",
       "path": "/api/v1/volume/{volumeId}/backup/{volumeBackupId}",
       "surface": "admin",
+      "contract_notes": "339-LIVE-C-DEFECTS: the backups of a deleted volume survive it and this delete now works for them (before, it answered 404 Volume not found, so their files could never be removed). The owner is the deleted volume's user, another account's backup is 404, and no request or response field changed, so the OpenTofu provider and MCP server need no change. 339-LIVE-C-DEFECTS (review): restore and delete of one backup are serialised on the backup row. A backup being restored refuses a delete with 409 reason backup_restoring, a backup being deleted refuses a restore or a second delete with 409 reason backup_deleting (no second queue row or node command); a deleted volume's backup follows the same rule. No request field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -7291,6 +7381,7 @@
       "method": "POST",
       "path": "/api/v1/volume/{volumeId}/backup/{volumeBackupId}/restore",
       "surface": "admin",
+      "contract_notes": "339-LIVE-C-DEFECTS: restoring a backup of a deleted volume works with mode=new_volume; mode=in_place answers 409 reason volume_deleted (before, a bare error). No request field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409. 339-LIVE-C-DEFECTS (review): for mode=new_volume, leaving project_id out (or sending it null or empty, which behaves exactly like leaving it out) keeps the copy in the source volume's project, also when the source was deleted; a real project id is an explicit choice. No new field; admin endpoint, excluded from the provider and MCP. 339-LIVE-C-DEFECTS (review): restore and delete of one backup are serialised on the backup row. A backup being restored refuses a delete with 409 reason backup_restoring, a backup being deleted refuses a restore or a second delete with 409 reason backup_deleting (no second queue row or node command); a deleted volume's backup follows the same rule. No request field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -7347,6 +7438,7 @@
       "method": "POST",
       "path": "/api/v1/volume/{volumeId}/snapshot/{volumeSnapshotId}/restore",
       "surface": "admin",
+      "contract_notes": "339-LIVE-C-DEFECTS (review): for mode=new_volume, leaving project_id out (or sending it null or empty, which behaves exactly like leaving it out) keeps the copy in the source volume's project, also when the source was deleted; a real project id is an explicit choice. No new field; admin endpoint, excluded from the provider and MCP.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -7354,6 +7446,21 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the D3 safe allowlist (see mcp-phase4-excluded.md)"
+      }
+    },
+    {
+      "id": "admin GET /api/v1/volume/{volumeId}/backups",
+      "method": "GET",
+      "path": "/api/v1/volume/{volumeId}/backups",
+      "surface": "admin",
+      "contract_notes": "339-LIVE-C-DEFECTS: new read-only listing of a volume's backups (newest first) that also answers for a deleted volume: {success, volume_deleted, backups[]} (admin api/v1 wraps it in the envelope data object). Backups outlive their volume, so this is how a customer finds the ones a deleted volume left.",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin read not in the v1 curated admin allowlist; candidate for a later phase"
       }
     },
     {
@@ -9008,7 +9115,7 @@
       "method": "PATCH",
       "path": "/api/database/{user_dbId}/parameter-group",
       "surface": "user",
-      "contract_notes": "409 restore_not_activated with success:false, reason and message while a restore-to-new database has not activated, including a failed restore; no task, configuration, plan or password change starts. Wait for successful activation before retrying.",
+      "contract_notes": "409 restore_not_activated with success:false, reason and message while a restore-to-new database has not activated, including a failed restore; no task, configuration, plan or password change starts. Wait for successful activation before retrying. 340-FORMS r3: the parameter group must belong to the database owner (a foreign or unknown id answers 404 success:false); an empty parameter_group_id or an engine mismatch answers 422 (clearing is not supported).",
       "opentofu": {
         "status": "excluded",
         "reason": "applying or clearing database parameters is an imperative action; iaas_managed_database has no declarative parameter-group field (shared client method exists for explicit callers)"
@@ -9294,7 +9401,7 @@
       "method": "POST",
       "path": "/api/databases",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. 340-FORMS: the request body gained optional parameter_group_id (a parameter group of the account, same engine; any other id is refused), stored on the new database. The OpenTofu provider and MCP tool do not send it yet (deferred consumer sync).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_managed_database"
@@ -10309,6 +10416,7 @@
       "method": "POST",
       "path": "/api/instance/{user_instanceId}/power/restart",
       "surface": "user",
+      "contract_notes": "338-LVMZFS-VOLUMES: answers 409 reason volume_operation_in_progress (before any task or send) while a volume attached to the instance has a backup, restore, snapshot or other operation running; retry when the volume's active_operation is null. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -10337,6 +10445,7 @@
       "method": "POST",
       "path": "/api/instance/{user_instanceId}/power/start",
       "surface": "user",
+      "contract_notes": "338-LVMZFS-VOLUMES: answers 409 reason volume_operation_in_progress (before any task or send) while a volume attached to the instance has a backup, restore, snapshot or other operation running; retry when the volume's active_operation is null. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -10365,6 +10474,7 @@
       "method": "POST",
       "path": "/api/instance/{user_instanceId}/reinstall",
       "surface": "user",
+      "contract_notes": "338-LVMZFS-VOLUMES: answers 409 reason volume_operation_in_progress (before any task or send) while a volume attached to the instance has a backup, restore, snapshot or other operation running; retry when the volume's active_operation is null. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC",
@@ -10395,6 +10505,7 @@
       "method": "POST",
       "path": "/api/instance/{user_instanceId}/rescue",
       "surface": "user",
+      "contract_notes": "338-LVMZFS-VOLUMES: answers 409 reason volume_operation_in_progress (before any task or send) while a volume attached to the instance has a backup, restore, snapshot or other operation running; retry when the volume's active_operation is null. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409.",
       "opentofu": {
         "status": "covered",
         "resource": "iaas_instance",
@@ -11819,11 +11930,13 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "imperative action, not representable as declarative IaC"
+        "reason": "imperative action, not representable as declarative IaC",
+        "notes": "Success may carry warning and warning_reason \"config_push_failed\" (HTTP 200, success true, the saved rule) when the rule was stored but the configuration push to the node failed; the rule must not be re-posted. Refusals (foreign or unknown remote group or IP set, inverted ports, duplicate) answer 422 with message and errors."
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.load_balancer.add_security_group_rule"
+        "tool": "user.load_balancer.add_security_group_rule",
+        "notes": "Success may carry warning and warning_reason \"config_push_failed\" (HTTP 200, success true, the saved rule) when the rule was stored but the configuration push to the node failed; the rule must not be re-posted. Refusals (foreign or unknown remote group or IP set, inverted ports, duplicate) answer 422 with message and errors."
       }
     },
     {
@@ -13315,11 +13428,13 @@
       "surface": "user",
       "opentofu": {
         "status": "covered",
-        "type": "iaas_security_group"
+        "type": "iaas_security_group",
+        "notes": "Success may carry warning and warning_reason \"config_push_failed\" (HTTP 200, success true, the saved rule) when the rule was stored but the configuration push to the node failed; the rule must not be re-posted. Refusals (foreign or unknown remote group or IP set, inverted ports, duplicate) answer 422 with message and errors."
       },
       "mcp": {
         "status": "covered",
-        "tool": "user.security_group.add_rule"
+        "tool": "user.security_group.add_rule",
+        "notes": "Success may carry warning and warning_reason \"config_push_failed\" (HTTP 200, success true, the saved rule) when the rule was stored but the configuration push to the node failed; the rule must not be re-posted. Refusals (foreign or unknown remote group or IP set, inverted ports, duplicate) answer 422 with message and errors."
       }
     },
     {
@@ -13679,6 +13794,7 @@
       "method": "DELETE",
       "path": "/api/storage/volume/{user_volumeId}",
       "surface": "user",
+      "contract_notes": "338-LVMZFS-VOLUMES: a volume on a local LVM or ZFS pool lives on one node; the operations answer 409 reason node_upgrade_required when that node predates local block volumes and 409 volume_node_mismatch when an attach targets an instance on another node, and snapshot create or restore answers 409 volume_snapshot_unsupported on any local LVM or ZFS pool (scheduled snapshot runs there are skipped, not failed; backups work). No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_volume"
@@ -13707,7 +13823,7 @@
       "method": "POST",
       "path": "/api/storage/volume/{user_volumeId}/attach",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. 338-LVMZFS-VOLUMES: a volume on a local LVM or ZFS pool lives on one node; the operations answer 409 reason node_upgrade_required when that node predates local block volumes and 409 volume_node_mismatch when an attach targets an instance on another node, and snapshot create or restore answers 409 volume_snapshot_unsupported on any local LVM or ZFS pool (scheduled snapshot runs there are skipped, not failed; backups work). No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_volume"
@@ -13722,7 +13838,7 @@
       "method": "POST",
       "path": "/api/storage/volume/{user_volumeId}/backup",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. 338-LVMZFS-VOLUMES: a volume on a local LVM or ZFS pool lives on one node; the operations answer 409 reason node_upgrade_required when that node predates local block volumes and 409 volume_node_mismatch when an attach targets an instance on another node, and snapshot create or restore answers 409 volume_snapshot_unsupported on any local LVM or ZFS pool (scheduled snapshot runs there are skipped, not failed; backups work). No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -13737,7 +13853,7 @@
       "method": "DELETE",
       "path": "/api/storage/volume/{user_volumeId}/backup/{user_volumeBackupId}",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. 339-LIVE-C-DEFECTS: the backups of a deleted volume survive it and this delete now works for them (before, it answered 404 Volume not found, so their files could never be removed). The owner is the deleted volume's user, another account's backup is 404, and no request or response field changed, so the OpenTofu provider and MCP server need no change. 339-LIVE-C-DEFECTS (review): restore and delete of one backup are serialised on the backup row. A backup being restored refuses a delete with 409 reason backup_restoring, a backup being deleted refuses a restore or a second delete with 409 reason backup_deleting (no second queue row or node command); a deleted volume's backup follows the same rule. No request field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -13752,7 +13868,7 @@
       "method": "POST",
       "path": "/api/storage/volume/{user_volumeId}/backup/{user_volumeBackupId}/restore",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. 338-LVMZFS-VOLUMES: a volume on a local LVM or ZFS pool lives on one node; the operations answer 409 reason node_upgrade_required when that node predates local block volumes and 409 volume_node_mismatch when an attach targets an instance on another node, and snapshot create or restore answers 409 volume_snapshot_unsupported on any local LVM or ZFS pool (scheduled snapshot runs there are skipped, not failed; backups work). No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s. 339-LIVE-C-DEFECTS: restoring a backup of a deleted volume works with mode=new_volume; mode=in_place answers 409 reason volume_deleted (before, a bare error). No request field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409. 339-LIVE-C-DEFECTS (review): for mode=new_volume, leaving project_id out (or sending it null or empty, which behaves exactly like leaving it out) keeps the copy in the source volume's project, also when the source volume was deleted; a real project id is an explicit choice; the effective project needs manage permission for a team member (403 otherwise). No new field, so the OpenTofu provider and MCP server need no change. 339-LIVE-C-DEFECTS (review): restore and delete of one backup are serialised on the backup row. A backup being restored refuses a delete with 409 reason backup_restoring, a backup being deleted refuses a restore or a second delete with 409 reason backup_deleting (no second queue row or node command); a deleted volume's backup follows the same rule. No request field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -13767,6 +13883,7 @@
       "method": "POST",
       "path": "/api/storage/volume/{user_volumeId}/detach",
       "surface": "user",
+      "contract_notes": "338-LVMZFS-VOLUMES: a volume on a local LVM or ZFS pool lives on one node; the operations answer 409 reason node_upgrade_required when that node predates local block volumes and 409 volume_node_mismatch when an attach targets an instance on another node, and snapshot create or restore answers 409 volume_snapshot_unsupported on any local LVM or ZFS pool (scheduled snapshot runs there are skipped, not failed; backups work). No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_volume"
@@ -13781,6 +13898,7 @@
       "method": "PATCH",
       "path": "/api/storage/volume/{user_volumeId}/resize",
       "surface": "user",
+      "contract_notes": "338-LVMZFS-VOLUMES: a volume on a local LVM or ZFS pool lives on one node; the operations answer 409 reason node_upgrade_required when that node predates local block volumes and 409 volume_node_mismatch when an attach targets an instance on another node, and snapshot create or restore answers 409 volume_snapshot_unsupported on any local LVM or ZFS pool (scheduled snapshot runs there are skipped, not failed; backups work). No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_volume"
@@ -13795,7 +13913,7 @@
       "method": "POST",
       "path": "/api/storage/volume/{user_volumeId}/snapshot",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. 338-LVMZFS-VOLUMES: a volume on a local LVM or ZFS pool lives on one node; the operations answer 409 reason node_upgrade_required when that node predates local block volumes and 409 volume_node_mismatch when an attach targets an instance on another node, and snapshot create or restore answers 409 volume_snapshot_unsupported on any local LVM or ZFS pool (scheduled snapshot runs there are skipped, not failed; backups work). No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_volume_snapshot"
@@ -13825,7 +13943,7 @@
       "method": "POST",
       "path": "/api/storage/volume/{user_volumeId}/snapshot/{user_volumeSnapshotId}/restore",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. 338-LVMZFS-VOLUMES: a volume on a local LVM or ZFS pool lives on one node; the operations answer 409 reason node_upgrade_required when that node predates local block volumes and 409 volume_node_mismatch when an attach targets an instance on another node, and snapshot create or restore answers 409 volume_snapshot_unsupported on any local LVM or ZFS pool (scheduled snapshot runs there are skipped, not failed; backups work). No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s. 339-LIVE-C-DEFECTS (review): for mode=new_volume, leaving project_id out (or sending it null or empty, which behaves exactly like leaving it out) keeps the copy in the source volume's project, also when the source volume was deleted; a real project id is an explicit choice; the effective project needs manage permission for a team member (403 otherwise). No new field, so the OpenTofu provider and MCP server need no change.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -13833,6 +13951,21 @@
       "mcp": {
         "status": "covered",
         "tool": "user.volume.snapshot_restore"
+      }
+    },
+    {
+      "id": "user GET /api/storage/volume/{user_volumeId}/backups",
+      "method": "GET",
+      "path": "/api/storage/volume/{user_volumeId}/backups",
+      "surface": "user",
+      "contract_notes": "339-LIVE-C-DEFECTS: new read-only listing of a volume's backups (newest first) that also answers for a deleted volume: {success, volume_deleted, backups[]} (admin api/v1 wraps it in the envelope data object). Backups outlive their volume, so this is how a customer finds the ones a deleted volume left.",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "read-only listing of a volume's backups with no declarative resource of its own; backups are created and removed imperatively"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "new read-only listing (339-LIVE-C-DEFECTS); the MCP volume tools are a later phase, the existing user.volume.get tool still returns a live volume's backups"
       }
     },
     {
@@ -13855,7 +13988,7 @@
       "method": "POST",
       "path": "/api/storage/volumes",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
+      "contract_notes": "Subuser authorization is per-project aware (337-PROJECT-PERMS): a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. 338-LVMZFS-VOLUMES: a volume on a local LVM or ZFS pool lives on one node; the operations answer 409 reason node_upgrade_required when that node predates local block volumes and 409 volume_node_mismatch when an attach targets an instance on another node, and snapshot create or restore answers 409 volume_snapshot_unsupported on any local LVM or ZFS pool (scheduled snapshot runs there are skipped, not failed; backups work). No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_volume"

@@ -30,7 +30,7 @@ resource "iaas_notification_channel" "slack" {
 resource "iaas_alert_rule" "test" {
   name          = "tf-acc-cpu-alert"
   resource_type = "instance"
-  metric        = "cpu_pct"
+  metric        = "cpu"
   operator      = "gt"
   threshold     = 80
   duration      = 300
@@ -46,7 +46,7 @@ resource "iaas_alert_rule" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("iaas_alert_rule.test", "id"),
 					resource.TestCheckResourceAttr("iaas_alert_rule.test", "name", "tf-acc-cpu-alert"),
-					resource.TestCheckResourceAttr("iaas_alert_rule.test", "metric", "cpu_pct"),
+					resource.TestCheckResourceAttr("iaas_alert_rule.test", "metric", "cpu"),
 					resource.TestCheckResourceAttr("iaas_alert_rule.test", "operator", "gt"),
 					resource.TestCheckResourceAttr("iaas_alert_rule.test", "threshold", "80"),
 					resource.TestCheckResourceAttr("iaas_alert_rule.test", "enabled", "true"),
