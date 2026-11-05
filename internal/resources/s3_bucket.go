@@ -12,9 +12,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/validators"
 )
 
 // Interface assertions - iaas_s3_bucket is a SYNC resource. It models:
@@ -129,9 +131,14 @@ func (r *s3BucketResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			},
 			"name": schema.StringAttribute{
 				Required: true,
-				Description: "Bucket name. Must be 3-63 characters, lowercase letters, digits, dots " +
-					"or hyphens, starting and ending with a letter or digit, and globally unique. " +
+				Description: "Bucket name, unique across the whole platform (every account and S3 server; a deleted bucket keeps its name). " +
+					"AWS S3 naming rules: 3-63 characters; lowercase letters, digits, dots and hyphens only; begins and ends with a letter or digit; " +
+					"no two adjacent dots; not formatted as an IP address; must not start with xn--, sthree- or amzn-s3-demo-; " +
+					"must not end with -s3alias, --ol-s3, .mrap, --x-s3 or --table-s3. A taken name is refused by the API (422) at apply time. " +
 					"Immutable; changing it forces a new resource.",
+				Validators: []validator.String{
+					validators.S3BucketName(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

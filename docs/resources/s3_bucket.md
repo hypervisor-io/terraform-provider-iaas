@@ -17,7 +17,7 @@ Manages an S3-compatible object storage bucket. The bucket name, plan and server
 # creation (changing any forces a new resource). The bucket gets its own
 # auto-generated access_key/secret_key pair (re-readable on every refresh).
 resource "iaas_s3_bucket" "assets" {
-  name         = "my-app-assets" # 3-63 chars, lowercase, globally unique
+  name         = "my-app-assets" # 3-63 chars, lowercase, unique platform-wide
   s3_plan_id   = "00000000-0000-0000-0000-000000000000"
   s3_server_id = "11111111-1111-1111-1111-111111111111"
 
@@ -59,7 +59,7 @@ output "bucket_secret_key" {
 
 ### Required
 
-- `name` (String) Bucket name. Must be 3-63 characters, lowercase letters, digits, dots or hyphens, starting and ending with a letter or digit, and globally unique. Immutable; changing it forces a new resource.
+- `name` (String) Bucket name, unique across the whole platform (every account and S3 server; a deleted bucket keeps its name). AWS S3 naming rules: 3-63 characters; lowercase letters, digits, dots and hyphens only; begins and ends with a letter or digit; no two adjacent dots; not formatted as an IP address; must not start with xn--, sthree- or amzn-s3-demo-; must not end with -s3alias, --ol-s3, .mrap, --x-s3 or --table-s3. A taken name is refused by the API (422) at apply time. Immutable; changing it forces a new resource.
 - `s3_plan_id` (String) UUID of the S3 plan (quota / bandwidth sizing). Must be an enabled plan. Immutable; changing it forces a new resource.
 - `s3_server_id` (String) UUID of the S3 server (storage location) the bucket lives on. Must be an enabled server. Immutable; changing it forces a new resource.
 

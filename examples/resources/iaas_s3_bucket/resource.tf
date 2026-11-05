@@ -2,7 +2,7 @@
 # creation (changing any forces a new resource). The bucket gets its own
 # auto-generated access_key/secret_key pair (re-readable on every refresh).
 resource "iaas_s3_bucket" "assets" {
-  name         = "my-app-assets" # 3-63 chars, lowercase, globally unique
+  name         = "my-app-assets" # 3-63 chars, lowercase, unique platform-wide
   s3_plan_id   = "00000000-0000-0000-0000-000000000000"
   s3_server_id = "11111111-1111-1111-1111-111111111111"
 
