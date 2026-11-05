@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added / Changed
 
+- `iaas_s3_bucket` destroy now waits for the asynchronous bucket delete (the API answers 202 `deleting`): it polls until the bucket is gone, fails with the platform's `delete_error` when the delete failed (the bucket still exists; run destroy again), and honours a new `timeouts { delete = ... }` block (default 10 minutes). A 409 `delete_in_progress` is treated as accepted.
 - `iaas_s3_access_key` is now deleted server-side on `terraform destroy` (it was a state-only removal with a warning). The platform removes the key's credentials from its storage servers first and keeps the key, answering HTTP 502, when a storage server cannot be reached; destroy can then simply be repeated. A key that is already gone counts as deleted.
 
 - `iaas_s3_bucket.name` is validated at plan time against the AWS S3 bucket naming rules the API now enforces (3-63 characters; lowercase letters, digits, dots, hyphens; begin and end with a letter or digit; no adjacent dots; not an IP address; no `xn--`, `sthree-` or `amzn-s3-demo-` prefix; no `-s3alias`, `--ol-s3`, `.mrap`, `--x-s3` or `--table-s3` suffix). Names are unique across the whole platform, deleted buckets included; a taken name is refused by the API at apply time. The naming check runs only when a bucket is created or its name changes (a replacement); an existing bucket whose accepted name no longer meets the rules, such as `sthree-assets`, keeps planning clean while its name is unchanged.

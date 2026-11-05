@@ -56,7 +56,8 @@ resource "iaas_s3_bucket" "test" {
 // access keys (id → permission), and records attach/update/detach call counts.
 // ---------------------------------------------------------------------------
 type s3BucketMock struct {
-	mu sync.Mutex
+	deleted bool
+	mu      sync.Mutex
 
 	id            string
 	name          string
@@ -168,6 +169,10 @@ func TestUnitS3Bucket_lifecycle(t *testing.T) {
 	srv.Handle("GET", "/object-storage/bucket/"+bucketID, func(w http.ResponseWriter, r *http.Request) {
 		store.mu.Lock()
 		defer store.mu.Unlock()
+		if store.deleted {
+			writeJSON(w, http.StatusNotFound, map[string]any{"message": "S3 Bucket not found"})
+			return
+		}
 		writeJSON(w, http.StatusOK, store.showEnvelope())
 	})
 
@@ -225,7 +230,10 @@ func TestUnitS3Bucket_lifecycle(t *testing.T) {
 
 	// DELETE - DELETE /object-storage/bucket/{id}.
 	srv.Handle("DELETE", "/object-storage/bucket/"+bucketID, func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]any{"success": true, "message": "queued for deletion"})
+		store.mu.Lock()
+		defer store.mu.Unlock()
+		store.deleted = true // the platform answers 202 and the job removes the row; Delete polls SHOW until 404
+		writeJSON(w, http.StatusAccepted, map[string]any{"success": true, "status": "deleting", "message": "queued for deletion"})
 	})
 
 	providerCfg := acctest.ProviderConfig(srv.Endpoint())

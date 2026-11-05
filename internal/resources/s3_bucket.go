@@ -2,8 +2,11 @@ package resources
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -16,6 +19,7 @@ import (
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
 	"github.com/hypervisor-io/terraform-provider-iaas/internal/validators"
+	"github.com/hypervisor-io/terraform-provider-iaas/waiter"
 )
 
 // Interface assertions - iaas_s3_bucket is a SYNC resource. It models:
@@ -88,6 +92,8 @@ type s3BucketModel struct {
 	Suspended types.Bool   `tfsdk:"suspended"`
 	Quota     types.Int64  `tfsdk:"quota"`
 	Bandwidth types.Int64  `tfsdk:"bandwidth"`
+
+	Timeouts timeouts.Value `tfsdk:"timeouts"`
 }
 
 // s3BucketKeyModel maps a single attached-key object inside the attached_keys
@@ -111,8 +117,11 @@ func (r *s3BucketResource) Metadata(_ context.Context, req resource.MetadataRequ
 }
 
 // Schema describes the iaas_s3_bucket resource.
-func (r *s3BucketResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *s3BucketResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Blocks: map[string]schema.Block{
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{Delete: true}),
+		},
 		Description: "Manages an S3-compatible object storage bucket. The bucket name, plan and " +
 			"server are fixed at creation (changing any forces a new resource). The default access " +
 			"control (ACL) is set in place. A dedicated access_key/secret_key pair is generated for " +
@@ -449,10 +458,65 @@ func (r *s3BucketResource) Delete(ctx context.Context, req resource.DeleteReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if err := r.client.DeleteS3Bucket(ctx, state.ID.ValueString()); err != nil {
-		resp.Diagnostics.Append(diagFromErr("Error deleting S3 bucket", err))
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultS3BucketDeleteTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
+	id := state.ID.ValueString()
+	if err := r.client.DeleteS3Bucket(ctx, id); err != nil {
+		var apiErr *client.APIError
+		// A delete already running (409 delete_in_progress) is accepted: keep polling it.
+		if client.IsNotFound(err) {
+			return
+		}
+		if !(errors.As(err, &apiErr) && apiErr.Status == 409 && apiErr.Reason == "delete_in_progress") {
+			resp.Diagnostics.Append(diagFromErr("Error deleting S3 bucket", err))
+			return
+		}
+	}
+	if err := waitS3BucketGone(ctx, r.client, id, deleteTimeout, pollInterval()); err != nil {
+		resp.Diagnostics.AddError("S3 bucket was not deleted", err.Error())
+	}
+}
+
+// defaultS3BucketDeleteTimeout bounds how long Delete waits for the asynchronous delete job.
+const defaultS3BucketDeleteTimeout = 10 * time.Minute
+
+// waitS3BucketGone polls the bucket until SHOW answers 404 (deleted), the platform reports
+// delete_state "failed" (error carrying delete_error; the bucket still exists remotely, so
+// the destroy must not drop it from state), or the timeout expires. Up to 3 consecutive
+// transient read errors are tolerated. The DELETE endpoint answers 202 "deleting".
+func waitS3BucketGone(ctx context.Context, c *client.Client, id string, timeout, interval time.Duration) error {
+	transient := 0
+	return waiter.WaitFor(ctx, waiter.Options{
+		Interval: interval,
+		Timeout:  timeout,
+		Refresh: func() (string, bool, error) {
+			env, err := c.GetS3Bucket(ctx, id)
+			if err != nil {
+				if client.IsNotFound(err) {
+					return "deleted", true, nil
+				}
+				transient++
+				if transient > 3 {
+					return "unknown", false, fmt.Errorf("reading the bucket while waiting for its deletion: %w", err)
+				}
+				return "unknown", false, nil
+			}
+			transient = 0
+			b, _ := env["bucket"].(map[string]any)
+			state, _ := b["delete_state"].(string)
+			if state == "failed" {
+				kind, _ := b["delete_error"].(string)
+				return state, false, fmt.Errorf("the platform could not delete the bucket (delete_error: %s); the bucket still exists, run destroy again to retry", kind)
+			}
+			if state == "" {
+				state = "present"
+			}
+			return state, false, nil
+		},
+	})
 }
 
 // ImportState lets `terraform import iaas_s3_bucket.x <uuid>` adopt an existing
@@ -512,6 +576,7 @@ func s3BucketStateFromAPI(env map[string]any, keys []map[string]any, prior s3Buc
 		Suspended: boolFromIntAPI(bucket, "suspended", prior.Suspended),
 		Quota:     int64FromAPI(bucket, "quota", prior.Quota),
 		Bandwidth: int64FromAPI(bucket, "bandwidth", prior.Bandwidth),
+		Timeouts:  prior.Timeouts,
 	}
 
 	keySet, diags := s3BucketKeySetFromAPI(keys, prior.AttachedKeys)
