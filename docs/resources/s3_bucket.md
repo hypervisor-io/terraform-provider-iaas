@@ -87,9 +87,10 @@ Required:
 - `access_key_id` (String) UUID of the standalone access key (iaas_s3_access_key) to attach to this bucket.
 - `permission` (String) Permission granted to this access key on the bucket: "read", "write", or "readwrite". Updatable in place.
 
+
 <a id="nestedblock--timeouts"></a>
 ### Nested Schema for `timeouts`
 
 Optional:
 
-- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs. Destroy waits up to this long (default 10m) for the asynchronous bucket delete to finish.
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
