@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added / Changed
 
-- `iaas_s3_bucket.name` is validated at plan time against the AWS S3 bucket naming rules the API now enforces (3-63 characters; lowercase letters, digits, dots, hyphens; begin and end with a letter or digit; no adjacent dots; not an IP address; no `xn--`, `sthree-` or `amzn-s3-demo-` prefix; no `-s3alias`, `--ol-s3`, `.mrap`, `--x-s3` or `--table-s3` suffix). Names are unique across the whole platform, deleted buckets included; a taken name is refused by the API at apply time. Existing buckets are not re-validated.
+- `iaas_s3_bucket.name` is validated at plan time against the AWS S3 bucket naming rules the API now enforces (3-63 characters; lowercase letters, digits, dots, hyphens; begin and end with a letter or digit; no adjacent dots; not an IP address; no `xn--`, `sthree-` or `amzn-s3-demo-` prefix; no `-s3alias`, `--ol-s3`, `.mrap`, `--x-s3` or `--table-s3` suffix). Names are unique across the whole platform, deleted buckets included; a taken name is refused by the API at apply time. The naming check runs only when a bucket is created or its name changes (a replacement); an existing bucket whose accepted name no longer meets the rules, such as `sthree-assets`, keeps planning clean while its name is unchanged.
 - `iaas_managed_database` gains optional `parameter_group_id` (a parameter group of the account with the
   same engine), sent on create and changed in place through the apply-parameter-group endpoint. The API
   cannot detach a group, so removing the argument leaves the applied group in place.

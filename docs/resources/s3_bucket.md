@@ -59,7 +59,7 @@ output "bucket_secret_key" {
 
 ### Required
 
-- `name` (String) Bucket name, unique across the whole platform (every account and S3 server; a deleted bucket keeps its name). AWS S3 naming rules: 3-63 characters; lowercase letters, digits, dots and hyphens only; begins and ends with a letter or digit; no two adjacent dots; not formatted as an IP address; must not start with xn--, sthree- or amzn-s3-demo-; must not end with -s3alias, --ol-s3, .mrap, --x-s3 or --table-s3. A taken name is refused by the API (422) at apply time. Immutable; changing it forces a new resource.
+- `name` (String) Bucket name, unique across the whole platform (every account and S3 server; a deleted bucket keeps its name). AWS S3 naming rules: 3-63 characters; lowercase letters, digits, dots and hyphens only; begins and ends with a letter or digit; no two adjacent dots; not formatted as an IP address; must not start with xn--, sthree- or amzn-s3-demo-; must not end with -s3alias, --ol-s3, .mrap, --x-s3 or --table-s3. The rules are checked at plan time only when the bucket is created or the name changes; an existing bucket with an older accepted name is not re-judged. A taken name is refused by the API (422) at apply time. Immutable; changing it forces a new resource.
 - `s3_plan_id` (String) UUID of the S3 plan (quota / bandwidth sizing). Must be an enabled plan. Immutable; changing it forces a new resource.
 - `s3_server_id` (String) UUID of the S3 server (storage location) the bucket lives on. Must be an enabled server. Immutable; changing it forces a new resource.
 

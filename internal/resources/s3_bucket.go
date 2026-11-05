@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -36,6 +35,7 @@ var (
 	_ resource.Resource                = &s3BucketResource{}
 	_ resource.ResourceWithConfigure   = &s3BucketResource{}
 	_ resource.ResourceWithImportState = &s3BucketResource{}
+	_ resource.ResourceWithModifyPlan  = &s3BucketResource{}
 )
 
 // NewS3BucketResource is the resource constructor registered with the provider.
@@ -134,11 +134,10 @@ func (r *s3BucketResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Description: "Bucket name, unique across the whole platform (every account and S3 server; a deleted bucket keeps its name). " +
 					"AWS S3 naming rules: 3-63 characters; lowercase letters, digits, dots and hyphens only; begins and ends with a letter or digit; " +
 					"no two adjacent dots; not formatted as an IP address; must not start with xn--, sthree- or amzn-s3-demo-; " +
-					"must not end with -s3alias, --ol-s3, .mrap, --x-s3 or --table-s3. A taken name is refused by the API (422) at apply time. " +
+					"must not end with -s3alias, --ol-s3, .mrap, --x-s3 or --table-s3. The rules are checked at plan time only when the bucket is created or the name changes; an existing bucket with an older accepted name is not re-judged. A taken name is refused by the API (422) at apply time. " +
 					"Immutable; changing it forces a new resource.",
-				Validators: []validator.String{
-					validators.S3BucketName(),
-				},
+				// The naming rules are checked in ModifyPlan, only for a create or a name change: an existing bucket whose
+				// name was accepted before the rules existed must keep planning clean.
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -574,4 +573,30 @@ func bucketKeysFromSet(ctx context.Context, set types.Set) ([]s3BucketKeyModel, 
 	var keys []s3BucketKeyModel
 	d := set.ElementsAs(ctx, &keys, false)
 	return keys, d
+}
+
+// ModifyPlan applies the strict AWS naming rules only when the bucket is being created (no prior state) or replaced
+// (the name differs from state). An unchanged legacy name is never re-judged, so no-op and ACL-only plans stay clean.
+func (r *s3BucketResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() { // destroy
+		return
+	}
+	var cfg types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("name"), &cfg)...)
+	if resp.Diagnostics.HasError() || cfg.IsNull() || cfg.IsUnknown() {
+		return
+	}
+	if !req.State.Raw.IsNull() {
+		var prior types.String
+		resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("name"), &prior)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if !prior.IsNull() && !prior.IsUnknown() && prior.ValueString() == cfg.ValueString() {
+			return
+		}
+	}
+	if msg := validators.S3BucketNameProblem(cfg.ValueString()); msg != "" {
+		resp.Diagnostics.AddAttributeError(path.Root("name"), "Invalid S3 bucket name", fmt.Sprintf("name %s", msg))
+	}
 }

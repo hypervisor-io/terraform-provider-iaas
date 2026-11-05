@@ -13,6 +13,10 @@ import (
 // S3BucketName validates a NEW bucket name against the AWS S3 general purpose bucket naming rules, the same rules the
 // Master API enforces on bucket create (source: https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html).
 // Uniqueness across the platform cannot be checked at plan time; the API answers 422 with errors.name for a taken name.
+//
+// The attribute validator form judges every plan, including resources that already exist; the iaas_s3_bucket resource
+// therefore does NOT attach it and instead calls S3BucketNameProblem from ModifyPlan, only when the bucket is created or
+// its name changes (a replacement). Names the API accepted before the rules existed stay valid while they do not change.
 func S3BucketName() validator.String {
 	return s3BucketNameValidator{}
 }
@@ -24,6 +28,9 @@ var (
 	s3ForbiddenPrefixes = []string{"xn--", "sthree-", "amzn-s3-demo-"}
 	s3ForbiddenSuffixes = []string{"-s3alias", "--ol-s3", ".mrap", "--x-s3", "--table-s3"}
 )
+
+// S3BucketNameProblem is the exported form of the naming check: the first broken rule, or "" when the name is acceptable.
+func S3BucketNameProblem(name string) string { return s3BucketNameViolation(name) }
 
 // s3BucketNameViolation returns the first broken rule, or "" when the name is acceptable.
 func s3BucketNameViolation(name string) string {
