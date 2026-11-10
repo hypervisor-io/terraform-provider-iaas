@@ -421,3 +421,54 @@ func TestResponseError_RetryAfterHeader(t *testing.T) {
 		t.Fatalf("err = %#v; want reason volume_busy and no RetryAfter", err)
 	}
 }
+
+func TestResponseError_AccountReason_Hint(t *testing.T) {
+	for _, reason := range []string{"account_inactive", "account_suspended"} {
+		body := []byte(`{"success":false,"message":"Account is not active.","reason":"` + reason + `"}`)
+		err := responseError(&http.Response{StatusCode: 403, Header: http.Header{}}, body)
+		var apiErr *APIError
+		if !errors.As(err, &apiErr) {
+			t.Fatalf("%s: want *APIError, got %T", reason, err)
+		}
+		if apiErr.Reason != reason {
+			t.Errorf("Reason = %q, want %q", apiErr.Reason, reason)
+		}
+		if !strings.Contains(apiErr.Message, accountStatusHint) {
+			t.Errorf("%s: missing account hint: %s", reason, apiErr.Message)
+		}
+		if strings.Contains(apiErr.Message, "IP-locked") || strings.Contains(apiErr.Message, "IP address") {
+			t.Errorf("%s: IP hint must not appear: %s", reason, apiErr.Message)
+		}
+	}
+}
+
+func TestResponseError_NonAccountReason_KeepsIPHint(t *testing.T) {
+	for _, body := range []string{
+		`{"message":"Forbidden"}`,
+		`{"message":"Forbidden","reason":"scope_missing"}`,
+		`{"message":"Forbidden","reason":42}`,
+	} {
+		err := responseError(&http.Response{StatusCode: 403, Header: http.Header{}}, []byte(body))
+		var apiErr *APIError
+		if !errors.As(err, &apiErr) {
+			t.Fatalf("want *APIError, got %T", err)
+		}
+		if !strings.Contains(apiErr.Message, ipLockHint) {
+			t.Errorf("body %s: IP hint missing: %s", body, apiErr.Message)
+		}
+		if strings.Contains(apiErr.Message, accountStatusHint) {
+			t.Errorf("body %s: account hint must not appear: %s", body, apiErr.Message)
+		}
+	}
+}
+
+func TestResponseError_401_IgnoresNothingNew(t *testing.T) {
+	err := responseError(&http.Response{StatusCode: 401, Header: http.Header{}}, []byte(`{"message":"Unauthenticated."}`))
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("want *APIError, got %T", err)
+	}
+	if apiErr.Message != "Unauthenticated.; "+ipLockHint {
+		t.Errorf("401 message changed: %s", apiErr.Message)
+	}
+}

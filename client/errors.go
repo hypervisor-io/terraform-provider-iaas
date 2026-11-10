@@ -18,6 +18,12 @@ import (
 const ipLockHint = "check that your token is registered from this IP address (tokens are IP-locked), " +
 	"the token is enabled and not expired, and has the required scope / subuser permission"
 
+// accountStatusHint replaces ipLockHint when the API refuses a request because
+// the token owner's account is not Active (reason account_inactive or
+// account_suspended). The IP-lock advice would mislead in that case.
+const accountStatusHint = "the account that owns this token is not active (status: inactive or suspended); " +
+	"ask the panel administrator to reactivate it"
+
 // APIError represents a non-2xx response from the IaaS API.
 // It is a plain Go error - no terraform-plugin-framework dependency.
 // Resource-layer code translates *APIError → Terraform diagnostics.
@@ -73,7 +79,7 @@ func (e *APIError) Error() string {
 // Parsing rules:
 //   - 2xx → nil.
 //   - 422 → parse {"errors":{field:[...]}} into FieldErrors, plus top-level "message".
-//   - 401/403 → Message includes ipLockHint.
+//   - 401/403 → Message includes ipLockHint, or accountStatusHint when reason is account_*.
 //   - others (404, generic 4xx, 5xx) → Message from body "message" field if present,
 //     else a status-based default.
 //
@@ -137,7 +143,11 @@ func responseError(resp *http.Response, body []byte) error {
 		}
 
 	case http.StatusUnauthorized, http.StatusForbidden: // 401, 403
-		apiErr.Message = msg + "; " + ipLockHint
+		if strings.HasPrefix(apiErr.Reason, "account_") {
+			apiErr.Message = msg + "; " + accountStatusHint
+		} else {
+			apiErr.Message = msg + "; " + ipLockHint
+		}
 
 	default:
 		apiErr.Message = msg
