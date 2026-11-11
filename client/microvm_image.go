@@ -55,7 +55,11 @@ func (c *Client) GetMicrovmImage(ctx context.Context, id string) (map[string]any
 // lifecycle_hooks?, build_hooks?}. Credentials travel in "auth", never inside
 // "source".
 func (c *Client) CreateMicrovmImage(ctx context.Context, body map[string]any) (map[string]any, error) {
-	return c.doItem(ctx, "POST", "/microvm/images", body, "image")
+	// SBX-SMALL: a kit create starts a build, so it carries an Idempotency-Key
+	// (fresh per call, kept across transport retries).
+	return c.doItemWithHeaders(ctx, "POST", "/microvm/images", body, "image", map[string]string{
+		"Idempotency-Key": newUUIDv4(),
+	})
 }
 
 // BuildMicrovmImage stamps a new version of the image from the same source,
@@ -64,8 +68,13 @@ func (c *Client) BuildMicrovmImage(ctx context.Context, id, hypervisorGroupID st
 	if id == "" {
 		return nil, fmt.Errorf("BuildMicrovmImage: empty id")
 	}
-	return c.doItem(ctx, "POST", "/microvm/image/"+url.PathEscape(id)+"/build",
-		map[string]any{"hypervisor_group_id": hypervisorGroupID}, "version")
+	// SBX-SMALL: a build is billed node time, so it carries an Idempotency-Key
+	// (a retry of the same call replays the first answer instead of starting a
+	// second build).
+	return c.doItemWithHeaders(ctx, "POST", "/microvm/image/"+url.PathEscape(id)+"/build",
+		map[string]any{"hypervisor_group_id": hypervisorGroupID}, "version", map[string]string{
+			"Idempotency-Key": newUUIDv4(),
+		})
 }
 
 // DeleteMicrovmImage deletes an image and its versions. The API answers 409

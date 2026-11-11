@@ -3,12 +3,12 @@
 page_title: "iaas_microvm Resource - iaas"
 subcategory: ""
 description: |-
-  Creates and manages a MicroVM from a reusable image. Placement, image, ingress, network, and runtime policy changes replace the MicroVM; environment variables and custom domains update in place.
+  Creates and manages a MicroVM from a reusable image. Placement, image, ingress, network, and runtime policy changes replace the MicroVM; environment variables, custom domains and the outbound network policy update in place.
 ---
 
 # iaas_microvm (Resource)
 
-Creates and manages a MicroVM from a reusable image. Placement, image, ingress, network, and runtime policy changes replace the MicroVM; environment variables and custom domains update in place.
+Creates and manages a MicroVM from a reusable image. Placement, image, ingress, network, and runtime policy changes replace the MicroVM; environment variables, custom domains and the outbound network policy update in place.
 
 ## Example Usage
 
@@ -41,6 +41,33 @@ resource "iaas_microvm" "worker" {
   env = {
     MODE = "production"
   }
+
+  # Outbound network policy: deny everything except the listed destinations.
+  # It is in force from the first boot and changes in place afterwards;
+  # removing the attribute removes the policy (unrestricted outbound access).
+  egress_policy = {
+    default_action = "deny"
+    rules = [
+      {
+        action = "allow"
+        target = "api.github.com"
+        ports  = ["443"]
+      },
+      {
+        action   = "allow"
+        target   = "*.pythonhosted.org"
+        protocol = "tcp"
+        ports    = ["443"]
+        comment  = "package downloads"
+      },
+      {
+        action   = "allow"
+        target   = "8.8.8.8"
+        protocol = "tcp"
+        ports    = ["443", "8000-8100"]
+      },
+    ]
+  }
 }
 ```
 
@@ -56,6 +83,7 @@ resource "iaas_microvm" "worker" {
 
 - `always_on` (Boolean) Keep the MicroVM running and restart it after failure.
 - `domains` (Set of String) Custom hostnames reconciled through the domain endpoints.
+- `egress_policy` (Attributes) Outbound network policy of the sandbox, changed in place. Omit for unrestricted outbound access; removing the attribute removes the policy. A policy set at create is in force from the first boot (the sandbox is placed only on a node that can enforce it). A change is sent to the node in the background: the apply waits for a running or paused sandbox until `egress_policy_state` is `applied` and fails when the node refuses the policy; a stopped sandbox keeps it `pending` and starts with it. The platform always blocks some destinations whatever the policy says (metadata and link-local addresses, loopback, private networks other than the sandbox's own VPC subnets, the platform's own addresses, tcp 25 and tcp 853); an allow rule that could only match those is refused. A policy changed outside OpenTofu shows as a diff on the next plan. (see [below for nested schema](#nestedatt--egress_policy))
 - `env` (Map of String, Sensitive) Write-only environment variables, replaceable in place.
 - `hypervisor_group_id` (String, Deprecated) Location UUID used for placement. Changing this forces a new resource.
 - `idle_timeout_seconds` (Number) Inactivity interval before pause. Null disables idle pause.
@@ -64,10 +92,12 @@ resource "iaas_microvm" "worker" {
 - `lifecycle_hooks` (String) Lifecycle hook overrides as a JSON object.
 - `location_id` (String) Location UUID used for placement. Canonical replacement for hypervisor_group_id; exactly one of the two must be set. Changing this forces a new resource.
 - `max_lifetime_seconds` (Number) Maximum lifetime, capped server-side at 28800 seconds.
+- `metadata` (Map of String) Customer metadata: string keys to string values, updated in place. At most 32 keys; a key is 1-64 characters of letters, digits, '_', '.' and '-' and must not start with 'vc.'; a value is at most 256 characters. Also a list filter on the API (metadata[key]=value).
 - `network` (Attributes List) Ordered public and VPC network interfaces (there is no isolated kind - C1). The account's default network (iaas_microvm_settings) is used when omitted; a create with neither is a 422. (see [below for nested schema](#nestedatt--network))
 - `on_timeout` (String) Timeout action: pause or kill.
-- `plan_id` (String) Plan UUID. The first enabled location plan is used when omitted.
+- `plan_id` (String) Plan UUID. Its disk must hold the kit's image (`required_disk_gib` on the kit, see the `iaas_microvm_catalog` data source with `image_id`): a smaller plan is refused with reason `plan_disk_too_small` and nothing is created (an image of 2 GiB or less fits any plan). When omitted, the smallest enabled location plan that holds the kit is used.
 - `secure` (Boolean) Require an access token for shell ingress.
+- `security_group_ids` (Set of String) Security groups owned by the account (at most 10) that apply to the whole MicroVM, every network interface. They are in force before the MicroVM can receive traffic; without groups the MicroVM is open on every port. Changing the set attaches and detaches groups in place (the node applies it within about 10 seconds). Read back from the API, so groups attached outside Terraform show as drift. Do not also manage the same MicroVM through iaas_security_group.sandbox_ids.
 - `ssh_key_ids` (List of String) Account SSH key UUIDs installed to /root/.ssh/authorized_keys and every non-system user's authorized_keys (C3). Changing this forces a new resource; the daemon writes keys once, at first boot.
 
 ### Read-Only
@@ -75,12 +105,46 @@ resource "iaas_microvm" "worker" {
 - `current_run_started_at` (String) Start timestamp of the current run.
 - `current_run_status` (String) Status of the current run.
 - `e2b_id` (String) Short wire identifier assigned by the API.
+- `egress_policy_generation` (Number) Generation of the stored outbound policy; it rises by one on every change, whoever makes it.
+- `egress_policy_state` (String) How far the node has applied the outbound policy: `none` (no policy), `pending` (stored, not confirmed by the node yet), `applied`, `failed` (the node refused it), `unavailable` (the node cannot enforce a policy right now; the policy is not in force) or `inactive` (the sandbox is killed or errored: the stored policy is kept for reading and is in force nowhere). Null on a platform without outbound policies.
 - `fqdn` (String) Generated HTTP hostname, when HTTP ingress is enabled.
 - `id` (String) UUID assigned to the MicroVM.
 - `interfaces` (Attributes List) Allocated interface addresses. (see [below for nested schema](#nestedatt--interfaces))
+- `last_resume_mode` (String) How the last resume brought the sandbox back: snapshot (memory kept) or fresh_boot (restarted from disk, in-memory state not kept). Null until the first resume.
+- `last_resume_reason` (String) Short machine reason for a fresh_boot resume, for example snapshot_missing or snapshot_version_mismatch. Null otherwise.
+- `last_resumed_at` (String) When the last resume happened. Null until the first resume.
 - `ssh` (String) SSH command for the default-route interface (C3), e.g. "ssh root@203.0.113.10".
 - `state` (String) Current lifecycle state.
 - `timeout_at` (String) Current maximum-lifetime deadline.
+
+<a id="nestedatt--egress_policy"></a>
+### Nested Schema for `egress_policy`
+
+Required:
+
+- `default_action` (String) What happens to outbound traffic no rule matches: `allow` or `deny`.
+
+Optional:
+
+- `inbound_replies` (String) Which replies to inbound connections may leave the sandbox: `service_ports` (only the ports the platform dials or publishes) or `any`. When omitted the platform uses `service_ports` with `default_action = "deny"` and `any` with `allow`. `any` is not accepted together with `deny`.
+- `rules` (Attributes List) Rules, matched before the default action, at most 100. A deny rule wins over an allow rule for the same destination. (see [below for nested schema](#nestedatt--egress_policy--rules))
+
+<a id="nestedatt--egress_policy--rules"></a>
+### Nested Schema for `egress_policy.rules`
+
+Required:
+
+- `action` (String) `allow` or `deny`.
+- `target` (String) Host name (`api.github.com`), wildcard (`*.example.com`, which does not match `example.com` itself), IPv4 or IPv6 address, or a network in CIDR form. Write internationalised names in their `xn--` form.
+
+Optional:
+
+- `comment` (String) A note, at most 120 characters.
+- `id` (String) Rule id (1 to 32 letters, digits, `_`, `.`, `-`), unique within the policy. Optional: the platform assigns one when omitted, and an assigned id is not tracked here.
+- `ports` (List of String) Destination ports as strings: a port (`"443"`) or, on address and network rules only, a range (`"8000-8100"`). Omitted means every port. A host name rule takes at most 8 ports.
+- `protocol` (String) `tcp`, `udp`, `icmp` or `any`. Omitted means `any`.
+
+
 
 <a id="nestedatt--ingress"></a>
 ### Nested Schema for `ingress`
@@ -120,7 +184,7 @@ Required:
 Optional:
 
 - `rate_mbit` (Number) Optional interface rate limit in Mbit/s.
-- `security_group_ids` (List of String)
+- `security_group_ids` (List of String) Same as the top-level security_group_ids, kept for existing configurations. Security groups apply to the whole MicroVM, not to one interface, so every network entry must name the same set; different sets are refused (422 security_groups_differ_per_nic). Prefer the top-level attribute.
 - `static_ip_id` (String) kind = public only: one of the account's allocated static IPs in this microVM's location. Distinct across every network entry in the same create (C8.3).
 - `subnet_id` (String) Public subnet UUID for kind = public. Optional - the platform auto-assigns a subnet with free capacity in the microVM's location when omitted (C8.1).
 - `vpc_subnet_id` (String) Owned VPC subnet UUID. Required for kind = vpc.

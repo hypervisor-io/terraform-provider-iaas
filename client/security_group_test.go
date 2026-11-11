@@ -619,3 +619,55 @@ func TestAddSecurityGroupRuleWithWarning_422IsAnError(t *testing.T) {
 		t.Errorf("message/field errors lost: %+v", apiErr)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// AttachSecurityGroupSandboxes / DetachSecurityGroupSandboxes (SBX-SG-ATTACH)
+// ---------------------------------------------------------------------------
+
+func TestAttachDetachSecurityGroupSandboxes(t *testing.T) {
+	var gotMethod, gotPath string
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"message":"ok","sandbox_ids":["vm-1","vm-2"]}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	if err := c.AttachSecurityGroupSandboxes(context.Background(), "sg-1", []string{"vm-1", "vm-2"}); err != nil {
+		t.Fatalf("attach: %v", err)
+	}
+	if gotMethod != http.MethodPost || gotPath != "/api/security-group/sg-1/attach-sandboxes" {
+		t.Errorf("attach = %s %s", gotMethod, gotPath)
+	}
+	if ids, ok := gotBody["sandbox_ids"].([]any); !ok || len(ids) != 2 || ids[0] != "vm-1" {
+		t.Errorf("body = %v", gotBody)
+	}
+	if err := c.DetachSecurityGroupSandboxes(context.Background(), "sg-1", []string{"vm-1"}); err != nil {
+		t.Fatalf("detach: %v", err)
+	}
+	if gotMethod != http.MethodPost || gotPath != "/api/security-group/sg-1/detach-sandboxes" {
+		t.Errorf("detach = %s %s", gotMethod, gotPath)
+	}
+	if c.AttachSecurityGroupSandboxes(context.Background(), "", []string{"vm-1"}) == nil || c.DetachSecurityGroupSandboxes(context.Background(), "", []string{"vm-1"}) == nil {
+		t.Error("an empty group id must be refused")
+	}
+}
+
+// A typed refusal is a real status with a reason, not a 200 success:false.
+func TestAttachSecurityGroupSandboxesKilledSandbox(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"success":false,"reason":"sandbox_killed","message":"A killed sandbox cannot carry security groups."}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	err := c.AttachSecurityGroupSandboxes(context.Background(), "sg-1", []string{"vm-1"})
+	if err == nil || !contains(err.Error(), "killed sandbox") {
+		t.Fatalf("err = %v; want the killed-sandbox refusal", err)
+	}
+}

@@ -48,6 +48,7 @@ Read-Only:
 - `icon` (String) Launcher icon key.
 - `id` (String)
 - `name` (String)
+- `required_disk_gib` (Number) Disk in GiB the kit's image needs; null when unknown; a figure of 2 or less excludes no plan, as the node launches such images on any plan. A sandbox on a plan with less disk is refused with reason plan_disk_too_small.
 - `sort_order` (Number) Launcher sort order.
 - `source_kind` (String)
 - `status` (String)

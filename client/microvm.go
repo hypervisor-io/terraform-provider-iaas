@@ -25,6 +25,7 @@ import (
 //	START   POST   /microvm/vm/{id}/start                          -> {success}
 //	KILL    POST   /microvm/vm/{id}/kill                           -> {success}
 //	TIMEOUT POST   /microvm/vm/{id}/timeout   body {timeout}       -> {success}
+//	METADATA PATCH /microvm/vm/{id}/metadata  body {metadata}      -> {success,metadata}
 //	DEPLOY  POST   /microvm/vm/{id}/deploy    body {image_version_id}
 //	                                                                 -> {success,run:{...}}
 //	ROLLBACK POST  /microvm/vm/{id}/rollback  body {image_version_id}
@@ -48,7 +49,17 @@ func microvm(id string) string { return "/microvm/vm/" + url.PathEscape(id) }
 // (search), state, image id and connector id. Empty filters are omitted from
 // the query.
 func (c *Client) ListMicrovms(ctx context.Context, search, state, imageID, connectorID string) ([]map[string]any, error) {
+	return c.ListMicrovmsByMetadata(ctx, search, state, imageID, connectorID, nil)
+}
+
+// ListMicrovmsByMetadata is ListMicrovms with the metadata[key]=value filter
+// (exact match, every pair must match; applied by the Master before
+// pagination).
+func (c *Client) ListMicrovmsByMetadata(ctx context.Context, search, state, imageID, connectorID string, metadata map[string]string) ([]map[string]any, error) {
 	q := url.Values{}
+	for k, v := range metadata {
+		q.Set("metadata["+k+"]", v)
+	}
 	if search != "" {
 		q.Set("search", search)
 	}
@@ -84,8 +95,26 @@ func (c *Client) GetMicrovm(ctx context.Context, id string) (map[string]any, err
 // ingress?, network?, max_lifetime_seconds?, on_timeout?,
 // idle_timeout_seconds?, always_on?, env?, lifecycle_hooks?, domain?,
 // secure?}.
+//
+// SBX-SMALL: every create carries an Idempotency-Key (a fresh UUID per call,
+// kept across the transport's own retries), so a retried create is replayed by
+// the Master's idempotency.strict middleware instead of starting a second,
+// separately billed sandbox. A 409 idempotency_in_progress means the first
+// request is still running; the caller retries later.
 func (c *Client) CreateMicrovm(ctx context.Context, body map[string]any) (map[string]any, error) {
-	return c.doItem(ctx, "POST", "/microvm/vms", body, "microvm")
+	return c.doItemWithHeaders(ctx, "POST", "/microvm/vms", body, "microvm", map[string]string{
+		"Idempotency-Key": newUUIDv4(),
+	})
+}
+
+// UpdateMicrovmMetadata merge-patches the MicroVM's customer metadata: a key
+// with a nil value is removed, any other key is set, keys not named are
+// untouched. It returns the full stored map (PATCH /microvm/vm/{id}/metadata).
+func (c *Client) UpdateMicrovmMetadata(ctx context.Context, id string, patch map[string]any) (map[string]any, error) {
+	if id == "" {
+		return nil, fmt.Errorf("UpdateMicrovmMetadata: empty id")
+	}
+	return c.doItem(ctx, "PATCH", microvm(id)+"/metadata", map[string]any{"metadata": patch}, "metadata")
 }
 
 // PauseMicrovm pauses a running MicroVM (snapshots it on the node).
@@ -129,6 +158,16 @@ func (c *Client) SetMicrovmTimeout(ctx context.Context, id string, timeoutSecond
 		return fmt.Errorf("SetMicrovmTimeout: empty id")
 	}
 	return c.doVoid(ctx, "POST", microvm(id)+"/timeout", map[string]any{"timeout": timeoutSeconds})
+}
+
+// RemoveMicrovmTimeout removes the MicroVM's lifetime deadline (SBX-SMALL): it
+// then has no lifetime cap, the same state a create with a null
+// max_lifetime_seconds makes.
+func (c *Client) RemoveMicrovmTimeout(ctx context.Context, id string) error {
+	if id == "" {
+		return fmt.Errorf("RemoveMicrovmTimeout: empty id")
+	}
+	return c.doVoid(ctx, "POST", microvm(id)+"/timeout", map[string]any{"no_limit": true})
 }
 
 // DeployMicrovm deploys a newer image version to the MicroVM (health-gated
@@ -216,6 +255,24 @@ func (c *Client) GetMicrovmMetrics(ctx context.Context, id string) (map[string]a
 // ready images, security groups, VPC subnets and limits.
 func (c *Client) GetMicrovmCatalog(ctx context.Context) (map[string]any, error) {
 	return c.doItem(ctx, "GET", "/microvm/catalog", nil, "")
+}
+
+// GetMicrovmCatalogForKit is GetMicrovmCatalog limited to the plans whose disk
+// holds the given kit (and optionally one of its versions): every location
+// lists only the plans that fit. Empty ids ask for the unfiltered catalog.
+func (c *Client) GetMicrovmCatalogForKit(ctx context.Context, imageID, imageVersionID string) (map[string]any, error) {
+	query := url.Values{}
+	if imageID != "" {
+		query.Set("image_id", imageID)
+		if imageVersionID != "" {
+			query.Set("image_version_id", imageVersionID)
+		}
+	}
+	path := "/microvm/catalog"
+	if len(query) > 0 {
+		path += "?" + query.Encode()
+	}
+	return c.doItem(ctx, "GET", path, nil, "")
 }
 
 // DeleteMicrovm kills (when not already killed) and soft-deletes the MicroVM;

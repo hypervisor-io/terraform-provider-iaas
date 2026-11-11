@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added / Changed
 
+- `iaas_microvm` gains `security_group_ids` (a set, optional and computed): security groups owned by the account that apply to the whole sandbox and are in force before it can receive traffic. Changing the set attaches and detaches groups in place; the set is read back from the API. Before this, `network[].security_group_ids` was accepted but never stored, so a sandbox created with groups was open on every port. The per-NIC attribute still works, but groups are per sandbox: every network entry must name the same set (a different set is a 422 `security_groups_differ_per_nic`). `iaas_security_group` gains `sandbox_ids` (attach and detach sandboxes in place). Needs a Master with the sandbox security group attach routes.
+
+- `iaas_microvm_catalog` gains optional `image_id` and `image_version_id`: each location then lists only the plans whose disk holds that kit's image. Kits (in this data source and `iaas_microvm_images`) gain the computed `required_disk_gib` (null when unknown; unknown or 2 GiB or less excludes no plan, matching the node). `iaas_microvm.plan_id` documents the Master's early refusal of a plan that is too small (HTTP 422, reason `plan_disk_too_small`; nothing is created) and that an omitted plan is now the smallest one that holds the kit.
+- Client only: `ListMicrovmEgressPresets` lists the platform's ready-made outbound policies
+  (`GET /microvm/egress/presets`). A preset is a starting document: copy its rules into `egress_policy` on
+  `iaas_microvm`, where they stay visible in the plan. There is no data source on purpose: expanding the
+  platform's list at plan time would change a plan whenever the platform edits a preset. The method exists for
+  the MCP server. The vendored API manifest marks the endpoint as excluded for OpenTofu with that reason.
+- Client only: `GetMicrovmEgressLog` reads a sandbox's outbound refusal log (`GET /microvm/vm/{id}/egress/log`:
+  what the policy refused, with filters and paging). The log is operational data that changes every minute, not
+  declarative state, so it has no resource or data source; the method exists for the MCP server, which builds on
+  this client. The vendored API manifest marks the endpoint as excluded for OpenTofu with that reason.
+- `iaas_microvm.egress_policy_state` can read `inactive`: the sandbox is killed or errored, the stored policy is
+  kept for reading and is in force nowhere (the platform used to keep reporting `applied` for it). An apply that
+  is waiting for the node when the sandbox ends stops at once with a warning instead of running into its
+  timeout. Needs a platform version that reports the value; older ones never send it.
+- `iaas_microvm` gains `egress_policy`, the sandbox's outbound network policy: `default_action` (`allow` or
+  `deny`), optional `inbound_replies`, and `rules` (`action`, `target` as a host name, `*.` wildcard, address
+  or CIDR network, optional `protocol`, `ports`, `comment`, `id`). A policy configured at create is sent with
+  the create request, so the sandbox never runs without it. Later changes are made in place (the whole policy
+  is replaced), and removing the attribute removes the policy. The apply waits for a running or paused sandbox
+  until the node has confirmed the change and fails when the node refuses it or cannot enforce it; a stopped
+  sandbox keeps the policy pending and starts with it. Two computed attributes, `egress_policy_state` and
+  `egress_policy_generation`, show how far the node is. A policy changed outside OpenTofu is detected through
+  the generation on the sandbox read and shows as a diff; values the platform only normalises (lower-cased
+  names, a default protocol, assigned rule ids) do not. `terraform import` reads the stored policy in its
+  shortest form. Against a platform without outbound policies a configured `egress_policy` fails the apply
+  instead of leaving an unrestricted sandbox. Needs a platform version with the sandbox outbound policy API.
+- `iaas_microvm` gains optional `metadata` (string map, changed in place through the new metadata endpoint). Sandbox create and kit build now send an `Idempotency-Key`, so a retried create is replayed by the platform instead of starting a second billed sandbox. The client gains `UpdateMicrovmMetadata`, `ListMicrovmsByMetadata` and `RemoveMicrovmTimeout`.
+- `iaas_microvm` gains the read-only attributes `last_resume_mode` (`snapshot` or `fresh_boot`), `last_resume_reason` and `last_resumed_at`. A `fresh_boot` resume means the sandbox was restarted from disk and its in-memory state was not kept. All three are null until the first resume.
 - `iaas_s3_bucket` destroy now waits for the asynchronous bucket delete (the API answers 202 `deleting`): it polls until the bucket is gone, fails with the platform's `delete_error` when the delete failed (the bucket still exists; run destroy again), and honours a new `timeouts { delete = ... }` block (default 10 minutes). A 409 `delete_in_progress` is treated as accepted.
 - `iaas_s3_access_key` is now deleted server-side on `terraform destroy` (it was a state-only removal with a warning). The platform removes the key's credentials from its storage servers first and keeps the key, answering HTTP 502, when a storage server cannot be reached; destroy can then simply be repeated. A key that is already gone counts as deleted.
 

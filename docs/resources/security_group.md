@@ -99,6 +99,7 @@ resource "iaas_security_group" "web" {
 - `description` (String) Optional free-text description of the security group. Set to null to clear. Updatable in place.
 - `instance_ids` (Set of String) UUIDs of the instances this security group is attached to, as an order-independent set. Adding or removing an id attaches or detaches the group on that instance in place. An instance may have at most 10 security groups.
 - `rules` (Attributes Set) The firewall rules in this security group, as an order-independent set. Each rule is added or removed on the server individually when it appears or disappears from this set. Because the API has no rule-update endpoint, changing any field of an existing rule removes and re-adds that rule. (see [below for nested schema](#nestedatt--rules))
+- `sandbox_ids` (Set of String) UUIDs of the sandboxes (MicroVMs) this security group is attached to, as an order-independent set. The group applies to the whole sandbox, every network interface, and the node enforces it within about 10 seconds. Adding or removing an id attaches or detaches the group in place. Only groups owned by the sandbox's account can be attached, and a sandbox may carry at most 10 groups. Do not manage the same sandbox's groups through iaas_microvm.security_group_ids as well.
 
 ### Read-Only
 

@@ -439,6 +439,15 @@ func TestResponseError_AccountReason_Hint(t *testing.T) {
 		if strings.Contains(apiErr.Message, "IP-locked") || strings.Contains(apiErr.Message, "IP address") {
 			t.Errorf("%s: IP hint must not appear: %s", reason, apiErr.Message)
 		}
+		// A team member's blocked account is the team owner's: the wording must cover both.
+		for _, want := range []string{"the account behind this token, or the account it belongs to, is not active", "inactive or suspended", "ask the panel administrator to reactivate it"} {
+			if !strings.Contains(apiErr.Message, want) {
+				t.Errorf("%s: message lacks %q: %s", reason, want, apiErr.Message)
+			}
+		}
+		if strings.Contains(apiErr.Message, "owns this token") {
+			t.Errorf("%s: old owner-only wording is back: %s", reason, apiErr.Message)
+		}
 	}
 }
 

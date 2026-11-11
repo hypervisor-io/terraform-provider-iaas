@@ -26,4 +26,31 @@ resource "iaas_microvm" "worker" {
   env = {
     MODE = "production"
   }
+
+  # Outbound network policy: deny everything except the listed destinations.
+  # It is in force from the first boot and changes in place afterwards;
+  # removing the attribute removes the policy (unrestricted outbound access).
+  egress_policy = {
+    default_action = "deny"
+    rules = [
+      {
+        action = "allow"
+        target = "api.github.com"
+        ports  = ["443"]
+      },
+      {
+        action   = "allow"
+        target   = "*.pythonhosted.org"
+        protocol = "tcp"
+        ports    = ["443"]
+        comment  = "package downloads"
+      },
+      {
+        action   = "allow"
+        target   = "8.8.8.8"
+        protocol = "tcp"
+        ports    = ["443", "8000-8100"]
+      },
+    ]
+  }
 }

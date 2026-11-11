@@ -216,3 +216,29 @@ func (c *Client) DetachSecurityGroupInstances(ctx context.Context, sgID string, 
 	body := map[string]any{"instance_ids": instanceIDs}
 	return c.doVoid(ctx, "POST", path, body)
 }
+
+// AttachSecurityGroupSandboxes attaches the security group to one or more
+// sandboxes (MicroVMs). The route is POST /security-group/{id}/attach-sandboxes
+// with body {sandbox_ids:[...]}. The group then applies to the whole sandbox,
+// every network interface, and the node enforces it within about 10 seconds.
+// Refusals are real statuses with a reason (404 unknown or foreign sandbox or
+// group, 409 sandbox_killed, 422 security_group_not_attachable or
+// max_security_groups_exceeded).
+func (c *Client) AttachSecurityGroupSandboxes(ctx context.Context, sgID string, sandboxIDs []string) error {
+	if sgID == "" {
+		return fmt.Errorf("AttachSecurityGroupSandboxes: empty sgID")
+	}
+	path := "/security-group/" + url.PathEscape(sgID) + "/attach-sandboxes"
+	return c.doVoid(ctx, "POST", path, map[string]any{"sandbox_ids": sandboxIDs})
+}
+
+// DetachSecurityGroupSandboxes detaches the security group from one or more
+// sandboxes: POST /security-group/{id}/detach-sandboxes with body
+// {sandbox_ids:[...]}. Detaching a group that is not attached is a no-op.
+func (c *Client) DetachSecurityGroupSandboxes(ctx context.Context, sgID string, sandboxIDs []string) error {
+	if sgID == "" {
+		return fmt.Errorf("DetachSecurityGroupSandboxes: empty sgID")
+	}
+	path := "/security-group/" + url.PathEscape(sgID) + "/detach-sandboxes"
+	return c.doVoid(ctx, "POST", path, map[string]any{"sandbox_ids": sandboxIDs})
+}

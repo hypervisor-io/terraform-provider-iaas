@@ -122,3 +122,34 @@ func TestGetMicrovmKeepsDomains(t *testing.T) {
 		t.Fatalf("envelope = %#v", envelope)
 	}
 }
+
+func TestGetMicrovmCatalogForKitSendsTheKitFilter(t *testing.T) {
+	var seen []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seen = append(seen, r.URL.Path+"?"+r.URL.RawQuery)
+		_ = json.NewEncoder(w).Encode(map[string]any{"locations": []any{}})
+	}))
+	defer server.Close()
+
+	c := New(server.URL+"/api", "token", 0, false)
+	ctx := context.Background()
+	for _, args := range [][2]string{{"", ""}, {"kit-1", ""}, {"kit-1", "ver-2"}, {"", "ver-2"}} {
+		if _, err := c.GetMicrovmCatalogForKit(ctx, args[0], args[1]); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want := []string{
+		"/api/microvm/catalog?",
+		"/api/microvm/catalog?image_id=kit-1",
+		"/api/microvm/catalog?image_id=kit-1&image_version_id=ver-2",
+		"/api/microvm/catalog?",
+	}
+	if len(seen) != len(want) {
+		t.Fatalf("requests = %v", seen)
+	}
+	for i := range want {
+		if seen[i] != want[i] {
+			t.Fatalf("request %d = %q; want %q", i, seen[i], want[i])
+		}
+	}
+}

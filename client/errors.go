@@ -11,7 +11,8 @@ import (
 	"time"
 )
 
-// ipLockHint is appended to all 401/403 error messages.
+// ipLockHint is appended to a 401/403 error message unless the API names an account-status
+// reason (account_*), in which case accountStatusHint is used instead.
 // The token is IP-locked (only works from the IP it was registered with).
 // Callers should also verify the token is enabled, not expired, and has
 // the required scope / subuser permission.
@@ -19,9 +20,9 @@ const ipLockHint = "check that your token is registered from this IP address (to
 	"the token is enabled and not expired, and has the required scope / subuser permission"
 
 // accountStatusHint replaces ipLockHint when the API refuses a request because
-// the token owner's account is not Active (reason account_inactive or
-// account_suspended). The IP-lock advice would mislead in that case.
-const accountStatusHint = "the account that owns this token is not active (status: inactive or suspended); " +
+// the token owner's account, or for a team member the team owner's account,
+// is not Active (reason account_inactive or account_suspended). The IP-lock advice would mislead in that case.
+const accountStatusHint = "the account behind this token, or the account it belongs to, is not active (inactive or suspended); " +
 	"ask the panel administrator to reactivate it"
 
 // APIError represents a non-2xx response from the IaaS API.
@@ -32,7 +33,8 @@ type APIError struct {
 	Status int
 	// Message is the human-readable summary from the API's "message" field,
 	// or a status-based default when absent.
-	// For 401/403 it also includes the IP-lock/scope hint (ipLockHint).
+	// For 401/403 it also includes the IP-lock/scope hint (ipLockHint), or the
+	// account-status hint (accountStatusHint) when the API sent an account_* reason.
 	Message string
 	// FieldErrors is populated for 422 Unprocessable Entity responses;
 	// keys are field names, values are slices of validation messages.

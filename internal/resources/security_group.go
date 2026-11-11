@@ -86,6 +86,7 @@ type securityGroupModel struct {
 	Description types.String `tfsdk:"description"`
 	Rules       types.Set    `tfsdk:"rules"`
 	InstanceIDs types.Set    `tfsdk:"instance_ids"`
+	SandboxIDs  types.Set    `tfsdk:"sandbox_ids"`
 }
 
 // securityGroupRuleModel maps a single nested rule object inside the rules set.
@@ -162,6 +163,16 @@ func (r *securityGroupResource) Schema(_ context.Context, _ resource.SchemaReque
 				Description: "UUIDs of the instances this security group is attached to, as an " +
 					"order-independent set. Adding or removing an id attaches or detaches the group " +
 					"on that instance in place. An instance may have at most 10 security groups.",
+			},
+			"sandbox_ids": schema.SetAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+				Description: "UUIDs of the sandboxes (MicroVMs) this security group is attached to, as an " +
+					"order-independent set. The group applies to the whole sandbox, every network interface, " +
+					"and the node enforces it within about 10 seconds. Adding or removing an id attaches or " +
+					"detaches the group in place. Only groups owned by the sandbox's account can be attached, " +
+					"and a sandbox may carry at most 10 groups. Do not manage the same sandbox's groups " +
+					"through iaas_microvm.security_group_ids as well.",
 			},
 			"rules": schema.SetNestedAttribute{
 				Optional: true,
@@ -288,6 +299,7 @@ func (r *securityGroupResource) Create(ctx context.Context, req resource.CreateR
 			Description: plan.Description,
 			Rules:       types.SetNull(types.ObjectType{AttrTypes: securityGroupRuleAttrTypes}),
 			InstanceIDs: types.SetNull(types.StringType),
+			SandboxIDs:  types.SetNull(types.StringType),
 		})
 	}
 
@@ -316,6 +328,20 @@ func (r *securityGroupResource) Create(ctx context.Context, req resource.CreateR
 	if len(attachIDs) > 0 {
 		if err := r.client.AttachSecurityGroupInstances(ctx, id, attachIDs); err != nil {
 			resp.Diagnostics.Append(diagFromErr("Error attaching instances to security group", err))
+			persistMinimal()
+			return
+		}
+	}
+
+	// Attach the configured sandboxes.
+	attachSandboxIDs, diags := stringsFromSet(ctx, plan.SandboxIDs)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if len(attachSandboxIDs) > 0 {
+		if err := r.client.AttachSecurityGroupSandboxes(ctx, id, attachSandboxIDs); err != nil {
+			resp.Diagnostics.Append(diagFromErr("Error attaching sandboxes to security group", err))
 			persistMinimal()
 			return
 		}
@@ -491,6 +517,46 @@ func (r *securityGroupResource) Update(ctx context.Context, req resource.UpdateR
 		}
 	}
 
+	// Diff the sandbox_ids set the same way.
+	plannedSandboxes, diags := stringsFromSet(ctx, plan.SandboxIDs)
+	resp.Diagnostics.Append(diags...)
+	stateSandboxes, diags := stringsFromSet(ctx, state.SandboxIDs)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plannedSandboxSet := make(map[string]struct{}, len(plannedSandboxes))
+	for _, sid := range plannedSandboxes {
+		plannedSandboxSet[sid] = struct{}{}
+	}
+	stateSandboxSet := make(map[string]struct{}, len(stateSandboxes))
+	for _, sid := range stateSandboxes {
+		stateSandboxSet[sid] = struct{}{}
+	}
+	var sandboxesToAttach, sandboxesToDetach []string
+	for _, sid := range plannedSandboxes {
+		if _, exists := stateSandboxSet[sid]; !exists {
+			sandboxesToAttach = append(sandboxesToAttach, sid)
+		}
+	}
+	for _, sid := range stateSandboxes {
+		if _, exists := plannedSandboxSet[sid]; !exists {
+			sandboxesToDetach = append(sandboxesToDetach, sid)
+		}
+	}
+	if len(sandboxesToAttach) > 0 {
+		if err := r.client.AttachSecurityGroupSandboxes(ctx, id, sandboxesToAttach); err != nil {
+			resp.Diagnostics.Append(diagFromErr("Error attaching sandboxes to security group", err))
+			return
+		}
+	}
+	if len(sandboxesToDetach) > 0 {
+		if err := r.client.DetachSecurityGroupSandboxes(ctx, id, sandboxesToDetach); err != nil {
+			resp.Diagnostics.Append(diagFromErr("Error detaching sandboxes from security group", err))
+			return
+		}
+	}
+
 	// Read back so state reflects the current server rule ids + attachments.
 	newState, notFound, diags := r.readState(ctx, id, plan)
 	resp.Diagnostics.Append(diags...)
@@ -616,6 +682,10 @@ func securityGroupStateFromAPI(env map[string]any, prior securityGroupModel) (se
 	instSet, d := instanceIDSetFromAPI(env["attached_instances"], prior.InstanceIDs)
 	diags.Append(d...)
 	m.InstanceIDs = instSet
+
+	sandboxSet, d := instanceIDSetFromAPI(env["attached_sandboxes"], prior.SandboxIDs)
+	diags.Append(d...)
+	m.SandboxIDs = sandboxSet
 
 	return m, diags
 }

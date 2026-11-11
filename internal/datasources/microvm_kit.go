@@ -29,9 +29,10 @@ var microvmKitAttrTypes = map[string]attr.Type{
 	"default_lifetime_seconds": types.Int64Type,
 	"suggested_secrets":        types.ListType{ElemType: types.ObjectType{AttrTypes: microvmSuggestedSecretAttrTypes}},
 	"sort_order":               types.Int64Type,
+	"required_disk_gib":        types.Int64Type,
 }
 
-// microvmKitSchemaAttributes returns the seven Computed kit attributes.
+// microvmKitSchemaAttributes returns the eight Computed kit attributes.
 func microvmKitSchemaAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"category":                 schema.StringAttribute{Computed: true, Description: "Launcher category of the kit."},
@@ -52,7 +53,8 @@ func microvmKitSchemaAttributes() map[string]schema.Attribute {
 				"role":        schema.StringAttribute{Computed: true, Description: "provider (feeds the secrets token) or repo (the repo access line). Null on a kit published before roles existed."},
 			}},
 		},
-		"sort_order": schema.Int64Attribute{Computed: true, Description: "Launcher sort order."},
+		"sort_order":        schema.Int64Attribute{Computed: true, Description: "Launcher sort order."},
+		"required_disk_gib": schema.Int64Attribute{Computed: true, Description: "Disk in GiB the kit's image needs; null when unknown; a figure of 2 or less excludes no plan, as the node launches such images on any plan. A sandbox on a plan with less disk is refused with reason plan_disk_too_small."},
 	}
 }
 
@@ -105,6 +107,7 @@ func microvmKitValues(obj map[string]any, diags *diag.Diagnostics) map[string]at
 		"default_lifetime_seconds": nullableInt64(obj["default_lifetime_seconds"]),
 		"suggested_secrets":        secrets,
 		"sort_order":               nullableInt64(obj["sort_order"]),
+		"required_disk_gib":        nullableInt64(obj["required_disk_gib"]),
 	}
 }
 

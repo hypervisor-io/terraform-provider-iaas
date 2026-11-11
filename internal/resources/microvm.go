@@ -3,7 +3,10 @@ package resources
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -16,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -48,6 +52,7 @@ type microvmModel struct {
 	PlanID              types.String `tfsdk:"plan_id"`
 	Name                types.String `tfsdk:"name"`
 	SshKeyIDs           types.List   `tfsdk:"ssh_key_ids"`
+	SecurityGroupIDs    types.Set    `tfsdk:"security_group_ids"`
 	Ingress             types.Object `tfsdk:"ingress"`
 	Network             types.List   `tfsdk:"network"`
 	MaxLifetimeSeconds  types.Int64  `tfsdk:"max_lifetime_seconds"`
@@ -55,6 +60,7 @@ type microvmModel struct {
 	IdleTimeoutSeconds  types.Int64  `tfsdk:"idle_timeout_seconds"`
 	AlwaysOn            types.Bool   `tfsdk:"always_on"`
 	Env                 types.Map    `tfsdk:"env"`
+	Metadata            types.Map    `tfsdk:"metadata"`
 	LifecycleHooks      types.String `tfsdk:"lifecycle_hooks"`
 	Secure              types.Bool   `tfsdk:"secure"`
 	Domains             types.Set    `tfsdk:"domains"`
@@ -64,8 +70,15 @@ type microvmModel struct {
 	TimeoutAt           types.String `tfsdk:"timeout_at"`
 	CurrentRunStatus    types.String `tfsdk:"current_run_status"`
 	CurrentRunStartedAt types.String `tfsdk:"current_run_started_at"`
+	LastResumeMode      types.String `tfsdk:"last_resume_mode"`
+	LastResumeReason    types.String `tfsdk:"last_resume_reason"`
+	LastResumedAt       types.String `tfsdk:"last_resumed_at"`
 	Ssh                 types.String `tfsdk:"ssh"`
 	Interfaces          types.List   `tfsdk:"interfaces"`
+
+	EgressPolicy           types.Object `tfsdk:"egress_policy"`
+	EgressPolicyState      types.String `tfsdk:"egress_policy_state"`
+	EgressPolicyGeneration types.Int64  `tfsdk:"egress_policy_generation"`
 }
 
 type microvmIngressModel struct {
@@ -112,7 +125,7 @@ func (r *microvmResource) Metadata(_ context.Context, req resource.MetadataReque
 func (r *microvmResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	replaceString := []planmodifier.String{stringplanmodifier.RequiresReplace()}
 	resp.Schema = schema.Schema{
-		Description: "Creates and manages a MicroVM from a reusable image. Placement, image, ingress, network, and runtime policy changes replace the MicroVM; environment variables and custom domains update in place.",
+		Description: "Creates and manages a MicroVM from a reusable image. Placement, image, ingress, network, and runtime policy changes replace the MicroVM; environment variables, custom domains and the outbound network policy update in place.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{Computed: true, Description: "UUID assigned to the MicroVM.", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"hypervisor_group_id": schema.StringAttribute{
@@ -140,13 +153,20 @@ func (r *microvmResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			},
 			"image_id":         schema.StringAttribute{Required: true, Description: "Ready platform or account image UUID.", PlanModifiers: replaceString},
 			"image_version_id": schema.StringAttribute{Optional: true, Description: "Ready version UUID. The current image version is used when omitted.", PlanModifiers: replaceString},
-			"plan_id":          schema.StringAttribute{Optional: true, Description: "Plan UUID. The first enabled location plan is used when omitted.", PlanModifiers: replaceString},
+			"plan_id":          schema.StringAttribute{Optional: true, Description: "Plan UUID. Its disk must hold the kit's image (`required_disk_gib` on the kit, see the `iaas_microvm_catalog` data source with `image_id`): a smaller plan is refused with reason `plan_disk_too_small` and nothing is created (an image of 2 GiB or less fits any plan). When omitted, the smallest enabled location plan that holds the kit is used.", PlanModifiers: replaceString},
 			"name":             schema.StringAttribute{Required: true, Description: "Account-unique lowercase name used in generated hostnames.", PlanModifiers: replaceString},
 			"ssh_key_ids": schema.ListAttribute{
 				Optional:      true,
 				ElementType:   types.StringType,
 				Description:   "Account SSH key UUIDs installed to /root/.ssh/authorized_keys and every non-system user's authorized_keys (C3). Changing this forces a new resource; the daemon writes keys once, at first boot.",
 				PlanModifiers: []planmodifier.List{listplanmodifier.RequiresReplace()},
+			},
+			"security_group_ids": schema.SetAttribute{
+				Optional:      true,
+				Computed:      true,
+				ElementType:   types.StringType,
+				Description:   "Security groups owned by the account (at most 10) that apply to the whole MicroVM, every network interface. They are in force before the MicroVM can receive traffic; without groups the MicroVM is open on every port. Changing the set attaches and detaches groups in place (the node applies it within about 10 seconds). Read back from the API, so groups attached outside Terraform show as drift. Do not also manage the same MicroVM through iaas_security_group.sandbox_ids.",
+				PlanModifiers: []planmodifier.Set{setplanmodifier.UseStateForUnknown()},
 			},
 			"ingress": schema.SingleNestedAttribute{
 				Optional:      true,
@@ -182,25 +202,32 @@ func (r *microvmResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 						Optional:    true,
 						Description: "kind = public only: one of the account's allocated static IPs in this microVM's location. Distinct across every network entry in the same create (C8.3).",
 					},
-					"security_group_ids": schema.ListAttribute{Optional: true, ElementType: types.StringType},
+					"security_group_ids": schema.ListAttribute{Optional: true, ElementType: types.StringType, Description: "Same as the top-level security_group_ids, kept for existing configurations. Security groups apply to the whole MicroVM, not to one interface, so every network entry must name the same set; different sets are refused (422 security_groups_differ_per_nic). Prefer the top-level attribute."},
 					"rate_mbit":          schema.Int64Attribute{Optional: true, Description: "Optional interface rate limit in Mbit/s."},
 				}},
 			},
-			"max_lifetime_seconds":   schema.Int64Attribute{Optional: true, Description: "Maximum lifetime, capped server-side at 28800 seconds.", PlanModifiers: []planmodifier.Int64{int64planmodifier.RequiresReplace()}},
-			"on_timeout":             schema.StringAttribute{Optional: true, Description: "Timeout action: pause or kill.", Validators: []validator.String{stringvalidator.OneOf("pause", "kill")}, PlanModifiers: replaceString},
-			"idle_timeout_seconds":   schema.Int64Attribute{Optional: true, Description: "Inactivity interval before pause. Null disables idle pause.", PlanModifiers: []planmodifier.Int64{int64planmodifier.RequiresReplace()}},
-			"always_on":              schema.BoolAttribute{Optional: true, Description: "Keep the MicroVM running and restart it after failure.", PlanModifiers: []planmodifier.Bool{boolplanmodifier.RequiresReplace()}},
-			"env":                    schema.MapAttribute{Optional: true, Sensitive: true, ElementType: types.StringType, Description: "Write-only environment variables, replaceable in place."},
-			"lifecycle_hooks":        schema.StringAttribute{Optional: true, Description: "Lifecycle hook overrides as a JSON object.", PlanModifiers: replaceString},
-			"secure":                 schema.BoolAttribute{Optional: true, Description: "Require an access token for shell ingress.", PlanModifiers: []planmodifier.Bool{boolplanmodifier.RequiresReplace()}},
-			"domains":                schema.SetAttribute{Optional: true, ElementType: types.StringType, Description: "Custom hostnames reconciled through the domain endpoints."},
-			"state":                  schema.StringAttribute{Computed: true, Description: "Current lifecycle state."},
-			"fqdn":                   schema.StringAttribute{Computed: true, Description: "Generated HTTP hostname, when HTTP ingress is enabled."},
-			"e2b_id":                 schema.StringAttribute{Computed: true, Description: "Short wire identifier assigned by the API.", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"timeout_at":             schema.StringAttribute{Computed: true, Description: "Current maximum-lifetime deadline."},
-			"current_run_status":     schema.StringAttribute{Computed: true, Description: "Status of the current run."},
-			"current_run_started_at": schema.StringAttribute{Computed: true, Description: "Start timestamp of the current run."},
-			"ssh":                    schema.StringAttribute{Computed: true, Description: "SSH command for the default-route interface (C3), e.g. \"ssh root@203.0.113.10\"."},
+			"max_lifetime_seconds":     schema.Int64Attribute{Optional: true, Description: "Maximum lifetime, capped server-side at 28800 seconds.", PlanModifiers: []planmodifier.Int64{int64planmodifier.RequiresReplace()}},
+			"on_timeout":               schema.StringAttribute{Optional: true, Description: "Timeout action: pause or kill.", Validators: []validator.String{stringvalidator.OneOf("pause", "kill")}, PlanModifiers: replaceString},
+			"idle_timeout_seconds":     schema.Int64Attribute{Optional: true, Description: "Inactivity interval before pause. Null disables idle pause.", PlanModifiers: []planmodifier.Int64{int64planmodifier.RequiresReplace()}},
+			"always_on":                schema.BoolAttribute{Optional: true, Description: "Keep the MicroVM running and restart it after failure.", PlanModifiers: []planmodifier.Bool{boolplanmodifier.RequiresReplace()}},
+			"env":                      schema.MapAttribute{Optional: true, Sensitive: true, ElementType: types.StringType, Description: "Write-only environment variables, replaceable in place."},
+			"metadata":                 schema.MapAttribute{Optional: true, ElementType: types.StringType, Description: "Customer metadata: string keys to string values, updated in place. At most 32 keys; a key is 1-64 characters of letters, digits, '_', '.' and '-' and must not start with 'vc.'; a value is at most 256 characters. Also a list filter on the API (metadata[key]=value)."},
+			"lifecycle_hooks":          schema.StringAttribute{Optional: true, Description: "Lifecycle hook overrides as a JSON object.", PlanModifiers: replaceString},
+			"secure":                   schema.BoolAttribute{Optional: true, Description: "Require an access token for shell ingress.", PlanModifiers: []planmodifier.Bool{boolplanmodifier.RequiresReplace()}},
+			"domains":                  schema.SetAttribute{Optional: true, ElementType: types.StringType, Description: "Custom hostnames reconciled through the domain endpoints."},
+			"egress_policy":            microvmEgressSchemaAttribute(),
+			"egress_policy_state":      schema.StringAttribute{Computed: true, Description: "How far the node has applied the outbound policy: `none` (no policy), `pending` (stored, not confirmed by the node yet), `applied`, `failed` (the node refused it), `unavailable` (the node cannot enforce a policy right now; the policy is not in force) or `inactive` (the sandbox is killed or errored: the stored policy is kept for reading and is in force nowhere). Null on a platform without outbound policies."},
+			"egress_policy_generation": schema.Int64Attribute{Computed: true, Description: "Generation of the stored outbound policy; it rises by one on every change, whoever makes it."},
+			"state":                    schema.StringAttribute{Computed: true, Description: "Current lifecycle state."},
+			"fqdn":                     schema.StringAttribute{Computed: true, Description: "Generated HTTP hostname, when HTTP ingress is enabled."},
+			"e2b_id":                   schema.StringAttribute{Computed: true, Description: "Short wire identifier assigned by the API.", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"timeout_at":               schema.StringAttribute{Computed: true, Description: "Current maximum-lifetime deadline."},
+			"current_run_status":       schema.StringAttribute{Computed: true, Description: "Status of the current run."},
+			"current_run_started_at":   schema.StringAttribute{Computed: true, Description: "Start timestamp of the current run."},
+			"last_resume_mode":         schema.StringAttribute{Computed: true, Description: "How the last resume brought the sandbox back: snapshot (memory kept) or fresh_boot (restarted from disk, in-memory state not kept). Null until the first resume."},
+			"last_resume_reason":       schema.StringAttribute{Computed: true, Description: "Short machine reason for a fresh_boot resume, for example snapshot_missing or snapshot_version_mismatch. Null otherwise."},
+			"last_resumed_at":          schema.StringAttribute{Computed: true, Description: "When the last resume happened. Null until the first resume."},
+			"ssh":                      schema.StringAttribute{Computed: true, Description: "SSH command for the default-route interface (C3), e.g. \"ssh root@203.0.113.10\"."},
 			"interfaces": schema.ListNestedAttribute{
 				Computed:    true,
 				Description: "Allocated interface addresses.",
@@ -245,26 +272,135 @@ func (r *microvmResource) Create(ctx context.Context, req resource.CreateRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	obj, err := r.client.CreateMicrovm(ctx, body)
+	obj, envDeferred, err := r.createWithEnvFallback(ctx, body)
 	if err != nil {
 		resp.Diagnostics.Append(diagFromErr("Error creating MicroVM", err))
 		return
 	}
 	state := microvmStateFromAPI(ctx, obj, nil, plan, &resp.Diagnostics)
+	policySet, generation, policyState, supported := microvmEgressSummary(obj)
+	state.EgressPolicyState, state.EgressPolicyGeneration = types.StringNull(), types.Int64Null()
+	if supported {
+		state.EgressPolicyState, state.EgressPolicyGeneration = types.StringValue(policyState), types.Int64Value(generation)
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	id := state.ID.ValueString()
-	if err := r.reconcileEnv(ctx, id, plan.Env, types.MapNull(types.StringType)); err != nil {
-		resp.Diagnostics.Append(diagFromErr("Error setting MicroVM environment", err))
+	if !plan.EgressPolicy.IsNull() && !plan.EgressPolicy.IsUnknown() {
+		if !supported || !policySet {
+			// Fail closed: a platform that predates outbound policies drops the field and
+			// would leave an unrestricted sandbox behind a configuration that asks for one.
+			resp.Diagnostics.AddError("MicroVM created without its outbound policy",
+				"The platform did not store egress_policy for this MicroVM (it may predate outbound network policies). The MicroVM exists and is NOT restricted; remove egress_policy or upgrade the platform, then apply again.")
+			return
+		}
+		resp.Diagnostics.Append(r.waitEgress(ctx, id, state.State.ValueString())...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+	// Env went out in the create body (microvmCreateBody). A Master older than 3381 ignores
+	// env on create without an error, so read back the key names and fall back to the env
+	// endpoint (the pre-3381 behaviour) for anything that did not arrive.
+	var envErr error
+	if envDeferred {
+		// The create was retried without env (older Master): set it the pre-3381 way.
+		envErr = r.reconcileEnv(ctx, id, plan.Env, types.MapNull(types.StringType))
+	} else {
+		envErr = r.ensureCreateEnv(ctx, id, plan.Env)
+	}
+	if envErr != nil {
+		resp.Diagnostics.Append(diagFromErr("Error setting MicroVM environment", envErr))
 		return
 	}
 	if err := r.reconcileDomains(ctx, id, plan.Domains, nil); err != nil {
 		resp.Diagnostics.Append(diagFromErr("Error setting MicroVM domains", err))
 		return
 	}
-	r.refresh(ctx, id, plan, &resp.State, &resp.Diagnostics)
+	r.refresh(ctx, id, plan, true, &resp.State, &resp.Diagnostics)
+}
+
+// createWithEnvFallback creates the MicroVM with env in the body. A Master older than the
+// create-env fix validates env as a string, so an object map is refused with a 422 whose
+// errors name only env (and creates no row). In exactly that case the create is retried ONCE
+// without env and the caller sets the variables through PUT /microvm/vm/{id}/env, the
+// sequence the provider used before env was sent on create. A 422 about any other field, or
+// a failure of the retry, is returned unchanged.
+//
+// If create ever carries an Idempotency-Key, the retry MUST use a new key: the first request
+// was refused and a replayed key could return that refusal again.
+func (r *microvmResource) createWithEnvFallback(ctx context.Context, body map[string]any) (map[string]any, bool, error) {
+	obj, err := r.client.CreateMicrovm(ctx, body)
+	if err == nil {
+		return obj, false, nil
+	}
+	if _, hasEnv := body["env"]; !hasEnv || !isEnvOnlyValidationError(err) {
+		return nil, false, err
+	}
+	retry := make(map[string]any, len(body))
+	for k, v := range body {
+		if k != "env" {
+			retry[k] = v
+		}
+	}
+	obj, err = r.client.CreateMicrovm(ctx, retry)
+	if err != nil {
+		return nil, false, err
+	}
+	return obj, true, nil
+}
+
+// isEnvOnlyValidationError is true for a 422 whose field errors name env (or env.*) and
+// nothing else.
+func isEnvOnlyValidationError(err error) bool {
+	var apiErr *client.APIError
+	if !errors.As(err, &apiErr) || apiErr.Status != http.StatusUnprocessableEntity || len(apiErr.FieldErrors) == 0 {
+		return false
+	}
+	for field := range apiErr.FieldErrors {
+		if field != "env" && !strings.HasPrefix(field, "env.") {
+			return false
+		}
+	}
+	return true
+}
+
+// ensureCreateEnv compares the env key names the Master reports with the configured ones and,
+// when any is missing (a Master that ignored env on create), replaces the env through
+// PUT /microvm/vm/{id}/env exactly as the provider did before env was sent on create.
+func (r *microvmResource) ensureCreateEnv(ctx context.Context, id string, desired types.Map) error {
+	if desired.IsNull() || desired.IsUnknown() || len(desired.Elements()) == 0 {
+		return nil
+	}
+	details, err := r.client.GetMicrovm(ctx, id)
+	if err != nil {
+		return err
+	}
+	if envKeysPresent(details, desired.Elements()) {
+		return nil
+	}
+	return r.reconcileEnv(ctx, id, desired, types.MapNull(types.StringType))
+}
+
+// envKeysPresent reports whether every configured variable name is in the SHOW envelope's
+// env_keys. Only names are compared; values are never returned by the API.
+func envKeysPresent(envelope map[string]any, configured map[string]attr.Value) bool {
+	have := map[string]bool{}
+	if arr, ok := envelope["env_keys"].([]any); ok {
+		for _, v := range arr {
+			if s, ok := v.(string); ok {
+				have[s] = true
+			}
+		}
+	}
+	for name := range configured {
+		if !have[name] {
+			return false
+		}
+	}
+	return true
 }
 
 func (r *microvmResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -284,6 +420,10 @@ func (r *microvmResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 	obj, domains := microvmEnvelopeParts(details)
 	newState := microvmStateFromAPI(ctx, obj, domains, state, &resp.Diagnostics)
+	r.applyEgressToState(ctx, state.ID.ValueString(), obj, state, &newState, false, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
 }
 
@@ -295,8 +435,16 @@ func (r *microvmResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 	id := state.ID.ValueString()
+	if err := r.reconcileSecurityGroups(ctx, id, plan.SecurityGroupIDs, state.SecurityGroupIDs); err != nil {
+		resp.Diagnostics.Append(diagFromErr("Error updating MicroVM security groups", err))
+		return
+	}
 	if err := r.reconcileEnv(ctx, id, plan.Env, state.Env); err != nil {
 		resp.Diagnostics.Append(diagFromErr("Error updating MicroVM environment", err))
+		return
+	}
+	if err := r.reconcileMetadata(ctx, id, plan.Metadata, state.Metadata); err != nil {
+		resp.Diagnostics.Append(diagFromErr("Error updating MicroVM metadata", err))
 		return
 	}
 	details, err := r.client.GetMicrovm(ctx, id)
@@ -309,7 +457,19 @@ func (r *microvmResource) Update(ctx context.Context, req resource.UpdateRequest
 		resp.Diagnostics.Append(diagFromErr("Error updating MicroVM domains", err))
 		return
 	}
-	r.refresh(ctx, id, plan, &resp.State, &resp.Diagnostics)
+	wrote, egressDiags := r.reconcileEgress(ctx, id, plan.EgressPolicy, state.EgressPolicy)
+	resp.Diagnostics.Append(egressDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if wrote {
+		// A node refusal is an error, but the policy IS stored: record it before returning.
+		waitDiags := r.waitEgress(ctx, id, state.State.ValueString())
+		r.refresh(ctx, id, plan, true, &resp.State, &resp.Diagnostics)
+		resp.Diagnostics.Append(waitDiags...)
+		return
+	}
+	r.refresh(ctx, id, plan, false, &resp.State, &resp.Diagnostics)
 }
 
 func (r *microvmResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -327,7 +487,7 @@ func (r *microvmResource) ImportState(ctx context.Context, req resource.ImportSt
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *microvmResource) refresh(ctx context.Context, id string, prior microvmModel, state *tfsdk.State, diags *diag.Diagnostics) {
+func (r *microvmResource) refresh(ctx context.Context, id string, prior microvmModel, forceEgress bool, state *tfsdk.State, diags *diag.Diagnostics) {
 	details, err := r.client.GetMicrovm(ctx, id)
 	if err != nil {
 		diags.Append(diagFromErr("Error reading MicroVM", err))
@@ -335,6 +495,10 @@ func (r *microvmResource) refresh(ctx context.Context, id string, prior microvmM
 	}
 	obj, domains := microvmEnvelopeParts(details)
 	model := microvmStateFromAPI(ctx, obj, domains, prior, diags)
+	r.applyEgressToState(ctx, id, obj, prior, &model, forceEgress, diags)
+	if diags.HasError() {
+		return
+	}
 	diags.Append(state.Set(ctx, model)...)
 }
 
@@ -352,11 +516,34 @@ func microvmCreateBody(ctx context.Context, plan microvmModel) (map[string]any, 
 	putOptionalInt64(body, "idle_timeout_seconds", plan.IdleTimeoutSeconds)
 	putOptionalBool(body, "always_on", plan.AlwaysOn)
 	putOptionalBool(body, "secure", plan.Secure)
+	if !plan.Metadata.IsNull() && !plan.Metadata.IsUnknown() {
+		var metadata map[string]string
+		diags.Append(plan.Metadata.ElementsAs(ctx, &metadata, false)...)
+		body["metadata"] = metadata
+	}
+
+	// 3381: the API applies env on create (object map, the same shape as the
+	// env update endpoint), so the first boot already has it and the node env
+	// gate answers at create time. Create verifies the key names afterwards and
+	// falls back to PUT /microvm/vm/{id}/env on an older Master (ensureCreateEnv).
+	if !plan.Env.IsNull() && !plan.Env.IsUnknown() {
+		env := map[string]string{}
+		diags.Append(plan.Env.ElementsAs(ctx, &env, false)...)
+		if len(env) > 0 {
+			body["env"] = env
+		}
+	}
 
 	if !plan.SshKeyIDs.IsNull() && !plan.SshKeyIDs.IsUnknown() {
 		var ids []string
 		diags.Append(plan.SshKeyIDs.ElementsAs(ctx, &ids, false)...)
 		body["ssh_key_ids"] = ids
+	}
+
+	if !plan.SecurityGroupIDs.IsNull() && !plan.SecurityGroupIDs.IsUnknown() {
+		var ids []string
+		diags.Append(plan.SecurityGroupIDs.ElementsAs(ctx, &ids, false)...)
+		body["security_group_ids"] = ids
 	}
 
 	if !plan.Ingress.IsNull() && !plan.Ingress.IsUnknown() {
@@ -384,6 +571,13 @@ func microvmCreateBody(ctx context.Context, plan microvmModel) (map[string]any, 
 			network = append(network, item)
 		}
 		body["network"] = network
+	}
+	// The outbound policy is part of the create request: the sandbox is placed on a
+	// node that can enforce it and never runs without it.
+	egress, egressDiags := microvmEgressToAPI(ctx, plan.EgressPolicy)
+	diags.Append(egressDiags...)
+	if egress != nil {
+		body["egress_policy"] = egress
 	}
 	if !plan.LifecycleHooks.IsNull() && !plan.LifecycleHooks.IsUnknown() {
 		var hooks map[string]any
@@ -436,6 +630,48 @@ func (r *microvmResource) reconcileEnv(ctx context.Context, id string, desired, 
 	return err
 }
 
+// microvmMetadataPatch is the merge patch that turns prior into desired: every
+// desired pair is sent, every prior key missing from desired is sent as nil
+// (removal). Equal maps give a nil patch.
+func microvmMetadataPatch(ctx context.Context, desired, prior types.Map) (map[string]any, error) {
+	want := map[string]string{}
+	if !desired.IsNull() && !desired.IsUnknown() {
+		if diags := desired.ElementsAs(ctx, &want, false); diags.HasError() {
+			return nil, fmt.Errorf("decoding metadata: %v", diags)
+		}
+	}
+	have := map[string]string{}
+	if !prior.IsNull() && !prior.IsUnknown() {
+		if diags := prior.ElementsAs(ctx, &have, false); diags.HasError() {
+			return nil, fmt.Errorf("decoding metadata: %v", diags)
+		}
+	}
+	patch := map[string]any{}
+	for k, v := range want {
+		if old, ok := have[k]; !ok || old != v {
+			patch[k] = v
+		}
+	}
+	for k := range have {
+		if _, ok := want[k]; !ok {
+			patch[k] = nil
+		}
+	}
+	if len(patch) == 0 {
+		return nil, nil
+	}
+	return patch, nil
+}
+
+func (r *microvmResource) reconcileMetadata(ctx context.Context, id string, desired, prior types.Map) error {
+	patch, err := microvmMetadataPatch(ctx, desired, prior)
+	if err != nil || patch == nil {
+		return err
+	}
+	_, err = r.client.UpdateMicrovmMetadata(ctx, id, patch)
+	return err
+}
+
 func (r *microvmResource) reconcileDomains(ctx context.Context, id string, desired types.Set, current []map[string]any) error {
 	wanted := map[string]bool{}
 	if !desired.IsNull() && !desired.IsUnknown() {
@@ -472,6 +708,47 @@ func (r *microvmResource) reconcileDomains(ctx context.Context, id string, desir
 	return nil
 }
 
+// reconcileSecurityGroups attaches the groups added to the plan and detaches the
+// ones removed, through the security-group attach-sandboxes / detach-sandboxes
+// routes. A plan that does not name the attribute (unknown or null) leaves the
+// groups as they are.
+func (r *microvmResource) reconcileSecurityGroups(ctx context.Context, id string, desired, current types.Set) error {
+	if desired.IsNull() || desired.IsUnknown() {
+		return nil
+	}
+	want, diags := stringsFromSet(ctx, desired)
+	if diags.HasError() {
+		return fmt.Errorf("decoding security_group_ids: %v", diags)
+	}
+	have, diags := stringsFromSet(ctx, current)
+	if diags.HasError() {
+		return fmt.Errorf("decoding security_group_ids: %v", diags)
+	}
+	wantSet := map[string]bool{}
+	for _, sg := range want {
+		wantSet[sg] = true
+	}
+	haveSet := map[string]bool{}
+	for _, sg := range have {
+		haveSet[sg] = true
+	}
+	for _, sg := range have {
+		if !wantSet[sg] {
+			if err := r.client.DetachSecurityGroupSandboxes(ctx, sg, []string{id}); err != nil {
+				return err
+			}
+		}
+	}
+	for _, sg := range want {
+		if !haveSet[sg] {
+			if err := r.client.AttachSecurityGroupSandboxes(ctx, sg, []string{id}); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // microvmEnvelopeParts splits the GetMicrovm SHOW envelope into the presented
 // microvm object and its domains (always non-nil so reconcilers can
 // distinguish "no domains yet" from "not fetched").
@@ -488,6 +765,16 @@ func microvmEnvelopeParts(envelope map[string]any) (map[string]any, []map[string
 	return obj, domains
 }
 
+// resumeStringFromAPI reads one of the read-only resume fields. A Master that
+// predates them omits the key; an unknown prior value must still become null,
+// never stay unknown after apply.
+func resumeStringFromAPI(obj map[string]any, key string, prior types.String) types.String {
+	if _, ok := obj[key]; !ok && prior.IsUnknown() {
+		return types.StringNull()
+	}
+	return optionalStringFromAPI(obj, key, prior)
+}
+
 func microvmStateFromAPI(ctx context.Context, obj map[string]any, domains []map[string]any, prior microvmModel, diags *diag.Diagnostics) microvmModel {
 	state := prior
 	state.ID = stringFromAPI(obj, "id", prior.ID)
@@ -502,6 +789,9 @@ func microvmStateFromAPI(ctx context.Context, obj map[string]any, domains []map[
 	state.E2bID = stringFromAPI(obj, "e2b_sandbox_id", prior.E2bID)
 	state.TimeoutAt = optionalStringFromAPI(obj, "timeout_at", prior.TimeoutAt)
 	state.Ssh = optionalStringFromAPI(obj, "ssh", prior.Ssh)
+	state.LastResumeMode = resumeStringFromAPI(obj, "last_resume_mode", prior.LastResumeMode)
+	state.LastResumeReason = resumeStringFromAPI(obj, "last_resume_reason", prior.LastResumeReason)
+	state.LastResumedAt = resumeStringFromAPI(obj, "last_resumed_at", prior.LastResumedAt)
 	if run, ok := obj["current_run"].(map[string]any); ok {
 		state.CurrentRunStatus = stringFromAPI(run, "status", prior.CurrentRunStatus)
 		state.CurrentRunStartedAt = optionalStringFromAPI(run, "started_at", prior.CurrentRunStartedAt)
@@ -517,9 +807,40 @@ func microvmStateFromAPI(ctx context.Context, obj map[string]any, domains []map[
 		diags.Append(domainDiags...)
 		state.Domains = set
 	}
+	if groups, ok := obj["security_groups"].([]any); ok {
+		ids := make([]string, 0, len(groups))
+		for _, entry := range groups {
+			if group, ok := entry.(map[string]any); ok {
+				if gid, ok := group["id"].(string); ok && gid != "" {
+					ids = append(ids, gid)
+				}
+			}
+		}
+		set, groupDiags := types.SetValueFrom(ctx, types.StringType, ids)
+		diags.Append(groupDiags...)
+		state.SecurityGroupIDs = set
+	} else if state.SecurityGroupIDs.IsUnknown() {
+		// An API without the field (older Master): never leave a computed value unknown after apply.
+		state.SecurityGroupIDs = types.SetNull(types.StringType)
+	}
 	interfaces, interfaceDiags := microvmInterfacesFromAPI(obj["interfaces"])
 	diags.Append(interfaceDiags...)
 	state.Interfaces = interfaces
+	// Metadata is managed only when the configuration (or prior state) names
+	// it, so a sandbox whose metadata was set outside Terraform does not make
+	// an unconfigured attribute appear. Non-string values (the E2B adapter
+	// stores whatever its SDK sent) are not representable and are skipped.
+	if !prior.Metadata.IsNull() {
+		values := map[string]attr.Value{}
+		if raw, ok := obj["metadata"].(map[string]any); ok {
+			for k, v := range raw {
+				if s, ok := v.(string); ok {
+					values[k] = types.StringValue(s)
+				}
+			}
+		}
+		state.Metadata = types.MapValueMust(types.StringType, values)
+	}
 	return state
 }
 

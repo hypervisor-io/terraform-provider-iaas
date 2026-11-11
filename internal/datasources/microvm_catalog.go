@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -28,6 +29,8 @@ type microvmCatalogDataSource struct {
 }
 
 type microvmCatalogModel struct {
+	ImageID        types.String `tfsdk:"image_id"`
+	ImageVersionID types.String `tfsdk:"image_version_id"`
 	Locations      types.List   `tfsdk:"locations"`
 	Images         types.List   `tfsdk:"images"`
 	SecurityGroups types.List   `tfsdk:"security_groups"`
@@ -91,6 +94,8 @@ func (d *microvmCatalogDataSource) Schema(_ context.Context, _ datasource.Schema
 	resp.Schema = schema.Schema{
 		Description: "Reads the unified MicroVM placement catalog, including locations, plans, ready images, network choices, and limits.",
 		Attributes: map[string]schema.Attribute{
+			"image_id":         schema.StringAttribute{Optional: true, Description: "A kit visible to the account. When set, each location lists only the plans whose disk holds that kit's image (see `required_disk_gib` on the kit); a kit whose size is unknown excludes no plan. Leave unset for every plan."},
+			"image_version_id": schema.StringAttribute{Optional: true, Description: "A version of `image_id` to size the plans against; defaults to the kit's current version. Requires `image_id`."},
 			"locations": schema.ListNestedAttribute{
 				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
@@ -167,15 +172,31 @@ func (d *microvmCatalogDataSource) Configure(_ context.Context, req datasource.C
 	d.client = c
 }
 
-func (d *microvmCatalogDataSource) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
-	catalog, err := d.client.GetMicrovmCatalog(ctx)
+func (d *microvmCatalogDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var config microvmCatalogModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if catalogFilterOrphansVersion(config.ImageID, config.ImageVersionID) {
+		resp.Diagnostics.AddAttributeError(path.Root("image_version_id"), "image_id is required", "image_version_id names a version of a kit, so image_id must be set too.")
+		return
+	}
+	catalog, err := d.client.GetMicrovmCatalogForKit(ctx, config.ImageID.ValueString(), config.ImageVersionID.ValueString())
 	if err != nil {
 		resp.Diagnostics.Append(tfdiag.FromErr("Error reading MicroVM catalog", err))
 		return
 	}
 	state, diags := microvmCatalogState(catalog)
+	state.ImageID, state.ImageVersionID = config.ImageID, config.ImageVersionID
 	resp.Diagnostics.Append(diags...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+}
+
+// catalogFilterOrphansVersion reports a version named without its kit: the
+// version only means something as a version of image_id.
+func catalogFilterOrphansVersion(imageID, versionID types.String) bool {
+	return versionID.ValueString() != "" && imageID.ValueString() == ""
 }
 
 func microvmCatalogState(catalog map[string]any) (microvmCatalogModel, diag.Diagnostics) {
@@ -238,7 +259,7 @@ func microvmCatalogState(catalog map[string]any) (microvmCatalogModel, diag.Diag
 		"max_microvms":             types.Int64Value(microvmLimit(objectMap(catalog["limits"]))),
 	})
 	diags.Append(limitDiags...)
-	return microvmCatalogModel{Locations: locationList, Images: imageList, SecurityGroups: securityGroups, VPCSubnets: subnetList, Limits: limits}, diags
+	return microvmCatalogModel{ImageID: types.StringNull(), ImageVersionID: types.StringNull(), Locations: locationList, Images: imageList, SecurityGroups: securityGroups, VPCSubnets: subnetList, Limits: limits}, diags
 }
 
 func namedObjects(raw any, attrTypes map[string]attr.Type, diags *diag.Diagnostics) types.List {

@@ -134,3 +134,45 @@ func TestMicrovmKitMetadataNullWhenMasterOmitsIt(t *testing.T) {
 		t.Fatal("catalog suggested_secrets not null")
 	}
 }
+
+func TestMicrovmKitRequiredDiskGibIsNullWhenUnknown(t *testing.T) {
+	state, diags := microvmCatalogState(map[string]any{"images": []any{
+		map[string]any{"id": "a", "name": "shell", "status": "ready", "required_disk_gib": 4.0},
+		map[string]any{"id": "b", "name": "mystery", "status": "ready", "required_disk_gib": nil},
+		map[string]any{"id": "c", "name": "old-master", "status": "ready"},
+	}})
+	if diags.HasError() {
+		t.Fatalf("microvmCatalogState: %v", diags)
+	}
+	got := []types.Int64{}
+	for _, element := range state.Images.Elements() {
+		got = append(got, element.(types.Object).Attributes()["required_disk_gib"].(types.Int64))
+	}
+	if got[0].ValueInt64() != 4 || got[0].IsNull() {
+		t.Fatalf("known size = %v", got[0])
+	}
+	if !got[1].IsNull() || !got[2].IsNull() {
+		t.Fatalf("an unknown size must stay null, never 0: %v %v", got[1], got[2])
+	}
+	if !state.ImageID.IsNull() || !state.ImageVersionID.IsNull() {
+		t.Fatalf("filter attributes must start null: %v %v", state.ImageID, state.ImageVersionID)
+	}
+}
+
+func TestCatalogFilterOrphansVersion(t *testing.T) {
+	cases := []struct {
+		image, version types.String
+		want           bool
+	}{
+		{types.StringNull(), types.StringNull(), false},
+		{types.StringValue("kit"), types.StringNull(), false},
+		{types.StringValue("kit"), types.StringValue("ver"), false},
+		{types.StringNull(), types.StringValue("ver"), true},
+		{types.StringValue(""), types.StringValue("ver"), true},
+	}
+	for i, c := range cases {
+		if got := catalogFilterOrphansVersion(c.image, c.version); got != c.want {
+			t.Fatalf("case %d: got %v want %v", i, got, c.want)
+		}
+	}
+}
