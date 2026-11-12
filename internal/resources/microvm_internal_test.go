@@ -11,10 +11,13 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
 )
@@ -294,6 +297,7 @@ func runMicrovmEnvCreate(t *testing.T, f *microvmEnvFake) {
 		}),
 		SecurityGroupIDs: types.SetNull(types.StringType),
 		Metadata:         types.MapNull(types.StringType),
+		Volumes:          types.ListNull(types.ObjectType{AttrTypes: microvmVolumeAttrTypes}),
 		SshKeyIDs:        types.ListNull(s.Attributes["ssh_key_ids"].GetType().(types.ListType).ElemType),
 		Ingress:          types.ObjectNull(s.Attributes["ingress"].GetType().(types.ObjectType).AttrTypes),
 		EgressPolicy:     types.ObjectNull(s.Attributes["egress_policy"].GetType().(types.ObjectType).AttrTypes),
@@ -510,5 +514,182 @@ func TestMicrovmStateFromAPIMapsResumeFields(t *testing.T) {
 	}
 	if diags.HasError() {
 		t.Fatalf("diags: %v", diags)
+	}
+}
+
+// a MicroVM started from a snapshot sends snapshot_id (and inherit_env) and neither image_id nor a
+// location; the platform takes both from the snapshot.
+func TestMicrovmCreateBodyForkSendsSnapshotAndNoImageOrLocation(t *testing.T) {
+	plan := microvmModel{
+		Name:       types.StringValue("fork-1"),
+		SnapshotID: types.StringValue("snap-1"),
+		InheritEnv: types.BoolValue(true),
+		ImageID:    types.StringUnknown(), // Optional+Computed, unknown at plan time
+		LocationID: types.StringUnknown(),
+	}
+	body, diags := microvmCreateBody(context.Background(), plan)
+	if diags.HasError() {
+		t.Fatalf("microvmCreateBody: %v", diags)
+	}
+	if body["snapshot_id"] != "snap-1" || body["inherit_env"] != true || body["name"] != "fork-1" {
+		t.Fatalf("body = %#v", body)
+	}
+	for _, key := range []string{"image_id", "location_id", "hypervisor_group_id"} {
+		if _, exists := body[key]; exists {
+			t.Errorf("a fork must not send %s", key)
+		}
+	}
+}
+
+func TestMicrovmCreateBodyImageSourceSendsNoSnapshotFields(t *testing.T) {
+	body, diags := microvmCreateBody(context.Background(), microvmModel{
+		Name: types.StringValue("x"), ImageID: types.StringValue("img-1"), LocationID: types.StringValue("loc-1"),
+		SnapshotID: types.StringUnknown(),
+	})
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	if _, ok := body["snapshot_id"]; ok {
+		t.Fatalf("body = %#v", body)
+	}
+	if _, ok := body["inherit_env"]; ok {
+		t.Fatalf("body = %#v", body)
+	}
+}
+
+func TestMicrovmValidateConfigSourceAndLocationRules(t *testing.T) {
+	ctx := context.Background()
+	res := &microvmResource{}
+	var sresp resource.SchemaResponse
+	res.Schema(ctx, resource.SchemaRequest{}, &sresp)
+	typ := sresp.Schema.Type().TerraformType(ctx).(tftypes.Object)
+	validate := func(set map[string]string) int {
+		vals := map[string]tftypes.Value{}
+		for k, at := range typ.AttributeTypes {
+			vals[k] = tftypes.NewValue(at, nil)
+		}
+		for k, v := range set {
+			vals[k] = tftypes.NewValue(tftypes.String, v)
+		}
+		resp := &resource.ValidateConfigResponse{}
+		res.ValidateConfig(ctx, resource.ValidateConfigRequest{Config: tfsdk.Config{Schema: sresp.Schema, Raw: tftypes.NewValue(typ, vals)}}, resp)
+		return resp.Diagnostics.ErrorsCount()
+	}
+	cases := []struct {
+		name string
+		set  map[string]string
+		want int
+	}{
+		{"image and location", map[string]string{"image_id": "i", "location_id": "l"}, 0},
+		{"legacy location", map[string]string{"image_id": "i", "hypervisor_group_id": "l"}, 0},
+		{"both locations", map[string]string{"image_id": "i", "location_id": "l", "hypervisor_group_id": "l"}, 1},
+		{"no location, image", map[string]string{"image_id": "i"}, 1},
+		{"snapshot without location", map[string]string{"snapshot_id": "s"}, 0},
+		{"snapshot with its location", map[string]string{"snapshot_id": "s", "location_id": "l"}, 0},
+		{"image and snapshot", map[string]string{"image_id": "i", "snapshot_id": "s", "location_id": "l"}, 1},
+		{"neither source", map[string]string{"location_id": "l"}, 1},
+	}
+	for _, tc := range cases {
+		if got := validate(tc.set); got != tc.want {
+			t.Errorf("%s: %d errors; want %d", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestMicrovmSchemaSnapshotArgumentsAreForceNewAndImageIsOptionalComputed(t *testing.T) {
+	var resp resource.SchemaResponse
+	NewMicrovmResource().Schema(context.Background(), resource.SchemaRequest{}, &resp)
+	for _, name := range []string{"image_id", "snapshot_id"} {
+		a := resp.Schema.Attributes[name]
+		if a.IsRequired() || !a.IsOptional() || !a.IsComputed() {
+			t.Errorf("%s must be Optional+Computed", name)
+		}
+	}
+	if a := resp.Schema.Attributes["inherit_env"]; !a.IsOptional() || a.IsComputed() {
+		t.Errorf("inherit_env must be Optional and not Computed")
+	}
+}
+
+// snapshot_id is Optional+Computed, so it is unknown at plan time. A platform that predates snapshots
+// does not return source_snapshot_id; the state must still end up known (null), never unknown after apply.
+func TestMicrovmStateSnapshotIDNeverStaysUnknownAndIsReadBack(t *testing.T) {
+	var diags diag.Diagnostics
+	plan := microvmModel{SnapshotID: types.StringUnknown()}
+	old := microvmStateFromAPI(context.Background(), map[string]any{"id": "vm-1", "image_id": "img-1"}, nil, plan, &diags)
+	if old.SnapshotID.IsUnknown() || !old.SnapshotID.IsNull() {
+		t.Fatalf("an older platform: snapshot_id = %v; want null", old.SnapshotID)
+	}
+	fork := microvmStateFromAPI(context.Background(), map[string]any{"id": "vm-2", "image_id": "img-1", "source_snapshot_id": "snap-1"}, nil, plan, &diags)
+	if fork.SnapshotID.ValueString() != "snap-1" {
+		t.Fatalf("a fork: snapshot_id = %v; want snap-1", fork.SnapshotID)
+	}
+	plain := microvmStateFromAPI(context.Background(), map[string]any{"id": "vm-3", "image_id": "img-1", "source_snapshot_id": nil}, nil, plan, &diags)
+	if !plain.SnapshotID.IsNull() {
+		t.Fatalf("a plain sandbox: snapshot_id = %v; want null", plain.SnapshotID)
+	}
+}
+
+// fast_start is a create-time preference. It rides the create body only when configured, it is never
+// read back (so state keeps what the plan said and an import carries none), and only the three documented words pass.
+func TestMicrovmCreateBodyCarriesFastStartOnlyWhenSet(t *testing.T) {
+	with, diags := microvmCreateBody(context.Background(), microvmModel{
+		Name: types.StringValue("fast-1"), ImageID: types.StringValue("img-1"), LocationID: types.StringValue("loc-1"),
+		FastStart: types.StringValue("require"),
+	})
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+	if with["fast_start"] != "require" {
+		t.Fatalf("body = %#v", with)
+	}
+	for _, unset := range []types.String{types.StringNull(), types.StringUnknown()} {
+		without, diags := microvmCreateBody(context.Background(), microvmModel{
+			Name: types.StringValue("fast-2"), ImageID: types.StringValue("img-1"), LocationID: types.StringValue("loc-1"), FastStart: unset,
+		})
+		if diags.HasError() {
+			t.Fatal(diags)
+		}
+		if _, ok := without["fast_start"]; ok {
+			t.Fatalf("an unset fast_start must not be sent: %#v", without)
+		}
+	}
+}
+
+func TestMicrovmFastStartSchemaIsOptionalCreateOnlyAndClosed(t *testing.T) {
+	ctx := context.Background()
+	res := &microvmResource{}
+	var resp resource.SchemaResponse
+	res.Schema(ctx, resource.SchemaRequest{}, &resp)
+	attr, ok := resp.Schema.Attributes["fast_start"].(schema.StringAttribute)
+	if !ok {
+		t.Fatal("fast_start must be a string attribute")
+	}
+	if !attr.IsOptional() || attr.IsComputed() || attr.IsRequired() {
+		t.Fatal("fast_start must be Optional and not Computed")
+	}
+	if len(attr.PlanModifiers) != 1 {
+		t.Fatalf("fast_start must force a new MicroVM when changed: %d plan modifiers", len(attr.PlanModifiers))
+	}
+	for word, valid := range map[string]bool{"allow": true, "require": true, "cold_only": true, "fastest": false, "": false, "REQUIRE": false} {
+		var resp validator.StringResponse
+		for _, v := range attr.Validators {
+			v.ValidateString(ctx, validator.StringRequest{Path: path.Root("fast_start"), ConfigValue: types.StringValue(word)}, &resp)
+		}
+		if resp.Diagnostics.HasError() == valid {
+			t.Errorf("fast_start %q: valid = %v, got error = %v", word, valid, resp.Diagnostics.HasError())
+		}
+	}
+}
+
+func TestMicrovmStateKeepsFastStartFromThePlan(t *testing.T) {
+	var diags diag.Diagnostics
+	plan := microvmModel{FastStart: types.StringValue("allow"), SnapshotID: types.StringUnknown()}
+	state := microvmStateFromAPI(context.Background(), map[string]any{"id": "vm-1", "image_id": "img-1"}, nil, plan, &diags)
+	if state.FastStart.ValueString() != "allow" {
+		t.Fatalf("fast_start = %v; the platform does not return it, the plan value stays", state.FastStart)
+	}
+	imported := microvmStateFromAPI(context.Background(), map[string]any{"id": "vm-2", "image_id": "img-1"}, nil, microvmModel{SnapshotID: types.StringUnknown()}, &diags)
+	if !imported.FastStart.IsNull() {
+		t.Fatalf("an import carries no fast_start: %v", imported.FastStart)
 	}
 }

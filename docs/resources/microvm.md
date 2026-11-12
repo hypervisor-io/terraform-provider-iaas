@@ -76,7 +76,6 @@ resource "iaas_microvm" "worker" {
 
 ### Required
 
-- `image_id` (String) Ready platform or account image UUID.
 - `name` (String) Account-unique lowercase name used in generated hostnames.
 
 ### Optional
@@ -85,10 +84,13 @@ resource "iaas_microvm" "worker" {
 - `domains` (Set of String) Custom hostnames reconciled through the domain endpoints.
 - `egress_policy` (Attributes) Outbound network policy of the sandbox, changed in place. Omit for unrestricted outbound access; removing the attribute removes the policy. A policy set at create is in force from the first boot (the sandbox is placed only on a node that can enforce it). A change is sent to the node in the background: the apply waits for a running or paused sandbox until `egress_policy_state` is `applied` and fails when the node refuses the policy; a stopped sandbox keeps it `pending` and starts with it. The platform always blocks some destinations whatever the policy says (metadata and link-local addresses, loopback, private networks other than the sandbox's own VPC subnets, the platform's own addresses, tcp 25 and tcp 853); an allow rule that could only match those is refused. A policy changed outside OpenTofu shows as a diff on the next plan. (see [below for nested schema](#nestedatt--egress_policy))
 - `env` (Map of String, Sensitive) Write-only environment variables, replaceable in place.
+- `fast_start` (String) How the MicroVM should start: allow (the platform default) takes the fastest start the location offers (a warm pooled sandbox or a restore from a template snapshot) and otherwise starts normally; cold_only always starts normally; require never starts normally and fails with HTTP 429 reason fast_start_unavailable instead (the error text says why and when to retry; nothing is created, so the apply can simply be repeated). require is refused at once where it can never be honoured: the location has fast start switched off, or the MicroVM is a snapshot fork, has MCP servers, has more than one network interface or has no shell ingress. Create-time only and not returned by the platform: changing it forces a new MicroVM, and an imported MicroVM carries none.
 - `hypervisor_group_id` (String, Deprecated) Location UUID used for placement. Changing this forces a new resource.
 - `idle_timeout_seconds` (Number) Inactivity interval before pause. Null disables idle pause.
+- `image_id` (String) Ready platform or account image UUID. Exactly one of image_id and snapshot_id must be set; for a sandbox started from a snapshot it reports the snapshot's image. Changing a configured value forces a new MicroVM.
 - `image_version_id` (String) Ready version UUID. The current image version is used when omitted.
 - `ingress` (Attributes) HTTP and shell ingress settings. (see [below for nested schema](#nestedatt--ingress))
+- `inherit_env` (Boolean) With snapshot_id: also start with the source sandbox's current environment variables (env wins on a clash). Fails if the source sandbox no longer exists. Create-time only and not returned by the platform: changing it forces a new MicroVM.
 - `lifecycle_hooks` (String) Lifecycle hook overrides as a JSON object.
 - `location_id` (String) Location UUID used for placement. Canonical replacement for hypervisor_group_id; exactly one of the two must be set. Changing this forces a new resource.
 - `max_lifetime_seconds` (Number) Maximum lifetime, capped server-side at 28800 seconds.
@@ -98,7 +100,9 @@ resource "iaas_microvm" "worker" {
 - `plan_id` (String) Plan UUID. Its disk must hold the kit's image (`required_disk_gib` on the kit, see the `iaas_microvm_catalog` data source with `image_id`): a smaller plan is refused with reason `plan_disk_too_small` and nothing is created (an image of 2 GiB or less fits any plan). When omitted, the smallest enabled location plan that holds the kit is used.
 - `secure` (Boolean) Require an access token for shell ingress.
 - `security_group_ids` (Set of String) Security groups owned by the account (at most 10) that apply to the whole MicroVM, every network interface. They are in force before the MicroVM can receive traffic; without groups the MicroVM is open on every port. Changing the set attaches and detaches groups in place (the node applies it within about 10 seconds). Read back from the API, so groups attached outside Terraform show as drift. Do not also manage the same MicroVM through iaas_security_group.sandbox_ids.
+- `snapshot_id` (String) Start the MicroVM from an iaas_microvm_snapshot (a fork) instead of an image: it boots cold from a copy of the snapshot's disk, in the snapshot's location and on the node that holds the snapshot, and its plan must hold the snapshot's root filesystem by the node's rule (any plan when that filesystem is 2 GiB or less, otherwise a plan disk of at least its size in whole GiB; disk_gib is the source's plan and is not the test). Environment variables, secrets and the outbound policy are not inherited: set them here (env, egress_policy) or use inherit_env. Exactly one of image_id and snapshot_id must be set. Changing it forces a new MicroVM. The platform reports it back (also after import), and it stays set when the snapshot is later destroyed.
 - `ssh_key_ids` (List of String) Account SSH key UUIDs installed to /root/.ssh/authorized_keys and every non-system user's authorized_keys (C3). Changing this forces a new resource; the daemon writes keys once, at first boot.
+- `volumes` (Attributes List) Persistent data volumes (iaas_sandbox_volume) the sandbox starts with, in slot order (the guest sees them as the data disks in that order). At most 4, all in the sandbox's location and on ONE node: the sandbox is placed on that node and never elsewhere. They keep their data when the sandbox stops, pauses, resumes and is deleted (unless delete_on_sandbox_delete). Create-time only: changing the list forces a new MicroVM, because a volume can be attached or detached only while the sandbox is stopped. A volume attached or detached outside Terraform shows as a change of this list and would replace the sandbox: use lifecycle { ignore_changes = [volumes] } to manage attachments yourself. Snapshots of the sandbox do not contain these volumes, and a sandbox started from a snapshot starts without volumes unless it lists its own. (see [below for nested schema](#nestedatt--volumes))
 
 ### Read-Only
 
@@ -188,6 +192,21 @@ Optional:
 - `static_ip_id` (String) kind = public only: one of the account's allocated static IPs in this microVM's location. Distinct across every network entry in the same create (C8.3).
 - `subnet_id` (String) Public subnet UUID for kind = public. Optional - the platform auto-assigns a subnet with free capacity in the microVM's location when omitted (C8.1).
 - `vpc_subnet_id` (String) Owned VPC subnet UUID. Required for kind = vpc.
+
+
+<a id="nestedatt--volumes"></a>
+### Nested Schema for `volumes`
+
+Required:
+
+- `volume_id` (String) A free iaas_sandbox_volume of the account in the sandbox's location.
+
+Optional:
+
+- `delete_on_sandbox_delete` (Boolean) Delete the volume (and stop billing it) when the sandbox is deleted. Default: the volume is kept, data intact.
+- `mount_path` (String) Absolute path where the guest mounts the volume (letters, digits and . _ + - /, outside system directories). Default /mnt/<volume name>.
+- `noexec` (Boolean) Mount with noexec.
+- `read_only` (Boolean) Mount read-only.
 
 
 <a id="nestedatt--interfaces"></a>

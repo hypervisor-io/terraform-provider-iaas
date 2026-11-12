@@ -30,9 +30,10 @@ import (
 )
 
 var (
-	_ resource.Resource                = &microvmResource{}
-	_ resource.ResourceWithConfigure   = &microvmResource{}
-	_ resource.ResourceWithImportState = &microvmResource{}
+	_ resource.Resource                   = &microvmResource{}
+	_ resource.ResourceWithConfigure      = &microvmResource{}
+	_ resource.ResourceWithValidateConfig = &microvmResource{}
+	_ resource.ResourceWithImportState    = &microvmResource{}
 )
 
 func NewMicrovmResource() resource.Resource {
@@ -48,6 +49,9 @@ type microvmModel struct {
 	HypervisorGroupID   types.String `tfsdk:"hypervisor_group_id"`
 	LocationID          types.String `tfsdk:"location_id"`
 	ImageID             types.String `tfsdk:"image_id"`
+	SnapshotID          types.String `tfsdk:"snapshot_id"`
+	InheritEnv          types.Bool   `tfsdk:"inherit_env"`
+	FastStart           types.String `tfsdk:"fast_start"`
 	ImageVersionID      types.String `tfsdk:"image_version_id"`
 	PlanID              types.String `tfsdk:"plan_id"`
 	Name                types.String `tfsdk:"name"`
@@ -75,6 +79,7 @@ type microvmModel struct {
 	LastResumedAt       types.String `tfsdk:"last_resumed_at"`
 	Ssh                 types.String `tfsdk:"ssh"`
 	Interfaces          types.List   `tfsdk:"interfaces"`
+	Volumes             types.List   `tfsdk:"volumes"`
 
 	EgressPolicy           types.Object `tfsdk:"egress_policy"`
 	EgressPolicyState      types.String `tfsdk:"egress_policy_state"`
@@ -95,6 +100,23 @@ type microvmHTTPIngressModel struct {
 
 type microvmShellIngressModel struct {
 	Enabled types.Bool `tfsdk:"enabled"`
+}
+
+// microvmVolumeModel is one entry of iaas_microvm.volumes (a sandbox volume mounted by the sandbox).
+type microvmVolumeModel struct {
+	VolumeID              types.String `tfsdk:"volume_id"`
+	MountPath             types.String `tfsdk:"mount_path"`
+	ReadOnly              types.Bool   `tfsdk:"read_only"`
+	Noexec                types.Bool   `tfsdk:"noexec"`
+	DeleteOnSandboxDelete types.Bool   `tfsdk:"delete_on_sandbox_delete"`
+}
+
+var microvmVolumeAttrTypes = map[string]attr.Type{
+	"volume_id":                types.StringType,
+	"mount_path":               types.StringType,
+	"read_only":                types.BoolType,
+	"noexec":                   types.BoolType,
+	"delete_on_sandbox_delete": types.BoolType,
 }
 
 type microvmNetworkModel struct {
@@ -143,15 +165,42 @@ func (r *microvmResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Computed: true,
 				Description: "Location UUID used for placement. Canonical replacement for " +
 					"hypervisor_group_id; exactly one of the two must be set. Changing this forces a new resource.",
-				Validators: []validator.String{
-					stringvalidator.ExactlyOneOf(path.MatchRoot("hypervisor_group_id")),
-				},
 				PlanModifiers: []planmodifier.String{
 					locationIDFromAliasModifier{},
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
 			},
-			"image_id":         schema.StringAttribute{Required: true, Description: "Ready platform or account image UUID.", PlanModifiers: replaceString},
+			"image_id": schema.StringAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "Ready platform or account image UUID. Exactly one of image_id and snapshot_id must be set; for a sandbox started from a snapshot it reports the snapshot's image. Changing a configured value forces a new MicroVM.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+			},
+			"snapshot_id": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "Start the MicroVM from an iaas_microvm_snapshot (a fork) instead of an image: it boots cold from a copy of the snapshot's disk, in the snapshot's location and on the node that holds the snapshot, and its plan must hold the snapshot's root filesystem by the node's rule (any plan when that filesystem is 2 GiB or less, otherwise a plan disk of at least its size in whole GiB; disk_gib is the source's plan and is not the test). " +
+					"Environment variables, secrets and the outbound policy are not inherited: set them here (env, egress_policy) or use inherit_env. Exactly one of image_id and snapshot_id must be set. Changing it forces a new MicroVM. The platform reports it back (also after import), and it stays set when the snapshot is later destroyed.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+			},
+			"inherit_env": schema.BoolAttribute{
+				Optional:      true,
+				Description:   "With snapshot_id: also start with the source sandbox's current environment variables (env wins on a clash). Fails if the source sandbox no longer exists. Create-time only and not returned by the platform: changing it forces a new MicroVM.",
+				PlanModifiers: []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
+			},
+			"fast_start": schema.StringAttribute{
+				Optional: true,
+				Description: "How the MicroVM should start: allow (the platform default) takes the fastest start the location offers (a warm pooled sandbox or a restore from a template snapshot) and otherwise starts normally; cold_only always starts normally; require never starts normally and fails with HTTP 429 reason fast_start_unavailable instead (the error text says why and when to retry; nothing is created, so the apply can simply be repeated). " +
+					"require is refused at once where it can never be honoured: the location has fast start switched off, or the MicroVM is a snapshot fork, has MCP servers, has more than one network interface or has no shell ingress. Create-time only and not returned by the platform: changing it forces a new MicroVM, and an imported MicroVM carries none.",
+				Validators:    []validator.String{stringvalidator.OneOf("allow", "require", "cold_only")},
+				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
+			},
 			"image_version_id": schema.StringAttribute{Optional: true, Description: "Ready version UUID. The current image version is used when omitted.", PlanModifiers: replaceString},
 			"plan_id":          schema.StringAttribute{Optional: true, Description: "Plan UUID. Its disk must hold the kit's image (`required_disk_gib` on the kit, see the `iaas_microvm_catalog` data source with `image_id`): a smaller plan is refused with reason `plan_disk_too_small` and nothing is created (an image of 2 GiB or less fits any plan). When omitted, the smallest enabled location plan that holds the kit is used.", PlanModifiers: replaceString},
 			"name":             schema.StringAttribute{Required: true, Description: "Account-unique lowercase name used in generated hostnames.", PlanModifiers: replaceString},
@@ -189,6 +238,20 @@ func (r *microvmResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 						},
 					},
 				},
+			},
+			"volumes": schema.ListNestedAttribute{
+				Optional: true,
+				Description: "Persistent data volumes (iaas_sandbox_volume) the sandbox starts with, in slot order (the guest sees them as the data disks in that order). At most 4, all in the sandbox's location and on ONE node: the sandbox is placed on that node and never elsewhere. " +
+					"They keep their data when the sandbox stops, pauses, resumes and is deleted (unless delete_on_sandbox_delete). Create-time only: changing the list forces a new MicroVM, because a volume can be attached or detached only while the sandbox is stopped. " +
+					"A volume attached or detached outside Terraform shows as a change of this list and would replace the sandbox: use lifecycle { ignore_changes = [volumes] } to manage attachments yourself. Snapshots of the sandbox do not contain these volumes, and a sandbox started from a snapshot starts without volumes unless it lists its own.",
+				PlanModifiers: []planmodifier.List{listplanmodifier.RequiresReplace()},
+				NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
+					"volume_id":                schema.StringAttribute{Required: true, Description: "A free iaas_sandbox_volume of the account in the sandbox's location."},
+					"mount_path":               schema.StringAttribute{Optional: true, Description: "Absolute path where the guest mounts the volume (letters, digits and . _ + - /, outside system directories). Default /mnt/<volume name>."},
+					"read_only":                schema.BoolAttribute{Optional: true, Description: "Mount read-only."},
+					"noexec":                   schema.BoolAttribute{Optional: true, Description: "Mount with noexec."},
+					"delete_on_sandbox_delete": schema.BoolAttribute{Optional: true, Description: "Delete the volume (and stop billing it) when the sandbox is deleted. Default: the volume is kept, data intact."},
+				}},
 			},
 			"network": schema.ListNestedAttribute{
 				Optional:      true,
@@ -246,6 +309,37 @@ func (r *microvmResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				}},
 			},
 		},
+	}
+}
+
+// ValidateConfig checks the cross-field rules a single attribute validator cannot express: exactly one of image_id
+// and snapshot_id, and a location (location_id or the deprecated hypervisor_group_id, not both) unless the sandbox
+// is started from a snapshot, which fixes its location.
+func (r *microvmResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var image, snapshot, location, group types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("image_id"), &image)...)
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("snapshot_id"), &snapshot)...)
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("location_id"), &location)...)
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("hypervisor_group_id"), &group)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	known := func(v types.String) bool { return !v.IsUnknown() }
+	if known(image) && known(snapshot) {
+		switch {
+		case !image.IsNull() && !snapshot.IsNull():
+			resp.Diagnostics.AddAttributeError(path.Root("snapshot_id"), "Conflicting source", "Set either image_id or snapshot_id, not both.")
+		case image.IsNull() && snapshot.IsNull():
+			resp.Diagnostics.AddAttributeError(path.Root("image_id"), "Missing source", "Set exactly one of image_id and snapshot_id.")
+		}
+	}
+	if known(location) && known(group) {
+		switch {
+		case !location.IsNull() && !group.IsNull():
+			resp.Diagnostics.AddAttributeError(path.Root("location_id"), "Conflicting location", "Set either location_id or the deprecated hypervisor_group_id, not both.")
+		case location.IsNull() && group.IsNull() && known(snapshot) && snapshot.IsNull():
+			resp.Diagnostics.AddAttributeError(path.Root("location_id"), "Missing location", "Set location_id (a sandbox started from snapshot_id takes the snapshot's location).")
+		}
 	}
 }
 
@@ -505,10 +599,17 @@ func (r *microvmResource) refresh(ctx context.Context, id string, prior microvmM
 func microvmCreateBody(ctx context.Context, plan microvmModel) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	body := map[string]any{
-		"location_id": effectiveLocationID(plan.LocationID, plan.HypervisorGroupID),
-		"image_id":    plan.ImageID.ValueString(),
-		"name":        plan.Name.ValueString(),
+		"name": plan.Name.ValueString(),
 	}
+	// A fork (snapshot_id) takes its location and image from the snapshot; the location may still be named, and the
+	// platform then checks it is the snapshot's own.
+	if location := effectiveLocationID(plan.LocationID, plan.HypervisorGroupID); location != "" {
+		body["location_id"] = location
+	}
+	putOptionalString(body, "image_id", plan.ImageID)
+	putOptionalString(body, "snapshot_id", plan.SnapshotID)
+	putOptionalBool(body, "inherit_env", plan.InheritEnv)
+	putOptionalString(body, "fast_start", plan.FastStart)
 	putOptionalString(body, "image_version_id", plan.ImageVersionID)
 	putOptionalString(body, "plan_id", plan.PlanID)
 	putOptionalInt64(body, "max_lifetime_seconds", plan.MaxLifetimeSeconds)
@@ -571,6 +672,20 @@ func microvmCreateBody(ctx context.Context, plan microvmModel) (map[string]any, 
 			network = append(network, item)
 		}
 		body["network"] = network
+	}
+	if !plan.Volumes.IsNull() && !plan.Volumes.IsUnknown() {
+		var entries []microvmVolumeModel
+		diags.Append(plan.Volumes.ElementsAs(ctx, &entries, false)...)
+		volumes := make([]map[string]any, 0, len(entries))
+		for _, entry := range entries {
+			item := map[string]any{"volume_id": entry.VolumeID.ValueString()}
+			putOptionalString(item, "mount_path", entry.MountPath)
+			putOptionalBool(item, "read_only", entry.ReadOnly)
+			putOptionalBool(item, "noexec", entry.Noexec)
+			putOptionalBool(item, "delete_on_sandbox_delete", entry.DeleteOnSandboxDelete)
+			volumes = append(volumes, item)
+		}
+		body["volumes"] = volumes
 	}
 	// The outbound policy is part of the create request: the sandbox is placed on a
 	// node that can enforce it and never runs without it.
@@ -781,6 +896,11 @@ func microvmStateFromAPI(ctx context.Context, obj map[string]any, domains []map[
 	state.HypervisorGroupID = hypervisorGroupIDFromAPI(obj, prior.HypervisorGroupID)
 	state.LocationID = locationIDFromAPI(obj, prior.LocationID)
 	state.ImageID = stringFromAPI(obj, "image_id", prior.ImageID)
+	state.SnapshotID = optionalStringFromAPI(obj, "source_snapshot_id", prior.SnapshotID)
+	if state.SnapshotID.IsUnknown() {
+		// A platform that predates snapshots does not return the field: a sandbox it created is not a fork.
+		state.SnapshotID = types.StringNull()
+	}
 	state.ImageVersionID = optionalStringFromAPI(obj, "image_version_id", prior.ImageVersionID)
 	state.PlanID = optionalStringFromAPI(obj, "plan_id", prior.PlanID)
 	state.Name = stringFromAPI(obj, "name", prior.Name)
@@ -841,7 +961,78 @@ func microvmStateFromAPI(ctx context.Context, obj map[string]any, domains []map[
 		}
 		state.Metadata = types.MapValueMust(types.StringType, values)
 	}
+	volumes, volumeDiags := microvmVolumesFromAPI(ctx, obj["volumes"], prior.Volumes)
+	diags.Append(volumeDiags...)
+	state.Volumes = volumes
 	return state
+}
+
+// microvmVolumesFromAPI maps the sandbox's volumes (slot order) onto the list attribute. It is tolerant of what the
+// configuration left out: an optional field that is null in the prior value and has its default on the platform (no
+// path chosen, flags false) stays null, so a default never shows as a change; a value that differs from a configured
+// one, a volume added or removed outside Terraform, shows as drift. With no prior value (import) every field is read.
+func microvmVolumesFromAPI(ctx context.Context, raw any, prior types.List) (types.List, diag.Diagnostics) {
+	objectType := types.ObjectType{AttrTypes: microvmVolumeAttrTypes}
+	if prior.ElementType(ctx) == nil {
+		// A model built without the attribute (the zero value) is a typed null, never a typeless list.
+		prior = types.ListNull(objectType)
+	}
+	items, ok := raw.([]any)
+	if !ok {
+		// A platform that predates sandbox volumes does not return the field: keep what the configuration says.
+		return prior, nil
+	}
+	if len(items) == 0 && (prior.IsNull() || prior.IsUnknown()) {
+		return types.ListNull(objectType), nil
+	}
+	var priorEntries []attr.Value
+	if !prior.IsNull() && !prior.IsUnknown() {
+		priorEntries = prior.Elements()
+	}
+	values := make([]attr.Value, 0, len(items))
+	var diags diag.Diagnostics
+	for i, rawItem := range items {
+		item, ok := rawItem.(map[string]any)
+		if !ok {
+			continue
+		}
+		var priorObj map[string]attr.Value
+		if i < len(priorEntries) {
+			if o, ok := priorEntries[i].(types.Object); ok {
+				priorObj = o.Attributes()
+			}
+		}
+		keepNull := func(name string) bool {
+			if priorObj == nil {
+				return false
+			}
+			v, ok := priorObj[name]
+			return ok && v.IsNull()
+		}
+		pathValue := nullableStringAttr(item["mount_path"])
+		if keepNull("mount_path") {
+			pathValue = types.StringNull()
+		}
+		flag := func(name string) attr.Value {
+			on, _ := item[name].(bool)
+			if keepNull(name) && !on {
+				return types.BoolNull()
+			}
+			return types.BoolValue(on)
+		}
+		value, itemDiags := types.ObjectValue(microvmVolumeAttrTypes, map[string]attr.Value{
+			"volume_id":                nullableStringAttr(item["id"]),
+			"mount_path":               pathValue,
+			"read_only":                flag("read_only"),
+			"noexec":                   flag("noexec"),
+			"delete_on_sandbox_delete": flag("delete_on_sandbox_delete"),
+		})
+		diags.Append(itemDiags...)
+		values = append(values, value)
+	}
+	list, listDiags := types.ListValue(objectType, values)
+	diags.Append(listDiags...)
+	return list, diags
 }
 
 func microvmInterfacesFromAPI(raw any) (types.List, diag.Diagnostics) {

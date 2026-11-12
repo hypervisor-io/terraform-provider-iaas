@@ -139,6 +139,7 @@ func microvmTestModel(t *testing.T, egress types.Object) microvmModel {
 		CurrentRunStartedAt:    types.StringNull(),
 		Ssh:                    types.StringNull(),
 		Interfaces:             types.ListNull(types.ObjectType{AttrTypes: microvmInterfaceAttrTypes}),
+		Volumes:                types.ListNull(types.ObjectType{AttrTypes: microvmVolumeAttrTypes}),
 		EgressPolicy:           egress,
 		EgressPolicyState:      types.StringNull(),
 		EgressPolicyGeneration: types.Int64Null(),

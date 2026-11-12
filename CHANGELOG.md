@@ -12,6 +12,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `iaas_microvm` gains `security_group_ids` (a set, optional and computed): security groups owned by the account that apply to the whole sandbox and are in force before it can receive traffic. Changing the set attaches and detaches groups in place; the set is read back from the API. The per-NIC attribute still works, but groups are per sandbox: every network entry must name the same set (a different set is a 422 `security_groups_differ_per_nic`). `iaas_security_group` gains `sandbox_ids` (attach and detach sandboxes in place). Needs a Master with the sandbox security group attach routes.
 
 - `iaas_microvm_catalog` gains optional `image_id` and `image_version_id`: each location then lists only the plans whose disk holds that kit's image. Kits (in this data source and `iaas_microvm_images`) gain the computed `required_disk_gib` (null when unknown; unknown or 2 GiB or less excludes no plan, matching the node). `iaas_microvm.plan_id` documents the Master's early refusal of a plan that is too small (HTTP 422, reason `plan_disk_too_small`; nothing is created) and that an omitted plan is now the smallest one that holds the kit.
+- New resource `iaas_sandbox_volume` and data source `iaas_sandbox_volumes`: persistent data volumes for sandboxes (`name`,
+  `size_gib` 1-1024, `location_id`). A volume keeps its data when a sandbox stops, pauses or is deleted, lives on one node
+  of its location and is billed per GiB-hour of its size. Every argument forces a new volume. Destroy waits until the
+  volume is gone and fails with a hint while a sandbox still holds it (`volume_in_use`). A refresh drops a volume that is
+  deleting and warns on `error`. Import by UUID reads everything. The resource is `POST /storage/volumes` with
+  `for = "sandbox"`; `iaas_volume` stays the KVM block volume.
+- `iaas_microvm` gains `volumes` (list of `volume_id`, `mount_path`, `read_only`, `noexec`, `delete_on_sandbox_delete`):
+  the volumes the sandbox starts with, placed on the node that holds them. Create-time only: changing the list forces a
+  new MicroVM, because a volume can be attached or detached only while the sandbox is stopped (the attach and detach
+  endpoints are therefore excluded in the manifest). Read back from the platform: a platform default (no path chosen,
+  flags off) never shows as a change; a volume attached or detached outside OpenTofu shows as a change of the list (use
+  `lifecycle { ignore_changes = [volumes] }` to manage attachments yourself). Import reads every field.
+- Client: `CreateSandboxVolume`, `DeleteSandboxVolume`, `ListSandboxVolumes`, `ListMicrovmVolumes`, `AttachMicrovmVolume`,
+  `DetachMicrovmVolume`. The vendored API manifest is synced (three volume endpoints, four notes).
+- `iaas_microvm.fast_start` (`allow`, `require`, `cold_only`): how a sandbox should start. `allow` (the platform default) takes the
+  fastest start the location offers and otherwise starts normally, `cold_only` always starts normally, `require` never
+  starts normally and fails with HTTP 429 reason `fast_start_unavailable` when the fast start cannot be had; nothing is
+  created then, so the apply can be repeated. Create-time only: it is not read back, changing it forces a new MicroVM and
+  an imported MicroVM carries none.
+- New resource `iaas_microvm_snapshot` and data source `iaas_microvm_snapshots`: sandbox disk snapshots. Create takes
+  the snapshot (`sandbox_id`, `name`, optional `description` and `consistency`), waits until it is `ready` and fails
+  with the platform's `failure_reason` if it fails; it reports `paused_ms` and `capture_method` (how long the
+  sandbox was paused and how the disk was copied), `used_bytes`, `billable_gib` and `price_gib_hour`. Every argument
+  forces a new snapshot. A snapshot survives the deletion of its sandbox (`sandbox_id` is kept, no drift). A refresh
+  drops a `failed` or `deleting` snapshot from state and warns on `unavailable`. Delete waits until the snapshot is
+  gone and retries while a sandbox is still being created from it. Import by UUID.
+- `iaas_microvm_snapshot` create: a refusal the location can name before taking the snapshot (it would pause a running sandbox
+  longer than allowed, file systems cannot be quiesced, not enough free disk) now arrives immediately as the create
+  error with its reason (for example `snapshot_requires_pause`, with the estimated pause and the limit); nothing is
+  created, so applying again after pausing the sandbox works. No schema change. When the location cannot answer in time
+  the snapshot is requested as before and the same reasons surface through the failed-snapshot error.
+- `iaas_microvm` gains `snapshot_id` (start from a snapshot instead of an image: boots cold from a copy of the saved
+  disk, in the snapshot's location) and `inherit_env`. Exactly one of `image_id` and `snapshot_id`; `image_id` is
+  now Optional+Computed and the location may be omitted with `snapshot_id`. `snapshot_id` is read back from the
+  platform (`source_snapshot_id`), so import shows no diff, and it stays set after the snapshot is destroyed.
+- Client: `CreateMicrovmSnapshot`, `GetMicrovmSnapshot`, `ListMicrovmSnapshots`, `DeleteMicrovmSnapshot`. The vendored
+  API manifest is synced (four snapshot endpoints, all covered).
+- Client only: `MintMicrovmAccess` and `MintMicrovmPreview` mint the short-lived run API token and the preview
+  link of a sandbox (`POST /microvm/vm/{id}/access` and `/preview`). Both answer a credential that expires, not
+  declarative state, so there is no resource or data source and nothing is stored in state; the methods exist for
+  the MCP server, which mints a token inside one tool call and then calls the node itself. The vendored API
+  manifest marks both endpoints as excluded for OpenTofu with that reason.
 - Client only: `ListMicrovmEgressPresets` lists the platform's ready-made outbound policies
   (`GET /microvm/egress/presets`). A preset is a starting document: copy its rules into `egress_policy` on
   `iaas_microvm`, where they stay visible in the plan. There is no data source on purpose: expanding the

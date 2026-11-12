@@ -264,6 +264,8 @@ func (p *IaasProvider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewMicrovmSettingsResource,
 		resources.NewMicrovmSecretResource,
 		resources.NewMicrovmMcpServerResource,
+		resources.NewMicrovmSnapshotResource,
+		resources.NewSandboxVolumeResource,
 	}
 }
 
@@ -291,6 +293,8 @@ func (p *IaasProvider) DataSources(_ context.Context) []func() datasource.DataSo
 		datasources.NewKubernetesSubnetDataSource,
 		datasources.NewMicrovmImagesDataSource,
 		datasources.NewMicrovmCatalogDataSource,
+		datasources.NewMicrovmSnapshotsDataSource,
+		datasources.NewSandboxVolumesDataSource,
 		datasources.NewWebhookEventKindsDataSource,
 		datasources.NewPlatformVersionDataSource,
 	}
