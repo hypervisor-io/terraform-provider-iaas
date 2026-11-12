@@ -57,7 +57,7 @@
     }
   },
   "account_status_contract": {
-    "note": "Cross-cutting auth error, not a per-endpoint field: users.status 0 Inactive, 1 Active, 2 Suspended. Only 1 may authenticate. A token whose user (or, for a team member, whose account owner) is not Active gets HTTP 403 with {success:false, message, reason}. Admin impersonation tokens (kind=impersonation) are exempt on the user surface.",
+    "note": "Cross-cutting auth error, not a per-endpoint field: users.status 0 Inactive, 1 Active, 2 Suspended. Only an Active account (1) may authenticate. A token whose user (or, for a team member, whose account owner) is not Active gets HTTP 403 with {success:false, message, reason}. Admin impersonation tokens (kind=impersonation) are exempt on the user surface.",
     "surfaces": [
       "user",
       "admin"
@@ -938,11 +938,11 @@
       "contract_notes": "backup_type full (default) or incremental; atomic admission shared by both types. 409 backup_in_progress while a backup is pending/in_progress, database_busy for nonterminal work on the actual source VM, restore_not_activated for a restore-to-new database not activated, recovery_in_progress or pitr_reopen_in_progress during recovery/PITR reopen. Incremental-only refusals: incremental_requires_policy, incremental_not_supported_on_replica, incremental_requires_pitr, incremental_requires_full_backup, incremental_parent_unavailable; never silently falls back to full. Refusals carry success:false, reason and message. A transport error, 5xx, 408/429 or invalid node ACK does not prove refusal; backup/task reservations can remain pending until a terminal callback or operator reconciliation. The user API returns 200 success:false with message for caught dispatch failures; the admin API maps that body to 400. No generic dispatch reason is promised. Inspect backup/task state before retrying; acceptance is not completion. Pending/in_progress backups are conservatively serialized across the primary and all its replicas because historical source VM ownership is not stored. A retained backup of another family member answers 409 database_busy even when its source Task is missing or terminal, regardless of current replica health; distinct sibling source VMs are also held until the authoritative backup state is terminal.",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Deferred consumer sync: the request body gained optional backup_type (full|incremental, default full) and incremental refusals answer 409 with reasons (incremental_requires_policy, incremental_not_supported_on_replica, incremental_requires_pitr, backup_in_progress, incremental_requires_full_backup, incremental_parent_unavailable); the tool/provider send no backup_type."
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Deferred consumer sync: the request body accepts optional backup_type (full|incremental, default full) and incremental refusals answer 409 with reasons (incremental_requires_policy, incremental_not_supported_on_replica, incremental_requires_pitr, backup_in_progress, incremental_requires_full_backup, incremental_parent_unavailable); the tool/provider send no backup_type."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist. Deferred consumer sync: the request body gained optional backup_type (full|incremental, default full) and incremental refusals answer 409 with reasons (incremental_requires_policy, incremental_not_supported_on_replica, incremental_requires_pitr, backup_in_progress, incremental_requires_full_backup, incremental_parent_unavailable); the tool/provider send no backup_type."
+        "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist. Deferred consumer sync: the request body accepts optional backup_type (full|incremental, default full) and incremental refusals answer 409 with reasons (incremental_requires_policy, incremental_not_supported_on_replica, incremental_requires_pitr, backup_in_progress, incremental_requires_full_backup, incremental_parent_unavailable); the tool/provider send no backup_type."
       }
     },
     {
@@ -1321,11 +1321,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Deferred consumer sync: creating while the account's quota check lock is held by a concurrent request now answers 409 reason account_busy, and a genuine quota breach answers 422 reason quota_exceeded, instead of HTTP 200 success:false; the consumers do not branch on these reasons yet. Deferred consumer sync: the request body gained optional parameter_group_id (a db_parameter_group of the owner, same engine; refused otherwise) which is stored on the new database; the OpenTofu provider (parameter_group_id attribute) and the MCP create tool now send it on the user endpoint; this admin endpoint stays excluded."
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Deferred consumer sync: creating while the account's quota check lock is held by a concurrent request answers 409 reason account_busy, and a genuine quota breach answers 422 reason quota_exceeded; the consumers do not branch on these reasons yet. Deferred consumer sync: the request body accepts optional parameter_group_id (a db_parameter_group of the owner, same engine; refused otherwise) which is stored on the new database; the OpenTofu provider (parameter_group_id attribute) and the MCP create tool send it on the user endpoint; this admin endpoint stays excluded."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist. Deferred consumer sync: creating while the account's quota check lock is held by a concurrent request now answers 409 reason account_busy, and a genuine quota breach answers 422 reason quota_exceeded, instead of HTTP 200 success:false; the consumers do not branch on these reasons yet. Deferred consumer sync: the request body gained optional parameter_group_id (a db_parameter_group of the owner, same engine; refused otherwise) which is stored on the new database; the OpenTofu provider (parameter_group_id attribute) and the MCP create tool now send it on the user endpoint; this admin endpoint stays excluded."
+        "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist. Deferred consumer sync: creating while the account's quota check lock is held by a concurrent request answers 409 reason account_busy, and a genuine quota breach answers 422 reason quota_exceeded; the consumers do not branch on these reasons yet. Deferred consumer sync: the request body accepts optional parameter_group_id (a db_parameter_group of the owner, same engine; refused otherwise) which is stored on the new database; the OpenTofu provider (parameter_group_id attribute) and the MCP create tool send it on the user endpoint; this admin endpoint stays excluded."
       }
     },
     {
@@ -2062,7 +2062,7 @@
       "method": "DELETE",
       "path": "/api/v1/hypervisor/group/{hypervisorGroupId}",
       "surface": "admin",
-      "contract_notes": "A group live volumes use answers 409 reason group_has_volumes, a group that still has hypervisors 409 group_has_hypervisors (the node link is NOT NULL, so this never succeeded), each with the count in data; both used to answer 200 with success false and raw SQL text. Deleted volumes do not block and release their link. The delete is one transaction, so a refusal leaves the group intact; a database refusal is a typed 409 group_in_use or 500 group_delete_failed. No request field changed; admin endpoint, excluded from the provider and MCP.",
+      "contract_notes": "A group live volumes use answers 409 reason group_has_volumes, a group that still has hypervisors 409 group_has_hypervisors, each with the count in data. Deleted volumes do not block and release their link. The delete is one transaction, so a refusal leaves the group intact; a database refusal is a typed 409 group_in_use or 500 group_delete_failed. No request field changed; admin endpoint, excluded from the provider and MCP.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -2584,11 +2584,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints, including optional backup_storage_id destination assignment and the now required hypervisor_group_id; creation returns data.hypervisor_id as a named scalar; KVM link failures create no record: 409 node_already_linked with optional data.linked_panel_ip (strictly validated IP), 502 node_link_refused for other refusals, malformed or non-2xx answers, 503 node_unreachable for transport failure; messages are fixed; successful linkage keeps the row and warns if the first configuration push fails"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints, including optional backup_storage_id destination assignment and the required hypervisor_group_id; creation returns data.hypervisor_id as a named scalar; KVM link failures create no record: 409 node_already_linked with optional data.linked_panel_ip (strictly validated IP), 502 node_link_refused for other refusals, malformed or non-2xx answers, 503 node_unreachable for transport failure; messages are fixed; successful linkage keeps the row and warns if the first configuration push fails"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin hypervisor creation and optional backup_storage_id destination assignment are excluded from the MCP server's safe allowlist, and hypervisor_group_id is now required; creation returns data.hypervisor_id as a named scalar; KVM link failures create no record: 409 node_already_linked with optional data.linked_panel_ip (strictly validated IP), 502 node_link_refused for other refusals, malformed or non-2xx answers, 503 node_unreachable for transport failure; messages are fixed; successful linkage keeps the row and warns if the first configuration push fails"
+        "reason": "admin hypervisor creation and optional backup_storage_id destination assignment are excluded from the MCP server's safe allowlist, and hypervisor_group_id is required; creation returns data.hypervisor_id as a named scalar; KVM link failures create no record: 409 node_already_linked with optional data.linked_panel_ip (strictly validated IP), 502 node_link_refused for other refusals, malformed or non-2xx answers, 503 node_unreachable for transport failure; messages are fixed; successful linkage keeps the row and warns if the first configuration push fails"
       }
     },
     {
@@ -3597,11 +3597,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Proxmox ticket failures now answer 503 reason=proxmox_console_unavailable."
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Proxmox ticket failures answer 503 reason=proxmox_console_unavailable."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "Admin console capability is outside the curated MCP allowlist. Proxmox ticket failures now answer 503 reason=proxmox_console_unavailable."
+        "reason": "Admin console capability is outside the curated MCP allowlist. Proxmox ticket failures answer 503 reason=proxmox_console_unavailable."
       }
     },
     {
@@ -3611,11 +3611,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Proxmox ticket failures now answer 503 reason=proxmox_console_unavailable."
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Proxmox ticket failures answer 503 reason=proxmox_console_unavailable."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "Admin console capability is outside the curated MCP allowlist. Proxmox ticket failures now answer 503 reason=proxmox_console_unavailable."
+        "reason": "Admin console capability is outside the curated MCP allowlist. Proxmox ticket failures answer 503 reason=proxmox_console_unavailable."
       }
     },
     {
@@ -3992,12 +3992,12 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Admin create now answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. Optional string external_reference (max 191) makes a repeated create for the same user and reference return the existing instance. The OpenTofu provider and MCP server do not model these fields yet (consumer work deferred).",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Admin create answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. Optional string external_reference (max 191) makes a repeated create for the same user and reference return the existing instance. The OpenTofu provider and MCP server do not model these fields yet (consumer work deferred).",
         "notes": "Explicit pre-dispatch image_not_ready refusal answers 409 with a retry message. Existing instances survive; new direct/order-time creates roll back. Legacy reason-less replies remain ambiguous. Existing generic API-error handling retains HTTP status and the retry message; machine reason remains an HTTP-body field, not a separate consumer result field. No request or success schema change. Admin create refusals for a location whose servers were refused for different reasons keep the priority winner as `reason` and add a `data.reasons` array (distinct codes, most actionable first) with a message naming each server; admin api/v1 is excluded for the OpenTofu provider and the MCP server, which do not read this field."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist. Admin create now answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. Optional string external_reference (max 191) makes a repeated create for the same user and reference return the existing instance. The OpenTofu provider and MCP server do not model these fields yet (consumer work deferred).",
+        "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist. Admin create answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. Optional string external_reference (max 191) makes a repeated create for the same user and reference return the existing instance. The OpenTofu provider and MCP server do not model these fields yet (consumer work deferred).",
         "notes": "Explicit pre-dispatch image_not_ready refusal answers 409 with a retry message. Existing instances survive; new direct/order-time creates roll back. Legacy reason-less replies remain ambiguous. Existing generic API-error handling retains HTTP status and the retry message; machine reason remains an HTTP-body field, not a separate consumer result field. No request or success schema change. Admin create refusals for a location whose servers were refused for different reasons keep the priority winner as `reason` and add a `data.reasons` array (distinct codes, most actionable first) with a message naming each server; admin api/v1 is excluded for the OpenTofu provider and the MCP server, which do not read this field."
       }
     },
@@ -5760,7 +5760,7 @@
       "method": "DELETE",
       "path": "/api/v1/s3/access-key/{keyId}",
       "surface": "admin",
-      "contract_notes": "The key's remote user is now removed on every enabled storage server (and on every server of an attached bucket) and read back as gone, whatever its attach state. When a storage server cannot be reached or refuses, the key is kept and the answer is a typed 502 (storage_unreachable or remote_delete_failed); repeat the call. Also answers 409 reason bucket_busy (nothing changed, repeat) while another access change holds one of the key's buckets. Disabled storage servers are tried best effort after the enabled ones (a failure there is logged and never blocks the delete).",
+      "contract_notes": "The key's remote user is removed on every enabled storage server (and on every server of an attached bucket) and read back as gone, whatever its attach state. When a storage server cannot be reached or refuses, the key is kept and the answer is a typed 502 (storage_unreachable or remote_delete_failed); repeat the call. Also answers 409 reason bucket_busy (nothing changed, repeat) while another access change holds one of the key's buckets. Disabled storage servers are tried best effort after the enabled ones (a failure there is logged and never blocks the delete).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -5875,7 +5875,7 @@
       "method": "PUT",
       "path": "/api/v1/s3/bucket/{bucketId}/acl/{action}",
       "surface": "admin",
-      "contract_notes": "This route used to call a service method that does not exist (500/400 on every call); it now runs the same locked, read-back path as the panels and the user API. 409 reason bucket_busy while another access change holds the bucket (nothing changed, repeat). action must be public, private, upload or download (else 400); unknown bucket 404; the stored default_access changes only after the server's ACL is read back.",
+      "contract_notes": "This route runs the same locked, read-back path as the panels and the user API. 409 reason bucket_busy while another access change holds the bucket (nothing changed, repeat). action must be public, private, upload or download (else 400); unknown bucket 404; the stored default_access changes only after the server's ACL is read back.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -5890,7 +5890,7 @@
       "method": "POST",
       "path": "/api/v1/s3/bucket/{bucketId}/attach-key/{keyId}",
       "surface": "admin",
-      "contract_notes": "This route used to call a service method that does not exist (500/400 on every call); it now runs the same locked, read-back path as the panels and the user API. 409 reason bucket_busy while another access change holds the bucket (nothing changed, repeat). Body permission (read, write, readwrite) is required (422); the key must belong to the bucket owner (422); the attachment is stored only after the key's policy is read back on the server. The key is re-read under its lock before any remote call: a key that no longer exists answers 404 reason key_not_found, and attaching a deactivated key answers 409 reason key_inactive (no storage call is made in either case). A bucket that is being deleted refuses grant-adding changes.",
+      "contract_notes": "This route runs the same locked, read-back path as the panels and the user API. 409 reason bucket_busy while another access change holds the bucket (nothing changed, repeat). Body permission (read, write, readwrite) is required (422); the key must belong to the bucket owner (422); the attachment is stored only after the key's policy is read back on the server. The key is re-read under its lock before any remote call: a key that no longer exists answers 404 reason key_not_found, and attaching a deactivated key answers 409 reason key_inactive (no storage call is made in either case). A bucket that is being deleted refuses grant-adding changes.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -5905,7 +5905,7 @@
       "method": "POST",
       "path": "/api/v1/s3/bucket/{bucketId}/detach-key/{keyId}",
       "surface": "admin",
-      "contract_notes": "This route used to call a service method that does not exist (500/400 on every call); it now runs the same locked, read-back path as the panels and the user API. 409 reason bucket_busy while another access change holds the bucket (nothing changed, repeat). 404 when the key is not attached.",
+      "contract_notes": "This route runs the same locked, read-back path as the panels and the user API. 409 reason bucket_busy while another access change holds the bucket (nothing changed, repeat). 404 when the key is not attached.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -5949,7 +5949,7 @@
       "method": "POST",
       "path": "/api/v1/s3/bucket/{s3BucketId}/object/public-url",
       "surface": "admin",
-      "contract_notes": "Same change as the user endpoint. The link is a presigned GET signed with the bucket's own key (expires_in 60..604800, default 3600), the response gains expires_in and expires_at, and failures are typed statuses (422, 404, 409, 502 with a reason) instead of 400/200 success:false. The bucket ACL is no longer touched.",
+      "contract_notes": "Same change as the user endpoint. The link is a presigned GET signed with the bucket's own key (expires_in 60..604800, default 3600), the response carries expires_in and expires_at, and failures are typed statuses (422, 404, 409, 502 with a reason). The bucket ACL is not touched.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -5964,7 +5964,7 @@
       "method": "GET",
       "path": "/api/v1/s3/buckets",
       "surface": "admin",
-      "contract_notes": "Each bucket carries user, s3_server and plan (the plan relation was loaded under a wrong name before and every call failed).",
+      "contract_notes": "Each bucket carries user, s3_server and plan.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -5979,7 +5979,7 @@
       "method": "POST",
       "path": "/api/v1/s3/buckets",
       "surface": "admin",
-      "contract_notes": "Bucket names are unique platform-wide: every user, every S3 server, deleted buckets included, enforced by a database key so two simultaneous creates of one name cannot both succeed. A taken or invalid name answers 422 with errors.name (same text for a lost race as for the normal check) and no remote storage call is made. New names must follow the AWS S3 bucket naming rules (3-63 characters, lowercase letters, digits, dots and hyphens, begin and end with a letter or digit, no adjacent dots, not an IP address, no xn--, sthree- or amzn-s3-demo- prefix, no -s3alias, --ol-s3, .mrap, --x-s3 or --table-s3 suffix); existing buckets are never re-validated. Stricter request validation only: no field added or removed. The admin endpoint now validates name, user_id, s3_server_id and s3_plan_id (all documented as required) instead of passing the raw body through. A saved change answers 200 with success true even when the storage server cannot be reached: the body then carries warning and warning_reason \"server_check_failed\" (the server status holds an error marker until the next check). verify_tls (boolean, default true) controls certificate verification when ssl is on; false is for self-signed lab servers only (rc alias set --insecure).",
+      "contract_notes": "Bucket names are unique platform-wide: every user, every S3 server, deleted buckets included, enforced by a database key so two simultaneous creates of one name cannot both succeed. A taken or invalid name answers 422 with errors.name (same text for a lost race as for the normal check) and no remote storage call is made. New names must follow the AWS S3 bucket naming rules (3-63 characters, lowercase letters, digits, dots and hyphens, begin and end with a letter or digit, no adjacent dots, not an IP address, no xn--, sthree- or amzn-s3-demo- prefix, no -s3alias, --ol-s3, .mrap, --x-s3 or --table-s3 suffix); existing buckets are never re-validated. Stricter request validation only: no field added or removed. The admin endpoint validates name, user_id, s3_server_id and s3_plan_id (all documented as required). A saved change answers 200 with success true even when the storage server cannot be reached: the body then carries warning and warning_reason \"server_check_failed\" (the server status holds an error marker until the next check). verify_tls (boolean, default true) controls certificate verification when ssl is on; false is for self-signed lab servers only (rc alias set --insecure).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -7471,7 +7471,7 @@
       "method": "DELETE",
       "path": "/api/v1/volume/{volumeId}/backup/{volumeBackupId}",
       "surface": "admin",
-      "contract_notes": "The backups of a deleted volume survive it and this delete now works for them (before, it answered 404 Volume not found, so their files could never be removed). The owner is the deleted volume's user, another account's backup is 404, and no request or response field changed, so the OpenTofu provider and MCP server need no change. restore and delete of one backup are serialised on the backup row. A backup being restored refuses a delete with 409 reason backup_restoring, a backup being deleted refuses a restore or a second delete with 409 reason backup_deleting (no second queue row or node command); a deleted volume's backup follows the same rule. No request field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
+      "contract_notes": "The backups of a deleted volume survive it and this delete works for them. The owner is the deleted volume's user, another account's backup is 404, and no request or response field changed, so the OpenTofu provider and MCP server need no change. restore and delete of one backup are serialised on the backup row. A backup being restored refuses a delete with 409 reason backup_restoring, a backup being deleted refuses a restore or a second delete with 409 reason backup_deleting (no second queue row or node command); a deleted volume's backup follows the same rule. No request field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -9508,7 +9508,7 @@
       "method": "POST",
       "path": "/api/databases",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. The request body gained optional parameter_group_id (a parameter group of the account, same engine; any other id is refused), stored on the new database. The OpenTofu provider (parameter_group_id attribute) and the MCP create tool now send it.",
+      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. The request body accepts optional parameter_group_id (a parameter group of the account, same engine; any other id is refused), stored on the new database. The OpenTofu provider (parameter_group_id attribute) and the MCP create tool send it.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_managed_database"
@@ -9936,7 +9936,7 @@
       },
       "mcp": {
         "status": "excluded",
-        "reason": "async dispatch semantics changed: an unconfirmed Slave send leaves the task claim live until terminal callback or proven-dead reconciliation; consumer user.instance.delete_backup was previously covered and must be reviewed before reenabling"
+        "reason": "async dispatch semantics changed: an unconfirmed Slave send leaves the task claim live until terminal callback or proven-dead reconciliation; consumer user.instance.delete_backup must be reviewed before reenabling"
       }
     },
     {
@@ -9978,7 +9978,7 @@
       },
       "mcp": {
         "status": "excluded",
-        "reason": "async dispatch semantics changed: an unconfirmed Slave send leaves the task claim live until terminal callback or proven-dead reconciliation; consumer user.instance.restore_backup was previously covered and must be reviewed before reenabling; on Proxmox only a proven pre-mutation refusal releases the restore lock; an attempted stop or restore request keeps its task and lock live pending confirmation"
+        "reason": "async dispatch semantics changed: an unconfirmed Slave send leaves the task claim live until terminal callback or proven-dead reconciliation; consumer user.instance.restore_backup must be reviewed before reenabling; on Proxmox only a proven pre-mutation refusal releases the restore lock; an attempted stop or restore request keeps its task and lock live pending confirmation"
       }
     },
     {
@@ -10498,11 +10498,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "ephemeral console/session capability, not declarative IaC. Proxmox ticket failures now answer 503 reason=proxmox_console_unavailable."
+        "reason": "ephemeral console/session capability, not declarative IaC. Proxmox ticket failures answer 503 reason=proxmox_console_unavailable."
       },
       "mcp": {
         "status": "excluded",
-        "reason": "ephemeral console/session capability, not a declarative or AI-management action. Proxmox ticket failures now answer 503 reason=proxmox_console_unavailable."
+        "reason": "ephemeral console/session capability, not a declarative or AI-management action. Proxmox ticket failures answer 503 reason=proxmox_console_unavailable."
       }
     },
     {
@@ -10968,11 +10968,11 @@
       "surface": "user",
       "opentofu": {
         "status": "excluded",
-        "reason": "ephemeral console/session capability, not declarative IaC; now answers the JSON session descriptor (was HTTP 500), typed failures 409/422/503; consumer support parked after release"
+        "reason": "ephemeral console/session capability, not declarative IaC; answers the JSON session descriptor, typed failures 409/422/503; consumer support parked after release"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "ephemeral console/session capability, not a declarative or AI-management action; now answers the JSON session descriptor (was HTTP 500), typed failures 409/422/503; consumer support parked after release"
+        "reason": "ephemeral console/session capability, not a declarative or AI-management action; answers the JSON session descriptor, typed failures 409/422/503; consumer support parked after release"
       }
     },
     {
@@ -11263,7 +11263,7 @@
       "method": "GET",
       "path": "/api/microvm/catalog",
       "surface": "user",
-      "contract_notes": "Kit metadata fields (category, icon, tagline, default_plan_vcpu, default_lifetime_seconds, suggested_secrets, sort_order) added 2026-10 are additive; system images are no longer listed in images[]; the iaas_microvm_catalog data source exposes them as Computed attributes (null when an older Master omits them) the MCP server has no catalog tool (endpoint excluded there), and its image tools pass the same fields through unchanged. suggested_secrets entries also carry provider, placeholder, icon and role when the kit sets them (KH-5); iaas_microvm_catalog exposes them as Computed nested attributes (null when absent); the MCP server has no catalog tool. Plan filter and kit size: optional query image_id (a kit visible to the account) and image_version_id (a version of that kit, default its current version) list in every location only the plans whose disk holds that kit image; without them the plans are unchanged; a kit or version of another account answers 404; a kit with an unknown size excludes no plan. Each images[] row gains required_disk_gib (integer GiB, null when unknown). The iaas_microvm_catalog data source gains optional image_id and image_version_id plus the computed required_disk_gib on each kit (null when absent). The MCP server has no catalog tool; its image tools pass required_disk_gib through.",
+      "contract_notes": "Kit metadata fields (category, icon, tagline, default_plan_vcpu, default_lifetime_seconds, suggested_secrets, sort_order) are additive; system images are not listed in images[]; the iaas_microvm_catalog data source exposes them as Computed attributes (null when an older Master omits them) the MCP server has no catalog tool (endpoint excluded there), and its image tools pass the same fields through unchanged. suggested_secrets entries also carry provider, placeholder, icon and role when the kit sets them; iaas_microvm_catalog exposes them as Computed nested attributes (null when absent); the MCP server has no catalog tool. Plan filter and kit size: optional query image_id (a kit visible to the account) and image_version_id (a version of that kit, default its current version) list in every location only the plans whose disk holds that kit image; without them the plans are unchanged; a kit or version of another account answers 404; a kit with an unknown size excludes no plan. Each images[] row carries required_disk_gib (integer GiB, null when unknown). The iaas_microvm_catalog data source has optional image_id and image_version_id plus the computed required_disk_gib on each kit (null when absent). The MCP server has no catalog tool; its image tools pass required_disk_gib through.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_microvm_catalog"
@@ -12310,7 +12310,7 @@
       "method": "GET",
       "path": "/api/microvm/image/{user_microvmImage}",
       "surface": "user",
-      "contract_notes": "Kit metadata fields (category, icon, tagline, default_plan_vcpu, default_lifetime_seconds, suggested_secrets, sort_order) added 2026-10 are additive; the iaas_microvm_images data source exposes them as Computed attributes (null when an older Master omits them) and the MCP image tools pass them through unchanged. suggested_secrets entries also carry provider, placeholder, icon and role when the kit sets them (KH-5); the iaas_microvm_images data source exposes them as Computed nested attributes (null when absent); the MCP image tools pass them through unchanged (pinned by a test). required_disk_gib is the disk in GiB the kit current version image needs (null when unknown, which restricts no plan); the iaas_microvm_images data source exposes it as a Computed attribute (null when absent) and the MCP image tools pass it through unchanged (pinned by a test). Each versions[] row also carries its own required_disk_gib.",
+      "contract_notes": "Kit metadata fields (category, icon, tagline, default_plan_vcpu, default_lifetime_seconds, suggested_secrets, sort_order) are additive; the iaas_microvm_images data source exposes them as Computed attributes (null when an older Master omits them) and the MCP image tools pass them through unchanged. suggested_secrets entries also carry provider, placeholder, icon and role when the kit sets them; the iaas_microvm_images data source exposes them as Computed nested attributes (null when absent); the MCP image tools pass them through unchanged (pinned by a test). required_disk_gib is the disk in GiB the kit current version image needs (null when unknown, which restricts no plan); the iaas_microvm_images data source exposes it as a Computed attribute (null when absent) and the MCP image tools pass it through unchanged (pinned by a test). Each versions[] row also carries its own required_disk_gib.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_microvm_image"
@@ -12340,7 +12340,7 @@
       "method": "GET",
       "path": "/api/microvm/images",
       "surface": "user",
-      "contract_notes": "Kit metadata fields (category, icon, tagline, default_plan_vcpu, default_lifetime_seconds, suggested_secrets, sort_order) added 2026-10 are additive; the iaas_microvm_images data source exposes them as Computed attributes (null when an older Master omits them) and the MCP image tools pass them through unchanged. suggested_secrets entries also carry provider, placeholder, icon and role when the kit sets them (KH-5); iaas_microvm_images exposes them as Computed nested attributes (null when absent); the MCP image tools pass them through unchanged (pinned by a test). required_disk_gib is the disk in GiB the kit current version image needs (null when unknown, which restricts no plan); the iaas_microvm_images data source exposes it as a Computed attribute (null when absent) and the MCP image tools pass it through unchanged (pinned by a test).",
+      "contract_notes": "Kit metadata fields (category, icon, tagline, default_plan_vcpu, default_lifetime_seconds, suggested_secrets, sort_order) are additive; the iaas_microvm_images data source exposes them as Computed attributes (null when an older Master omits them) and the MCP image tools pass them through unchanged. suggested_secrets entries also carry provider, placeholder, icon and role when the kit sets them; iaas_microvm_images exposes them as Computed nested attributes (null when absent); the MCP image tools pass them through unchanged (pinned by a test). required_disk_gib is the disk in GiB the kit current version image needs (null when unknown, which restricts no plan); the iaas_microvm_images data source exposes it as a Computed attribute (null when absent) and the MCP image tools pass it through unchanged (pinned by a test).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_microvm_images"
@@ -12355,7 +12355,7 @@
       "method": "POST",
       "path": "/api/microvm/images",
       "surface": "user",
-      "contract_notes": "KH-3A (2026-10) adds auth kind registry_secret ({kind: registry_secret, secret_id}: a vault secret of kind registry whose registry matches the image reference; 422 registry_secret_not_found, registry_authority_mismatch). The inline auth {kind: registry, username, password} still works but the response carries deprecation {field: auth, sunset: 3.3.7}. iaas_microvm_image registry_secret_id and the MCP user.microvm.image.create auth_kind registry_secret map to it (provider 708be89, MCP 203c038). Optional Idempotency-Key header (idempotency.strict): same key + same body within 24 h replays the first 2xx answer (Idempotent-Replayed: true; the stored answer is encrypted) and creates no second kit or build; same key + different body is 422 idempotency_key_reused; same key while the first request still runs is 409 idempotency_in_progress with Retry-After; failures release the key; no header = unchanged behaviour. The OpenTofu provider and the MCP server send a key on every kit create.",
+      "contract_notes": "Adds auth kind registry_secret ({kind: registry_secret, secret_id}: a vault secret of kind registry whose registry matches the image reference; 422 registry_secret_not_found, registry_authority_mismatch). The inline auth {kind: registry, username, password} still works but the response carries deprecation {field: auth, sunset: 3.3.7}. iaas_microvm_image registry_secret_id and the MCP user.microvm.image.create auth_kind registry_secret map to it (provider 708be89, MCP 203c038). Optional Idempotency-Key header (idempotency.strict): same key + same body within 24 h replays the first 2xx answer (Idempotent-Replayed: true; the stored answer is encrypted) and creates no second kit or build; same key + different body is 422 idempotency_key_reused; same key while the first request still runs is 409 idempotency_in_progress with Retry-After; failures release the key; no header = unchanged behaviour. The OpenTofu provider and the MCP server send a key on every kit create.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_microvm_image"
@@ -12428,7 +12428,7 @@
       "method": "GET",
       "path": "/api/microvm/vm/{user_microvm}",
       "surface": "user",
-      "contract_notes": "Returns security_groups [{id, name}] (the groups applied to the sandbox, every NIC). Outbound network policy summary: egress {policy_set, default_action, rule_count, generation, state}, never the rules (those are GET /microvm/vm/{id}/egress); state is the read state of that endpoint, so a killed or errored sandbox with a stored policy reads inactive, never applied. An unknown, deleted or foreign sandbox now answers 404 {success:false, reason:sandbox_not_found, message} on this and every other /microvm/vm/{id} route of this API (it was the framework's untyped 404 body); the status is unchanged.",
+      "contract_notes": "Returns security_groups [{id, name}] (the groups applied to the sandbox, every NIC). Outbound network policy summary: egress {policy_set, default_action, rule_count, generation, state}, never the rules (those are GET /microvm/vm/{id}/egress); state is the read state of that endpoint, so a killed or errored sandbox with a stored policy reads inactive, never applied. An unknown, deleted or foreign sandbox answers 404 {success:false, reason:sandbox_not_found, message} on this and every other /microvm/vm/{id} route of this API.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_microvm"
@@ -13199,7 +13199,7 @@
       "method": "DELETE",
       "path": "/api/object-storage/bucket/{user_s3BucketId}",
       "surface": "user",
-      "contract_notes": "The delete is asynchronous and now answers 202 {success, status:'deleting'} instead of 200 'deleted'. The bucket gains delete_state (null, deleting, failed) and delete_error (typed kind) so a failed delete is visible; DELETE again retries and converges, including for buckets holding unfinished multipart uploads. A delete already running answers 409 reason delete_in_progress. Access is revoked on the storage server (read back) BEFORE billing stops and the job is queued, so a failed delete leaves a bucket nobody can use, never one that is usable and unbilled. If the revoke is not proven nothing is billed or stopped and the call answers 502 reason access_revoke_failed (safe to repeat); a busy bucket answers 409 bucket_busy. The staleness of a running delete is measured from its own heartbeat.",
+      "contract_notes": "The delete is asynchronous and answers 202 {success, status:'deleting'}. The bucket carries delete_state (null, deleting, failed) and delete_error (typed kind) so a failed delete is visible; DELETE again retries and converges, including for buckets holding unfinished multipart uploads. A delete already running answers 409 reason delete_in_progress. Access is revoked on the storage server (read back) BEFORE billing stops and the job is queued, so a failed delete leaves a bucket nobody can use, never one that is usable and unbilled. If the revoke is not proven nothing is billed or stopped and the call answers 502 reason access_revoke_failed (safe to repeat); a busy bucket answers 409 bucket_busy. The staleness of a running delete is measured from its own heartbeat.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_s3_bucket"
@@ -13288,7 +13288,7 @@
       "method": "POST",
       "path": "/api/object-storage/bucket/{user_s3BucketId}/object/public-url",
       "surface": "user",
-      "contract_notes": "The link is now a SigV4 presigned GET signed with the bucket's own key, valid for expires_in seconds (optional, 60..604800, default 3600); the response gains expires_in and expires_at. Failures are typed statuses instead of HTTP 200 with success:false: 422 bad object_key or expires_in, 404 object_not_found, 409 bucket suspended or its access turned off, 502 storage unreachable, each with a reason. The bucket ACL is no longer touched by this call. A suspended bucket answers the typed 409 {success:false, reason:'bucket_suspended'} on this route too (it was a bare 422 on the user API).",
+      "contract_notes": "The link is a SigV4 presigned GET signed with the bucket's own key, valid for expires_in seconds (optional, 60..604800, default 3600); the response carries expires_in and expires_at. Failures are typed statuses: 422 bad object_key or expires_in, 404 object_not_found, 409 bucket suspended or its access turned off, 502 storage unreachable, each with a reason. The bucket ACL is not touched by this call. A suspended bucket answers the typed 409 {success:false, reason:'bucket_suspended'} on this route too.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -14248,7 +14248,7 @@
       "method": "DELETE",
       "path": "/api/storage/volume/{user_volumeId}/backup/{user_volumeBackupId}",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. The backups of a deleted volume survive it and this delete now works for them (before, it answered 404 Volume not found, so their files could never be removed). The owner is the deleted volume's user, another account's backup is 404, and no request or response field changed, so the OpenTofu provider and MCP server need no change. restore and delete of one backup are serialised on the backup row. A backup being restored refuses a delete with 409 reason backup_restoring, a backup being deleted refuses a restore or a second delete with 409 reason backup_deleting (no second queue row or node command); a deleted volume's backup follows the same rule. No request field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
+      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. The backups of a deleted volume survive it and this delete works for them. The owner is the deleted volume's user, another account's backup is 404, and no request or response field changed, so the OpenTofu provider and MCP server need no change. restore and delete of one backup are serialised on the backup row. A backup being restored refuses a delete with 409 reason backup_restoring, a backup being deleted refuses a restore or a second delete with 409 reason backup_deleting (no second queue row or node command); a deleted volume's backup follows the same rule. No request field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -15350,7 +15350,7 @@
       "method": "PUT",
       "path": "/api/microvm/secret/{user_microvmSecret}",
       "surface": "user",
-      "contract_notes": "KH-3A (2026-10): kind is immutable (422 secret_kind_immutable); username rotatable; registry refused 422 registry_in_use while a kit references the row. Response fields additive as on create.",
+      "contract_notes": "Kind is immutable (422 secret_kind_immutable); username rotatable; registry refused 422 registry_in_use while a kit references the row. Response fields additive as on create.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_microvm_secret"
@@ -15365,7 +15365,7 @@
       "method": "GET",
       "path": "/api/microvm/secrets",
       "surface": "user",
-      "contract_notes": "KH-3A (2026-10) adds query kind (env default, registry, all); the default list stays environment secrets only. Rows gain kind, registry, username, images_count (additive).",
+      "contract_notes": "Adds query kind (env default, registry, all); the default list stays environment secrets only. Rows gain kind, registry, username, images_count (additive).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_microvm_secret"
@@ -15380,7 +15380,7 @@
       "method": "POST",
       "path": "/api/microvm/secrets",
       "surface": "user",
-      "contract_notes": "KH-3A (2026-10) adds optional kind (env default, registry), registry and username; a registry row is refused 422 registry_secrets_not_enabled until microvm:enable-secret-kinds ran, and 422 secret_kind_fields for fields of the other kind. Response gains kind, registry, username, images_count (additive).",
+      "contract_notes": "Adds optional kind (env default, registry), registry and username; a registry row is refused 422 registry_secrets_not_enabled until microvm:enable-secret-kinds ran, and 422 secret_kind_fields for fields of the other kind. Response carries kind, registry, username, images_count (additive).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_microvm_secret"
@@ -16075,11 +16075,11 @@
       "surface": "admin",
       "opentofu": {
         "status": "excluded",
-        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; this restore requires a KVM agent target (Proxmox returns 422 unsupported_hypervisor), retaining resolvable image metadata for OS seed flavor without installation or changing Windows settings; restore answers 409 backup_being_deleted while a deletion claim is held; backups on local, S3 and rclone destinations restore too (one disk per backup row): 422 backup_chain_broken, backup_not_complete, chain_destination_mixed, target_storage_incompatible (also any Ceph snapshot backup, refused before anything is created until the node can verify the image size), 409 destination_mismatch for a different PBS/local destination or local files on another node; 422 backup_not_addressable for a missing/unsupported destination; chain admission requires same source instance/disk, a full root and at most 100 rows; destroyed non-PBS disk size is an allocation estimate requiring Slave virtual-size preflight; not_pbs_backup no longer exists; unconfirmed deploy retains the new instance and live task, and unconfirmed archive dispatch retains its task, step marker and storage lock until terminal callback or proven-dead reconciliation"
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; this restore requires a KVM agent target (Proxmox returns 422 unsupported_hypervisor), retaining resolvable image metadata for OS seed flavor without installation or changing Windows settings; restore answers 409 backup_being_deleted while a deletion claim is held; backups on local, S3 and rclone destinations restore too (one disk per backup row): 422 backup_chain_broken, backup_not_complete, chain_destination_mixed, target_storage_incompatible (also any Ceph snapshot backup, refused before anything is created until the node can verify the image size), 409 destination_mismatch for a different PBS/local destination or local files on another node; 422 backup_not_addressable for a missing/unsupported destination; chain admission requires same source instance/disk, a full root and at most 100 rows; destroyed non-PBS disk size is an allocation estimate requiring Slave virtual-size preflight; unconfirmed deploy retains the new instance and live task, and unconfirmed archive dispatch retains its task, step marker and storage lock until terminal callback or proven-dead reconciliation"
       },
       "mcp": {
         "status": "excluded",
-        "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist; restore answers 409 backup_being_deleted while a deletion claim is held; backups on local, S3 and rclone destinations restore too (one disk per backup row): 422 backup_chain_broken, backup_not_complete, chain_destination_mixed, target_storage_incompatible (also any Ceph snapshot backup, refused before anything is created until the node can verify the image size), 409 destination_mismatch for a different PBS/local destination or local files on another node; 422 backup_not_addressable for a missing/unsupported destination; chain admission requires same source instance/disk, a full root and at most 100 rows; destroyed non-PBS disk size is an allocation estimate requiring Slave virtual-size preflight; not_pbs_backup no longer exists; unconfirmed deploy retains the new instance and live task, and unconfirmed archive dispatch retains its task, step marker and storage lock until terminal callback or proven-dead reconciliation"
+        "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist; restore answers 409 backup_being_deleted while a deletion claim is held; backups on local, S3 and rclone destinations restore too (one disk per backup row): 422 backup_chain_broken, backup_not_complete, chain_destination_mixed, target_storage_incompatible (also any Ceph snapshot backup, refused before anything is created until the node can verify the image size), 409 destination_mismatch for a different PBS/local destination or local files on another node; 422 backup_not_addressable for a missing/unsupported destination; chain admission requires same source instance/disk, a full root and at most 100 rows; destroyed non-PBS disk size is an allocation estimate requiring Slave virtual-size preflight; unconfirmed deploy retains the new instance and live task, and unconfirmed archive dispatch retains its task, step marker and storage lock until terminal callback or proven-dead reconciliation"
       }
     },
     {
