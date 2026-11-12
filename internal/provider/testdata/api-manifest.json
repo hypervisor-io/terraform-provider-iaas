@@ -15749,6 +15749,7 @@
       "method": "POST",
       "path": "/api/v1/microvm/node/{hypervisorId}/enable",
       "surface": "admin",
+      "contract_notes": "Enables the MicroVM engine on a node and stores its reservation. The engine runs only on KVM nodes with the VirtConsole agent: a Proxmox node is refused with 422 {success:false, reason:microvm_engine_requires_kvm_node, message}, nothing is stored and the node is not contacted. The same reason answers PUT .../fast-start (422) and POST .../sync-templates (409) for a Proxmox node. Admin panel twin: POST /admin/compute/hypervisor/{id}/microvm.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
