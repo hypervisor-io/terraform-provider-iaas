@@ -7975,6 +7975,20 @@
       }
     },
     {
+      "id": "admin POST /api/v1/vpc/{vpcId}/nat-gateway/{natGatewayId}/dedicated-address",
+      "method": "POST",
+      "path": "/api/v1/vpc/{vpcId}/nat-gateway/{natGatewayId}/dedicated-address",
+      "surface": "admin",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist"
+      }
+    },
+    {
       "id": "admin GET /api/v1/vpcs",
       "method": "GET",
       "path": "/api/v1/vpcs",
@@ -14888,6 +14902,20 @@
       "mcp": {
         "status": "covered",
         "tool": "user.vpn_gateway.create"
+      }
+    },
+    {
+      "id": "user POST /api/vpc/{user_vpcId}/nat-gateway/{user_natGatewayId}/dedicated-address",
+      "method": "POST",
+      "path": "/api/vpc/{user_vpcId}/nat-gateway/{user_natGatewayId}/dedicated-address",
+      "surface": "user",
+      "opentofu": {
+        "status": "excluded",
+        "reason": "new one-way action that switches a gateway on a Proxmox location to a dedicated public address; the provider models it in a follow-up change and the gateway resource already reads the new mode field"
+      },
+      "mcp": {
+        "status": "excluded",
+        "reason": "new one-way action that switches a gateway on a Proxmox location to a dedicated public address; the MCP server adds the tool in a follow-up change"
       }
     },
     {
