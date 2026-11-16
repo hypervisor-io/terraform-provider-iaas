@@ -2610,7 +2610,7 @@
       "method": "POST",
       "path": "/api/v1/image-browser/add",
       "surface": "admin",
-      "contract_notes": "422 install_iso with success:false, reason, message and errors.url when the url is an install ISO, not a cloud image: its path ends in .iso (any case, query string ignored) or, for a url that is not the catalog entry's own, a guarded HEAD answers an ISO content type. No image is created; install ISOs belong in the ISO library. Checked after url_not_allowed. Also 422 filename_taken with success:false, reason, message and errors.url when another catalog image already uses this filename for a DIFFERENT download url: a node stores a catalog image by filename and names its download task by it, so the second file would share one file and one state. Two catalog ids that point at the SAME url (the shipped Kubernetes control-plane/worker pairs) are one file and stay allowed. No image is created in either case.",
+      "contract_notes": "422 install_iso with success:false, reason, message and errors.url when the url is an install ISO, not a cloud image: its path ends in .iso (any case, query string ignored) or, for a url that is not the catalog entry's own, a guarded HEAD answers an ISO content type. No image is created; install ISOs belong in the ISO library. Checked after url_not_allowed. Also 422 filename_taken with success:false, reason, message and errors.url when another catalog image already uses this filename for a DIFFERENT download url: a node stores a catalog image by filename and names its download task by it, so the second file would share one file and one state. Two catalog ids that point at the SAME url (the shipped Kubernetes control-plane/worker pairs) are one file and stay allowed. No image is created in either case. Also 409 already_imported with success:false, reason, message naming the existing image and data.image_id, data.name, data.enabled when an image row already carries this catalog id (it used to answer the missing-id message); 422 source_image_id_missing and 422 source_image_id_invalid (the id is a whole number, accepted as a JSON number or a numeric string). 409 catalog_id_conflict (data.image_id, name, version, catalog_id, cause) when the id is held by an image of a different release that cannot be moved to its own catalog id; an image holding an id the catalog has reassigned is moved to its own id first and the import continues.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -2919,6 +2919,7 @@
       "method": "DELETE",
       "path": "/api/v1/instance/{instanceId}",
       "surface": "admin",
+      "contract_notes": "Documentation and header only, no request or response field changed: the delete answers 409 reason public_ip_operation_in_flight (with `Retry-After: 120`) while a public IP change for the instance was sent to its node less than two minutes ago; it clears by itself, so a caller repeats the same delete after a short wait. The OpenTofu provider and the MCP server should treat this one 409 as retryable (wait the Retry-After seconds, bounded), and no other 409 or 4xx.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; accepts optional delete_backups (default false keeps backups)"
@@ -6936,6 +6937,7 @@
       "method": "GET",
       "path": "/api/v1/task/{taskId}",
       "surface": "admin",
+      "contract_notes": "A failed task now outlives the deletion of its instance and stays readable until the retention prune (60 days). The `message` of a failed volume, disk or storage task is now filled with a short, scrubbed reason when the node sent none.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -6979,6 +6981,7 @@
       "method": "GET",
       "path": "/api/v1/tasks",
       "surface": "admin",
+      "contract_notes": "A failed task now outlives the deletion of its instance and stays listed until the retention prune (60 days).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8021,6 +8024,7 @@
       "method": "DELETE",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}",
       "surface": "admin",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8035,6 +8039,7 @@
       "method": "GET",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}",
       "surface": "admin",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8049,6 +8054,7 @@
       "method": "POST",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}/peer",
       "surface": "admin",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8063,6 +8069,7 @@
       "method": "DELETE",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}/peer/{vpnPeerId}",
       "surface": "admin",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8077,6 +8084,7 @@
       "method": "PATCH",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}/peer/{vpnPeerId}",
       "surface": "admin",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8091,6 +8099,7 @@
       "method": "POST",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}/peering",
       "surface": "admin",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8105,6 +8114,7 @@
       "method": "GET",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec",
       "surface": "admin",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8119,6 +8129,7 @@
       "method": "POST",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec",
       "surface": "admin",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8133,6 +8144,7 @@
       "method": "POST",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/install",
       "surface": "admin",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8147,6 +8159,7 @@
       "method": "DELETE",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
       "surface": "admin",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8161,6 +8174,7 @@
       "method": "GET",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
       "surface": "admin",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8175,6 +8189,7 @@
       "method": "PATCH",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}",
       "surface": "admin",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8189,6 +8204,7 @@
       "method": "GET",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}/remote-settings",
       "surface": "admin",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8203,6 +8219,7 @@
       "method": "POST",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}/ipsec/{ipsecConnectionId}/restart",
       "surface": "admin",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -9050,6 +9067,7 @@
       "method": "DELETE",
       "path": "/api/cloud-service/instances/{user_instanceId}",
       "surface": "user",
+      "contract_notes": "Documentation and header only, no request or response field changed: the delete answers 409 reason public_ip_operation_in_flight (with `Retry-After: 120`) while a public IP change for the instance was sent to its node less than two minutes ago; it clears by itself, so a caller repeats the same delete after a short wait. The OpenTofu provider and the MCP server should treat this one 409 as retryable (wait the Retry-After seconds, bounded), and no other 409 or 4xx.",
       "opentofu": {
         "status": "excluded",
         "reason": "optional delete_backups request field and retained-backup deletion behavior are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; existing instance deletion remains available without the cleanup option"
@@ -10044,6 +10062,7 @@
       "method": "GET",
       "path": "/api/instance/{user_instanceId}/bandwidth",
       "surface": "user",
+      "contract_notes": "Description only, no behavior change: one value per UTC day of the billing period, written by the collector while the guest runs; a stopped guest records nothing, so a period in which it never ran answers empty labels, rx and tx; `month` (YYYY-MM) selects an earlier period.",
       "opentofu": {
         "status": "excluded",
         "reason": "live telemetry/metrics read; not declarative IaC"
@@ -10798,6 +10817,7 @@
       "method": "GET",
       "path": "/api/instance/{user_instanceId}/tasks",
       "surface": "user",
+      "contract_notes": "The `message` of a failed volume, disk or storage task is now filled with a short, scrubbed reason when the node sent none. A failed task of a deleted instance stays in GET /api/tasks (this route needs the live instance).",
       "opentofu": {
         "status": "excluded",
         "reason": "live telemetry/metrics read; not declarative IaC"
@@ -14232,7 +14252,7 @@
       "method": "POST",
       "path": "/api/storage/volume/{user_volumeId}/attach",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. A volume on a local LVM or ZFS pool lives on one node; the operations answer 409 reason node_upgrade_required when that node predates local block volumes and 409 volume_node_mismatch when an attach targets an instance on another node, and snapshot create or restore answers 409 volume_snapshot_unsupported on any local LVM or ZFS pool (scheduled snapshot runs there are skipped, not failed; backups work). No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s.",
+      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. A volume on a local LVM or ZFS pool lives on one node; the operations answer 409 reason node_upgrade_required when that node predates local block volumes and 409 volume_node_mismatch when an attach targets an instance on another node, and snapshot create or restore answers 409 volume_snapshot_unsupported on any local LVM or ZFS pool (scheduled snapshot runs there are skipped, not failed; backups work). No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s. Attach is unchanged by the volumes setting: a volume that already exists in a location with volumes switched off can still be attached and detached.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_volume"
@@ -14397,7 +14417,7 @@
       "method": "POST",
       "path": "/api/storage/volumes",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. A volume on a local LVM or ZFS pool lives on one node; the operations answer 409 reason node_upgrade_required when that node predates local block volumes and 409 volume_node_mismatch when an attach targets an instance on another node, and snapshot create or restore answers 409 volume_snapshot_unsupported on any local LVM or ZFS pool (scheduled snapshot runs there are skipped, not failed; backups work). No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s. Sandbox volumes: with for=sandbox the body is {for, name, size_gib (1-1024), location_id, delete_on_sandbox_delete?, project_id?} and the volume is a persistent data volume for sandboxes (a file on one node of the location, priced per GiB-hour of the location's plan group), not a KVM block volume: no volume_plan_id. Needs microvm.manage as well as instances.manage. 201 {success, volume:{id, name, for, size_gib, status:available, location_id, sandbox_id, ...}}. Refusals: 409 no_sandbox_capacity, node_volumes_unsupported, volume_limit (the account volume quota), volume_node_unavailable; 422 volume_size_invalid and the usual field errors; 403 billing_disabled. Covered by the iaas_sandbox_volume resource (iaas_volume stays the KVM block volume) and by the user.volume.create tool's `for`, `size_gib` and `delete_on_sandbox_delete`.",
+      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. A volume on a local LVM or ZFS pool lives on one node; the operations answer 409 reason node_upgrade_required when that node predates local block volumes and 409 volume_node_mismatch when an attach targets an instance on another node, and snapshot create or restore answers 409 volume_snapshot_unsupported on any local LVM or ZFS pool (scheduled snapshot runs there are skipped, not failed; backups work). No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 409s. Sandbox volumes: with for=sandbox the body is {for, name, size_gib (1-1024), location_id, delete_on_sandbox_delete?, project_id?} and the volume is a persistent data volume for sandboxes (a file on one node of the location, priced per GiB-hour of the location's plan group), not a KVM block volume: no volume_plan_id. Needs microvm.manage as well as instances.manage. 201 {success, volume:{id, name, for, size_gib, status:available, location_id, sandbox_id, ...}}. Refusals: 409 no_sandbox_capacity, node_volumes_unsupported, volume_limit (the account volume quota), volume_node_unavailable; 422 volume_size_invalid and the usual field errors; 403 billing_disabled. Covered by the iaas_sandbox_volume resource (iaas_volume stays the KVM block volume) and by the user.volume.create tool's `for`, `size_gib` and `delete_on_sandbox_delete`. Volume create answers an immediate 422 reason volumes_disabled (message 'Volumes are not enabled for this hypervisor group.') when volumes are switched off for the location; nothing is created. The refusal carried the same message without a reason before. Existing volumes there can still be attached and detached. Consumers that branch on the generic 422 need no change.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_volume"
@@ -14457,7 +14477,7 @@
       "method": "GET",
       "path": "/api/tasks",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware: the resource's project (a task by its instance, a database backup policy by every database attached to it) is judged against the account owner's per-project permission overrides; a denied project answers 403 {success:false, reason:project_permission_denied} and list/detail responses omit or exclude rows and counts of denied projects. Owners are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change.",
+      "contract_notes": "Subuser authorization is per-project aware: the resource's project (a task by its instance, a database backup policy by every database attached to it) is judged against the account owner's per-project permission overrides; a denied project answers 403 {success:false, reason:project_permission_denied} and list/detail responses omit or exclude rows and counts of denied projects. Owners are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change. A failed task now outlives the deletion of its instance: it stays in this list (instance_id kept, instance null) and readable through its logs until the retention prune (60 days), with its message. Other tasks of a deleted instance are still removed with it. The `message` of a failed volume, disk or storage task is now filled with a short, scrubbed reason when the node sent none.",
       "opentofu": {
         "status": "excluded",
         "reason": "live telemetry/metrics read; not declarative IaC"
@@ -14967,6 +14987,7 @@
       "method": "DELETE",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpn_gateway"
@@ -14981,6 +15002,7 @@
       "method": "GET",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpn_gateway"
@@ -14995,6 +15017,7 @@
       "method": "POST",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}/peer",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpn_peer"
@@ -15009,6 +15032,7 @@
       "method": "DELETE",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}/peer/{user_vpnPeerId}",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpn_peer"
@@ -15023,6 +15047,7 @@
       "method": "PATCH",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}/peer/{user_vpnPeerId}",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpn_peer"
@@ -15037,6 +15062,7 @@
       "method": "GET",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}/peer/{user_vpnPeerId}/config",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpn_peer_config"
@@ -15051,6 +15077,7 @@
       "method": "POST",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}/peering",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpn_peering"
@@ -15065,6 +15092,7 @@
       "method": "POST",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}/retry",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
@@ -15079,6 +15107,7 @@
       "method": "GET",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpn_ipsec_connection"
@@ -15093,6 +15122,7 @@
       "method": "POST",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpn_ipsec_connection"
@@ -15107,6 +15137,7 @@
       "method": "DELETE",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpn_ipsec_connection"
@@ -15121,6 +15152,7 @@
       "method": "GET",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpn_ipsec_connection"
@@ -15135,6 +15167,7 @@
       "method": "PATCH",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpn_ipsec_connection"
@@ -15149,6 +15182,7 @@
       "method": "GET",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}/remote-settings",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "covered",
         "resource": "iaas_vpn_ipsec_connection",
@@ -15164,6 +15198,7 @@
       "method": "POST",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}/ipsec/{user_ipsecConnectionId}/restart",
       "surface": "user",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC"
