@@ -2,8 +2,12 @@ package resources
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -16,6 +20,7 @@ import (
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
 	"github.com/hypervisor-io/terraform-provider-iaas/internal/validators"
+	"github.com/hypervisor-io/terraform-provider-iaas/waiter"
 )
 
 // Interface assertions - vpc mirrors the golden ssh_key resource's full set of
@@ -47,13 +52,14 @@ type vpcResource struct {
 // VniNumber is server-computed (the API appends it on create and it is stable
 // afterwards), so it is modelled Computed and never sent on create.
 type vpcModel struct {
-	ID                types.String `tfsdk:"id"`
-	Name              types.String `tfsdk:"name"`
-	Cidr              types.String `tfsdk:"cidr"`
-	HypervisorGroupID types.String `tfsdk:"hypervisor_group_id"`
-	LocationID        types.String `tfsdk:"location_id"`
-	Description       types.String `tfsdk:"description"`
-	VniNumber         types.Int64  `tfsdk:"vni_number"`
+	ID                types.String   `tfsdk:"id"`
+	Name              types.String   `tfsdk:"name"`
+	Cidr              types.String   `tfsdk:"cidr"`
+	HypervisorGroupID types.String   `tfsdk:"hypervisor_group_id"`
+	LocationID        types.String   `tfsdk:"location_id"`
+	Description       types.String   `tfsdk:"description"`
+	VniNumber         types.Int64    `tfsdk:"vni_number"`
+	Timeouts          timeouts.Value `tfsdk:"timeouts"`
 }
 
 // Metadata sets the resource type name → "<provider>_vpc" → "iaas_vpc".
@@ -65,12 +71,15 @@ func (r *vpcResource) Metadata(_ context.Context, req resource.MetadataRequest, 
 //
 // Because there is NO update endpoint, EVERY configurable attribute is
 // RequiresReplace: any change must be applied by destroying and recreating.
-func (r *vpcResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *vpcResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Manages a VPC (virtual private cloud network) in your IaaS account. " +
 			"A VPC is an isolated layer-2 network, identified by a server-assigned VNI, " +
 			"into which private subnets and instances can be placed. The VPC API has no " +
-			"update endpoint, so changing any attribute forces the VPC to be replaced.",
+			"update endpoint, so changing any attribute forces the VPC to be replaced. " +
+			"Deleting a VPC also removes its NAT gateways; while a gateway is still being removed on its " +
+			"node the API reports the delete as pending, and the provider repeats the delete until the " +
+			"VPC is gone or the delete timeout passes.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -148,6 +157,14 @@ func (r *vpcResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
+		},
+		Blocks: map[string]schema.Block{
+			// Create is synchronous; only the delete can take a while (a NAT
+			// gateway is removed on its node before the VPC is), so only the
+			// delete timeout is exposed.
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{
+				Delete: true,
+			}),
 		},
 	}
 }
@@ -243,7 +260,11 @@ func (r *vpcResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	resp.Diagnostics.Append(resp.State.Set(ctx, vpcStateFromAPI(obj, plan))...)
 }
 
-// Delete removes the VPC.
+// Delete removes the VPC. While a NAT gateway of the VPC is still being removed
+// on its node, the API answers 409 (reason vpc_delete_pending, or
+// vpc_delete_incomplete when a later step failed) and leaves the VPC in status
+// "deleting"; repeating the same DELETE finishes it. Delete repeats it with the
+// waiter's capped backoff until the VPC is gone or the delete timeout passes.
 func (r *vpcResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state vpcModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -251,10 +272,68 @@ func (r *vpcResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 		return
 	}
 
-	if err := r.client.DeleteVPC(ctx, state.ID.ValueString()); err != nil {
-		resp.Diagnostics.Append(diagFromErr("Error deleting VPC", err))
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, defaultVPCDeleteTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	if err := deleteVPCUntilGone(ctx, r.client, state.ID.ValueString(), deleteTimeout, pollInterval()); err != nil {
+		var apiErr *client.APIError
+		if errors.As(err, &apiErr) {
+			resp.Diagnostics.Append(diagFromErr("Error deleting VPC", err))
+			return
+		}
+		resp.Diagnostics.AddError("Error deleting VPC", err.Error())
+	}
+}
+
+// defaultVPCDeleteTimeout bounds how long Delete keeps repeating the DELETE
+// while the VPC's NAT gateways are being removed.
+const defaultVPCDeleteTimeout = 10 * time.Minute
+
+// deleteVPCUntilGone sends DELETE /vpc/{id} until it succeeds or answers 404
+// (the VPC is gone). A 409 with reason vpc_delete_pending or
+// vpc_delete_incomplete means the delete is in progress, so the call is repeated
+// after the waiter's backoff interval. Any other error ends the wait at once.
+// When the timeout passes the error names the NAT gateways still pending.
+func deleteVPCUntilGone(ctx context.Context, c *client.Client, id string, timeout, interval time.Duration) error {
+	var last *client.APIError
+	err := waiter.WaitFor(ctx, waiter.Options{
+		Interval: interval,
+		Timeout:  timeout,
+		Refresh: func() (string, bool, error) {
+			err := c.DeleteVPC(ctx, id)
+			if err == nil || client.IsNotFound(err) {
+				return "deleted", true, nil
+			}
+			var apiErr *client.APIError
+			if errors.As(err, &apiErr) && apiErr.Status == 409 &&
+				(apiErr.Reason == client.ReasonVpcDeletePending || apiErr.Reason == client.ReasonVpcDeleteIncomplete) {
+				last = apiErr
+				return "deleting", false, nil
+			}
+			return "", false, err
+		},
+	})
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, context.DeadlineExceeded) && last != nil {
+		msg := fmt.Sprintf("VPC %s is still being deleted after %s (reason: %s): %s", id, timeout, last.Reason, last.Message)
+		if len(last.PendingNatGateways) > 0 {
+			msg += "; NAT gateways still being removed: " + strings.Join(last.PendingNatGateways, ", ")
+		}
+		msg += ". The VPC is in status deleting; run destroy again later to finish it."
+		return errors.New(msg)
+	}
+	// A terminal API error comes back wrapped by the waiter; hand the original
+	// to the diagnostics so the message, reason and request id are kept.
+	var apiErr *client.APIError
+	if errors.As(err, &apiErr) {
+		return apiErr
+	}
+	return err
 }
 
 // ImportState lets `terraform import iaas_vpc.x <uuid>` adopt an existing VPC;
@@ -275,6 +354,7 @@ func vpcStateFromAPI(obj map[string]any, prior vpcModel) vpcModel {
 		LocationID:        locationIDFromAPI(obj, prior.LocationID),
 		Description:       optionalStringFromAPI(obj, "description", prior.Description),
 		VniNumber:         int64FromAPI(obj, "vni_number", prior.VniNumber),
+		Timeouts:          prior.Timeouts,
 	}
 }
 

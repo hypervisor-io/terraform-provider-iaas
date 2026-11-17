@@ -23,6 +23,7 @@ import (
 // detail:
 //   - the API message,
 //   - any 422 field-validation errors (field: [msgs]), sorted for determinism,
+//   - the NAT gateways a VPC delete is waiting for, when the API listed them,
 //   - the typed refusal reason code (when the API sent one),
 //   - the request id (when present) for support correlation.
 //
@@ -42,6 +43,13 @@ func FromErr(summary string, err error) diag.Diagnostic {
 			for _, f := range fields {
 				fmt.Fprintf(&sb, "\n  - %s: %s", f, strings.Join(apiErr.FieldErrors[f], "; "))
 			}
+		}
+		if len(apiErr.PendingNatGateways) > 0 {
+			fmt.Fprintf(&sb, "\nNAT gateways still being removed: %s", strings.Join(apiErr.PendingNatGateways, ", "))
+		}
+		if apiErr.Reason == client.ReasonVpcDeleting {
+			sb.WriteString("\nThe target VPC is being deleted, so nothing can be created in it. " +
+				"The request was not retried; use another VPC, or create the VPC again once the delete has finished.")
 		}
 		if apiErr.Reason != "" {
 			fmt.Fprintf(&sb, "\n(reason: %s)", apiErr.Reason)

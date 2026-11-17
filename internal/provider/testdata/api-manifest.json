@@ -1178,7 +1178,7 @@
       "method": "POST",
       "path": "/api/v1/database/{managedDatabaseId}/restore-to-new",
       "surface": "admin",
-      "contract_notes": "Body: exactly one of backup_id (a completed full or incremental S3 backup of this database; a PostgreSQL 17+ incremental restores with its whole chain) or target_time (inside the point-in-time window); optional name, db_plan_id, vpc_id, vpc_subnet_id. 202 success:true with data {managed_database_id, task_id, status: restoring}; the new database becomes active, and billed, only when the restore has finished. Refusals carry success:false, reason and message: 422 restore_point_required, restore_point_ambiguous, backup_not_found, backup_not_complete, backup_not_restorable, invalid_target_time, target_time_out_of_range, pitr_not_available, pitr_history_reset, backup_version_unrecorded, plan_not_available, plan_engine_unsupported, plan_storage_too_small, backup_size_unknown, vpc_required, vpc_not_found, vpc_location_mismatch, quota_exceeded; 409 replica_restore_not_supported, backup_chain_broken, pitr_plan_changed, pitr_archive_pruned, backup_destination_unavailable, engine_version_unavailable, location_unavailable, no_hypervisor_available, vpc_subnet_full, nat_gateway_required, public_ip_unavailable, account_busy; 503 deploy_dispatch_unconfirmed with data {managed_database_id, task_id}: the new database is kept and reconciled, do not retry. The source database is never changed.",
+      "contract_notes": "Body: exactly one of backup_id (a completed full or incremental S3 backup of this database; a PostgreSQL 17+ incremental restores with its whole chain) or target_time (inside the point-in-time window); optional name, db_plan_id, vpc_id, vpc_subnet_id. 202 success:true with data {managed_database_id, task_id, status: restoring}; the new database becomes active, and billed, only when the restore has finished. Refusals carry success:false, reason and message: 422 restore_point_required, restore_point_ambiguous, backup_not_found, backup_not_complete, backup_not_restorable, invalid_target_time, target_time_out_of_range, pitr_not_available, pitr_history_reset, backup_version_unrecorded, plan_not_available, plan_engine_unsupported, plan_storage_too_small, backup_size_unknown, vpc_required, vpc_not_found, vpc_location_mismatch, quota_exceeded; 409 replica_restore_not_supported, backup_chain_broken, pitr_plan_changed, pitr_archive_pruned, backup_destination_unavailable, engine_version_unavailable, location_unavailable, no_hypervisor_available, vpc_subnet_full, nat_gateway_required, public_ip_unavailable, account_busy; 503 deploy_dispatch_unconfirmed with data {managed_database_id, task_id}: the new database is kept and reconciled, do not retry. The source database is never changed. 409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -1326,7 +1326,8 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist. Deferred consumer sync: creating while the account's quota check lock is held by a concurrent request answers 409 reason account_busy, and a genuine quota breach answers 422 reason quota_exceeded; the consumers do not branch on these reasons yet. Deferred consumer sync: the request body accepts optional parameter_group_id (a db_parameter_group of the owner, same engine; refused otherwise) which is stored on the new database; the OpenTofu provider (parameter_group_id attribute) and the MCP create tool send it on the user endpoint; this admin endpoint stays excluded."
-      }
+      },
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted."
     },
     {
       "id": "admin GET /api/v1/db/backup-policies",
@@ -3871,7 +3872,8 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist"
-      }
+      },
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted."
     },
     {
       "id": "admin POST /api/v1/instance/{instanceId}/vpc/ip",
@@ -4508,7 +4510,8 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist"
-      }
+      },
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted."
     },
     {
       "id": "admin POST /api/v1/kubernetes/cluster/{kubernetesClusterId}/pools/reassign-default",
@@ -5334,7 +5337,8 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist"
-      }
+      },
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted."
     },
     {
       "id": "admin GET /api/v1/mass-mail",
@@ -7639,7 +7643,8 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist"
-      }
+      },
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted."
     },
     {
       "id": "admin DELETE /api/v1/vpc-dns/zone/{vpcDnsZoneId}/detach-vpc/{vpcId}",
@@ -7779,7 +7784,8 @@
       "mcp": {
         "status": "excluded",
         "reason": "destructive/irreversible admin op excluded from the MCP server's safe allowlist"
-      }
+      },
+      "contract_notes": "409 vpc_delete_pending (success:false, reason, message, pending_nat_gateways) while a NAT gateway is still being removed on its node, or 409 vpc_delete_incomplete when a step after the gateways failed; the VPC is then status deleting and the same DELETE repeated finishes it (also finished by the reconcile and vpc:finish-deleting-vpcs). Before: HTTP 200 with success:false, no reason, and the VPC stayed active."
     },
     {
       "id": "admin GET /api/v1/vpc/{vpcId}",
@@ -7835,7 +7841,8 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist"
-      }
+      },
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted."
     },
     {
       "id": "admin DELETE /api/v1/vpc/{vpcId}/nat-gateway/{natGatewayId}",
@@ -7961,7 +7968,8 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist"
-      }
+      },
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted."
     },
     {
       "id": "admin POST /api/v1/vpc/{vpcId}/vpn-gateway",
@@ -7975,7 +7983,8 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist"
-      }
+      },
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted."
     },
     {
       "id": "admin POST /api/v1/vpc/{vpcId}/nat-gateway/{natGatewayId}/dedicated-address",
@@ -8099,7 +8108,7 @@
       "method": "POST",
       "path": "/api/v1/vpn-gateway/{vpnGatewayId}/peering",
       "surface": "admin",
-      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error). 409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -9370,7 +9379,7 @@
       "method": "POST",
       "path": "/api/database/{user_dbId}/restore-to-new",
       "surface": "user",
-      "contract_notes": "Body: exactly one of backup_id (a completed full or incremental S3 backup of this database; a PostgreSQL 17+ incremental restores with its whole chain) or target_time (inside the point-in-time window); optional name, db_plan_id, vpc_id, vpc_subnet_id. 202 success:true with data {managed_database_id, task_id, status: restoring}; the new database becomes active, and billed, only when the restore has finished. Refusals carry success:false, reason and message: 422 restore_point_required, restore_point_ambiguous, backup_not_found, backup_not_complete, backup_not_restorable, invalid_target_time, target_time_out_of_range, pitr_not_available, pitr_history_reset, backup_version_unrecorded, plan_not_available, plan_engine_unsupported, plan_storage_too_small, backup_size_unknown, vpc_required, vpc_not_found, vpc_location_mismatch, quota_exceeded; 409 replica_restore_not_supported, backup_chain_broken, pitr_plan_changed, pitr_archive_pruned, backup_destination_unavailable, engine_version_unavailable, location_unavailable, no_hypervisor_available, vpc_subnet_full, nat_gateway_required, public_ip_unavailable, account_busy; 503 deploy_dispatch_unconfirmed with data {managed_database_id, task_id}: the new database is kept and reconciled, do not retry. The source database is never changed.",
+      "contract_notes": "Body: exactly one of backup_id (a completed full or incremental S3 backup of this database; a PostgreSQL 17+ incremental restores with its whole chain) or target_time (inside the point-in-time window); optional name, db_plan_id, vpc_id, vpc_subnet_id. 202 success:true with data {managed_database_id, task_id, status: restoring}; the new database becomes active, and billed, only when the restore has finished. Refusals carry success:false, reason and message: 422 restore_point_required, restore_point_ambiguous, backup_not_found, backup_not_complete, backup_not_restorable, invalid_target_time, target_time_out_of_range, pitr_not_available, pitr_history_reset, backup_version_unrecorded, plan_not_available, plan_engine_unsupported, plan_storage_too_small, backup_size_unknown, vpc_required, vpc_not_found, vpc_location_mismatch, quota_exceeded; 409 replica_restore_not_supported, backup_chain_broken, pitr_plan_changed, pitr_archive_pruned, backup_destination_unavailable, engine_version_unavailable, location_unavailable, no_hypervisor_available, vpc_subnet_full, nat_gateway_required, public_ip_unavailable, account_busy; 503 deploy_dispatch_unconfirmed with data {managed_database_id, task_id}: the new database is kept and reconciled, do not retry. The source database is never changed. 409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted.",
       "opentofu": {
         "status": "excluded",
         "reason": "Restore into a new database is an imperative operation, not a declarative resource lifecycle."
@@ -9540,7 +9549,7 @@
       "method": "POST",
       "path": "/api/databases",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. The request body accepts optional parameter_group_id (a parameter group of the account, same engine; any other id is refused), stored on the new database. The OpenTofu provider (parameter_group_id attribute) and the MCP create tool send it.",
+      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. The request body accepts optional parameter_group_id (a parameter group of the account, same engine; any other id is refused), stored on the new database. The OpenTofu provider (parameter_group_id attribute) and the MCP create tool send it. 409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_managed_database"
@@ -9674,7 +9683,8 @@
       "mcp": {
         "status": "covered",
         "tool": "user.dns_zone.attach_vpc"
-      }
+      },
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted."
     },
     {
       "id": "user DELETE /api/dns-zone/{user_dnsZoneId}/detach-vpc/{user_vpcId}",
@@ -10937,7 +10947,8 @@
       "mcp": {
         "status": "covered",
         "tool": "user.vpc.attach_instance"
-      }
+      },
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted."
     },
     {
       "id": "user POST /api/instance/{user_instanceId}/vpc/ip/add",
@@ -11389,7 +11400,8 @@
       "mcp": {
         "status": "covered",
         "tool": "user.kubernetes_node_pool.create"
-      }
+      },
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted."
     },
     {
       "id": "user POST /api/kubernetes/cluster/{user_clusterId}/retry",
@@ -11691,7 +11703,7 @@
       "method": "POST",
       "path": "/api/kubernetes/clusters",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
+      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. 409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_kubernetes_cluster"
@@ -12115,7 +12127,7 @@
       "method": "POST",
       "path": "/api/load-balancers",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
+      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. 409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_load_balancer"
@@ -12447,7 +12459,7 @@
       "method": "POST",
       "path": "/api/microvm/vms",
       "surface": "user",
-      "contract_notes": "env is applied (3381): an object map of variable name to value (primary, same shape as PUT /microvm/vm/{id}/env) or the legacy newline-separated KEY=value text; 422 errors.env for an unapplicable shape, never silence; up to 100 variables, values up to 8192 characters, kept untrimmed; request env counts toward the 409 microvm_env_unsupported_on_node gate. Vault secrets are merged into env by the panel launcher only (secret_ids is not an API field in phase 1). Planned: secret_ids on this endpoint with provider and MCP coverage. metadata: flat string map, at most 32 keys, key 1-64 of [A-Za-z0-9_.-], value up to 256 chars, reserved prefix vc., 422 errors.metadata; returned on every read. Optional Idempotency-Key header (idempotency.strict): same key + same body within 24 h replays the first 2xx answer (Idempotent-Replayed: true; the stored answer is encrypted) and runs nothing; same key + different body is 422 idempotency_key_reused; same key while the first request still runs is 409 idempotency_in_progress with Retry-After; failures release the key; no header = unchanged behaviour. The OpenTofu provider and the MCP server send a key on every create. Security groups: security_group_ids (new, top level) and network[].security_group_ids (kept) name groups owned by the account, at most 10; they are stored per sandbox and apply to every NIC, in force before the node can see traffic (the pivot rows are written before the node create call). Different sets on different NICs, or a set on one NIC and none on another, answer 422 reason security_groups_differ_per_nic and create nothing; a group of another account is 422 errors.security_group_ids.N. The response and every read carry security_groups [{id, name}]. The E2B-compatible create path takes no groups (unfiltered, as with no groups). Plan fit: a plan_id whose disk is smaller than the kit version required_disk_gib is refused before anything is created, status 422 with reason plan_disk_too_small and a message naming both sizes (the node own refusal image_exceeds_plan_disk is mapped to the same reason); with no plan_id the smallest enabled plan that holds the kit is used (the first enabled plan when the kit size is unknown); an unknown size never refuses, and neither does a size of 2 GiB or less (the node launches such images on any plan; only a larger image restricts). POST /microvm/vm/{id}/deploy answers the same 422 when the new version does not fit the sandbox plan. iaas_microvm.plan_id documents it (the reason reaches the user as part of the API error); the MCP create tool schema documents it. Outbound network policy: optional egress_policy, the same document as PUT /microvm/vm/{id}/egress. The sandbox is placed only on a node that can enforce it (and serve its name rules) and the policy rides the create spec, so it is in force from the first boot. A refused policy creates nothing: 422 with the reasons of that endpoint, errors and violations with field paths under egress_policy. (an empty object is 422 invalid_egress_policy, never read as no policy); 409 no_node_supports_egress_policy when the location has capacity only on nodes that cannot enforce one; 409 egress_policy_unsupported_node. The response and every read carry the egress summary. iaas_microvm.egress_policy sends it at create; the MCP create tool takes egress_policy. Fork: snapshot_id starts the sandbox from one of the account's ready disk snapshots instead of image_id (the two exclude each other: 422 snapshot_and_image_exclusive); location_id becomes optional and, when given, must be the snapshot's own (409 snapshot_location_mismatch). The new sandbox boots cold from a copy of the saved disk, is placed on the node that holds the snapshot (409 snapshot_node_unavailable when that node cannot take it) and its plan must be one the source sandbox could have run on: when the source ran an image of 2 GiB or less (the small-image rule, which restricts no plan) any plan fits, otherwise the plan disk must be at least the snapshot's root filesystem size rounded up to whole GiB, the node's own required number (the source's plan disk, disk_gib, is not part of the rule; 422 plan_disk_too_small, naming the true required and plan sizes). A fork is always a sandbox with the interactive shell: ingress.shell.enabled defaults on and an explicit false is 422 sandbox_kind_unsupported. A fork the node refuses leaves nothing behind (no row, the name and the address are free, nothing is billed): 422 snapshot_filesystem_unrecoverable (the saved disk was captured from a running sandbox and cannot be recovered; take a new snapshot after pausing or stopping), 502 fork_recovery_failed, 503 node_tools_too_old (also for a plain create or a version deploy: the location's software is too old to prepare this image, nothing was created or charged; try another location or contact support), and a node reason this release does not know is 502 snapshot_node_error with its code in node_reason. env, secrets, MCP bindings, domains and egress policy are NOT inherited; inherit_env true re-sends the source sandbox's own variables (409 snapshot_source_gone when it no longer exists). Other refusals: 404 snapshot_not_found, 409 snapshot_not_ready, snapshot_image_unavailable, 422 snapshot_template_mismatch. Every sandbox object carries source_snapshot_id (null unless it was started from a snapshot), which stays set after the snapshot is deleted. Covered by iaas_microvm.snapshot_id (ForceNew) and the user.microvm.create tool's snapshot_id. Sandbox volumes: optional volumes [{volume_id, mount_path?, read_only?, noexec?, delete_on_sandbox_delete?}] (at most 4, account volumes of for=sandbox that are free, in location_id and on ONE node). The sandbox is placed on that node and never elsewhere; a node that cannot take it is 409 volume_node_unavailable, volumes on different nodes or locations 409 volume_node_mismatch, a held volume 409 volume_in_use, an unknown or foreign one 404 volume_not_found, a bad path 422 mount_path_invalid, a taken path 409 mount_path_conflict. Nothing is created on a refusal. Every sandbox read carries volumes. A sandbox started from a snapshot (snapshot_id) starts without volumes unless it lists its own (snapshots do not contain volumes). POST /microvm/vm/{id}/deploy and rollback on a running sandbox that holds volumes answer 409 sandbox_state_invalid (a volume has one holder). Covered by iaas_microvm.volumes (create-time, forces a new sandbox) and the user.microvm.create tool's volumes. Fast start: optional fast_start, one of allow (the default), require, cold_only. allow takes a warm pooled sandbox or a restore from a template snapshot when the location has fast start switched on and the node can, and otherwise starts normally; cold_only never does. require never starts the normal way: where it can never be honoured (location off, a snapshot fork, a kit without the shell agent, MCP servers, other than one network interface, or no node that reports fast start) it is 429 fast_start_unavailable with cause fast_start_unsupported before anything is created, and where the node cannot give it right now it is 429 fast_start_unavailable with a cause (pool_empty, snapshot_building, restore_saturated, node_kvm_fault, fast_start_unavailable) after a rollback that leaves nothing behind, so the same request can be repeated; the body is {success:false, reason:'fast_start_unavailable', cause, message, retry_after_seconds?} and the Retry-After header is present only when a retry is likely to help. A bad value is 422 errors.fast_start. The E2B-compatible create never sends it and keeps its documented 429 shape when a start cannot be had. Covered by iaas_microvm.fast_start (ForceNew, create-time only, not read back, so an import carries none) and the user.microvm.create tool's fast_start.",
+      "contract_notes": "env is applied (3381): an object map of variable name to value (primary, same shape as PUT /microvm/vm/{id}/env) or the legacy newline-separated KEY=value text; 422 errors.env for an unapplicable shape, never silence; up to 100 variables, values up to 8192 characters, kept untrimmed; request env counts toward the 409 microvm_env_unsupported_on_node gate. Vault secrets are merged into env by the panel launcher only (secret_ids is not an API field in phase 1). Planned: secret_ids on this endpoint with provider and MCP coverage. metadata: flat string map, at most 32 keys, key 1-64 of [A-Za-z0-9_.-], value up to 256 chars, reserved prefix vc., 422 errors.metadata; returned on every read. Optional Idempotency-Key header (idempotency.strict): same key + same body within 24 h replays the first 2xx answer (Idempotent-Replayed: true; the stored answer is encrypted) and runs nothing; same key + different body is 422 idempotency_key_reused; same key while the first request still runs is 409 idempotency_in_progress with Retry-After; failures release the key; no header = unchanged behaviour. The OpenTofu provider and the MCP server send a key on every create. Security groups: security_group_ids (new, top level) and network[].security_group_ids (kept) name groups owned by the account, at most 10; they are stored per sandbox and apply to every NIC, in force before the node can see traffic (the pivot rows are written before the node create call). Different sets on different NICs, or a set on one NIC and none on another, answer 422 reason security_groups_differ_per_nic and create nothing; a group of another account is 422 errors.security_group_ids.N. The response and every read carry security_groups [{id, name}]. The E2B-compatible create path takes no groups (unfiltered, as with no groups). Plan fit: a plan_id whose disk is smaller than the kit version required_disk_gib is refused before anything is created, status 422 with reason plan_disk_too_small and a message naming both sizes (the node own refusal image_exceeds_plan_disk is mapped to the same reason); with no plan_id the smallest enabled plan that holds the kit is used (the first enabled plan when the kit size is unknown); an unknown size never refuses, and neither does a size of 2 GiB or less (the node launches such images on any plan; only a larger image restricts). POST /microvm/vm/{id}/deploy answers the same 422 when the new version does not fit the sandbox plan. iaas_microvm.plan_id documents it (the reason reaches the user as part of the API error); the MCP create tool schema documents it. Outbound network policy: optional egress_policy, the same document as PUT /microvm/vm/{id}/egress. The sandbox is placed only on a node that can enforce it (and serve its name rules) and the policy rides the create spec, so it is in force from the first boot. A refused policy creates nothing: 422 with the reasons of that endpoint, errors and violations with field paths under egress_policy. (an empty object is 422 invalid_egress_policy, never read as no policy); 409 no_node_supports_egress_policy when the location has capacity only on nodes that cannot enforce one; 409 egress_policy_unsupported_node. The response and every read carry the egress summary. iaas_microvm.egress_policy sends it at create; the MCP create tool takes egress_policy. Fork: snapshot_id starts the sandbox from one of the account's ready disk snapshots instead of image_id (the two exclude each other: 422 snapshot_and_image_exclusive); location_id becomes optional and, when given, must be the snapshot's own (409 snapshot_location_mismatch). The new sandbox boots cold from a copy of the saved disk, is placed on the node that holds the snapshot (409 snapshot_node_unavailable when that node cannot take it) and its plan must be one the source sandbox could have run on: when the source ran an image of 2 GiB or less (the small-image rule, which restricts no plan) any plan fits, otherwise the plan disk must be at least the snapshot's root filesystem size rounded up to whole GiB, the node's own required number (the source's plan disk, disk_gib, is not part of the rule; 422 plan_disk_too_small, naming the true required and plan sizes). A fork is always a sandbox with the interactive shell: ingress.shell.enabled defaults on and an explicit false is 422 sandbox_kind_unsupported. A fork the node refuses leaves nothing behind (no row, the name and the address are free, nothing is billed): 422 snapshot_filesystem_unrecoverable (the saved disk was captured from a running sandbox and cannot be recovered; take a new snapshot after pausing or stopping), 502 fork_recovery_failed, 503 node_tools_too_old (also for a plain create or a version deploy: the location's software is too old to prepare this image, nothing was created or charged; try another location or contact support), and a node reason this release does not know is 502 snapshot_node_error with its code in node_reason. env, secrets, MCP bindings, domains and egress policy are NOT inherited; inherit_env true re-sends the source sandbox's own variables (409 snapshot_source_gone when it no longer exists). Other refusals: 404 snapshot_not_found, 409 snapshot_not_ready, snapshot_image_unavailable, 422 snapshot_template_mismatch. Every sandbox object carries source_snapshot_id (null unless it was started from a snapshot), which stays set after the snapshot is deleted. Covered by iaas_microvm.snapshot_id (ForceNew) and the user.microvm.create tool's snapshot_id. Sandbox volumes: optional volumes [{volume_id, mount_path?, read_only?, noexec?, delete_on_sandbox_delete?}] (at most 4, account volumes of for=sandbox that are free, in location_id and on ONE node). The sandbox is placed on that node and never elsewhere; a node that cannot take it is 409 volume_node_unavailable, volumes on different nodes or locations 409 volume_node_mismatch, a held volume 409 volume_in_use, an unknown or foreign one 404 volume_not_found, a bad path 422 mount_path_invalid, a taken path 409 mount_path_conflict. Nothing is created on a refusal. Every sandbox read carries volumes. A sandbox started from a snapshot (snapshot_id) starts without volumes unless it lists its own (snapshots do not contain volumes). POST /microvm/vm/{id}/deploy and rollback on a running sandbox that holds volumes answer 409 sandbox_state_invalid (a volume has one holder). Covered by iaas_microvm.volumes (create-time, forces a new sandbox) and the user.microvm.create tool's volumes. Fast start: optional fast_start, one of allow (the default), require, cold_only. allow takes a warm pooled sandbox or a restore from a template snapshot when the location has fast start switched on and the node can, and otherwise starts normally; cold_only never does. require never starts the normal way: where it can never be honoured (location off, a snapshot fork, a kit without the shell agent, MCP servers, other than one network interface, or no node that reports fast start) it is 429 fast_start_unavailable with cause fast_start_unsupported before anything is created, and where the node cannot give it right now it is 429 fast_start_unavailable with a cause (pool_empty, snapshot_building, restore_saturated, node_kvm_fault, fast_start_unavailable) after a rollback that leaves nothing behind, so the same request can be repeated; the body is {success:false, reason:'fast_start_unavailable', cause, message, retry_after_seconds?} and the Retry-After header is present only when a retry is likely to help. A bad value is 422 errors.fast_start. The E2B-compatible create never sends it and keeps its documented 429 shape when a start cannot be had. Covered by iaas_microvm.fast_start (ForceNew, create-time only, not read back, so an import carries none) and the user.microvm.create tool's fast_start. 409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_microvm"
@@ -14698,7 +14710,8 @@
       "mcp": {
         "status": "covered",
         "tool": "user.vpc.delete"
-      }
+      },
+      "contract_notes": "409 vpc_delete_pending (success:false, reason, message, pending_nat_gateways) while a NAT gateway is still being removed on its node, or 409 vpc_delete_incomplete when a step after the gateways failed; the VPC is then status deleting and the same DELETE repeated finishes it (also finished by the reconcile and vpc:finish-deleting-vpcs). Before: HTTP 200 with success:false, no reason, and the VPC stayed active."
     },
     {
       "id": "user GET /api/vpc/{user_vpcId}",
@@ -14740,7 +14753,8 @@
       "mcp": {
         "status": "covered",
         "tool": "user.nat_gateway.create"
-      }
+      },
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted."
     },
     {
       "id": "user DELETE /api/vpc/{user_vpcId}/nat-gateway/{user_natGatewayId}",
@@ -14908,7 +14922,8 @@
       "mcp": {
         "status": "covered",
         "tool": "user.vpc_subnet.create"
-      }
+      },
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted."
     },
     {
       "id": "user POST /api/vpc/{user_vpcId}/vpn-gateway",
@@ -14922,7 +14937,8 @@
       "mcp": {
         "status": "covered",
         "tool": "user.vpn_gateway.create"
-      }
+      },
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted."
     },
     {
       "id": "user POST /api/vpc/{user_vpcId}/nat-gateway/{user_natGatewayId}/dedicated-address",
@@ -15077,7 +15093,7 @@
       "method": "POST",
       "path": "/api/vpn-gateway/{user_vpnGatewayId}/peering",
       "surface": "user",
-      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error).",
+      "contract_notes": "A gateway id that does not exist answers 404 {success:false, reason:not_found, message:\"VPN gateway not found.\"}, the envelope the IPsec connection id and the instance id already use; on the customer API a gateway of another account answers the identical body. The body of a successful call and every other status are unchanged, so the OpenTofu provider and MCP server need no change (both already treat any non-2xx as an error). 409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_vpn_peering"

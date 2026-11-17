@@ -230,3 +230,27 @@ func TestDeleteVPC_Failure(t *testing.T) {
 		t.Errorf("error = %q; want it to contain %q", err.Error(), "subnet still has used IPs")
 	}
 }
+
+// TestDeleteVPC_pendingIsTypedRefusal pins the 409 answer of a VPC delete that is
+// still finishing: the reason, the status and the pending NAT gateway ids reach
+// the caller as an *APIError.
+func TestDeleteVPC_pendingIsTypedRefusal(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"success":false,"reason":"vpc_delete_pending","message":"pending","pending_nat_gateways":["g1",{"id":"g2"}]}`))
+	}))
+	defer srv.Close()
+
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	err := c.DeleteVPC(context.Background(), "v1")
+	apiErr, ok := err.(*APIError)
+	if !ok {
+		t.Fatalf("want *APIError, got %T (%v)", err, err)
+	}
+	if apiErr.Status != 409 || apiErr.Reason != ReasonVpcDeletePending {
+		t.Errorf("status/reason = %d/%q", apiErr.Status, apiErr.Reason)
+	}
+	if len(apiErr.PendingNatGateways) != 2 || apiErr.PendingNatGateways[0] != "g1" || apiErr.PendingNatGateways[1] != "g2" {
+		t.Errorf("PendingNatGateways = %v", apiErr.PendingNatGateways)
+	}
+}

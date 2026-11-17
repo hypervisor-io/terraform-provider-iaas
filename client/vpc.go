@@ -12,7 +12,10 @@ import (
 //	CREATE  POST   /vpcs        body {name,cidr,hypervisor_group_id,description?}
 //	                            → 200 {success,message,vpc:{...,id,vni_number}}
 //	SHOW    GET    /vpc/{id}    (singular) → {success,vpc:{...,subnets:[...]}}; 404 when absent
-//	DELETE  DELETE /vpc/{id}    (singular) → 200 {success}; 200 success:false on failure
+//	DELETE  DELETE /vpc/{id}    (singular) → 200 {success}; 409 reason vpc_delete_pending
+//	                            or vpc_delete_incomplete while the delete is still
+//	                            finishing (repeat the DELETE); 200 success:false for
+//	                            other refusals (e.g. a subnet in use)
 //
 // Notes:
 //   - Create is SYNCHRONOUS and HTTP 200 (not 201). VpcService::store returns the
@@ -29,6 +32,21 @@ import (
 //   - CreateVPC takes a prebuilt body so the resource controls which optional
 //     fields are sent (description is omitted from the map when unset rather than
 //     sent as null).
+
+// Typed 409 reasons of the VPC lifecycle.
+//
+//   - ReasonVpcDeletePending: a DELETE of the VPC left it in status "deleting"
+//     because a NAT gateway is still being removed on its node; the body lists
+//     pending_nat_gateways. Repeating the same DELETE finishes it.
+//   - ReasonVpcDeleteIncomplete: a step after the gateways failed; the VPC is in
+//     status "deleting" and repeating the DELETE finishes it.
+//   - ReasonVpcDeleting: a create that targets a VPC in status "deleting" is
+//     refused. It is permanent for that VPC.
+const (
+	ReasonVpcDeletePending    = "vpc_delete_pending"
+	ReasonVpcDeleteIncomplete = "vpc_delete_incomplete"
+	ReasonVpcDeleting         = "vpc_deleting"
+)
 
 // ListVPCs returns all VPCs visible to the token (paginator-aware).
 func (c *Client) ListVPCs(ctx context.Context) ([]map[string]any, error) {

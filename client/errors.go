@@ -52,6 +52,9 @@ type APIError struct {
 	// when the header is absent, unparsable, zero or in the past. It is the
 	// raw server value; callers apply their own bounds.
 	RetryAfter time.Duration
+	// PendingNatGateways lists the ids of the NAT gateways a VPC delete is
+	// still waiting for (reason vpc_delete_pending). Empty otherwise.
+	PendingNatGateways []string
 }
 
 // Error implements the error interface.
@@ -108,6 +111,7 @@ func responseError(resp *http.Response, body []byte) error {
 		Error   string                     `json:"error"`
 		Errors  map[string]json.RawMessage `json:"errors"`
 		Reason  json.RawMessage            `json:"reason"`
+		Pending []json.RawMessage          `json:"pending_nat_gateways"`
 	}
 	_ = json.Unmarshal(body, &parsed) // best-effort; ignore unmarshal failures
 
@@ -116,6 +120,22 @@ func responseError(resp *http.Response, body []byte) error {
 	var reason string
 	if len(parsed.Reason) > 0 && json.Unmarshal(parsed.Reason, &reason) == nil {
 		apiErr.Reason = reason
+	}
+
+	// pending_nat_gateways is a list of ids; an entry given as an object is
+	// read through its id, anything else is skipped.
+	for _, raw := range parsed.Pending {
+		var id string
+		if json.Unmarshal(raw, &id) == nil && id != "" {
+			apiErr.PendingNatGateways = append(apiErr.PendingNatGateways, id)
+			continue
+		}
+		var obj struct {
+			ID string `json:"id"`
+		}
+		if json.Unmarshal(raw, &obj) == nil && obj.ID != "" {
+			apiErr.PendingNatGateways = append(apiErr.PendingNatGateways, obj.ID)
+		}
 	}
 
 	// Base message from the parsed body, or a status-based fallback.
