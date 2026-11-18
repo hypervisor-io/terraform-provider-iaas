@@ -64,6 +64,27 @@ type Client struct {
 	busyDefaultWait time.Duration
 	busyWaitCap     time.Duration
 	busyTotalCap    time.Duration
+	busyAttempts    int
+}
+
+// WithBusyRetry sets the bounds of the busy-refusal retry (HTTP 409
+// address_reservation_busy / database_busy): attempts is the TOTAL number of
+// tries (1 means never retry), perWait caps one wait and total caps all waits
+// of one call. Values below 1 or 0 keep the defaults (5 tries, 10 s, 30 s).
+// Interactive callers such as the MCP server use a short budget so a tool call
+// never sits silently for long. It returns c for chaining; call it before the
+// client is shared between goroutines.
+func (c *Client) WithBusyRetry(attempts int, perWait, total time.Duration) *Client {
+	if attempts >= 1 {
+		c.busyAttempts = attempts
+	}
+	if perWait > 0 {
+		c.busyWaitCap = perWait
+	}
+	if total > 0 {
+		c.busyTotalCap = total
+	}
+	return c
 }
 
 // New constructs a Client.
@@ -96,6 +117,7 @@ func New(endpoint, token string, timeout time.Duration, insecure bool) *Client {
 		busyDefaultWait: defaultBusyWait,
 		busyWaitCap:     defaultBusyWaitCap,
 		busyTotalCap:    defaultBusyTotalCap,
+		busyAttempts:    maxBusyAttempts,
 	}
 }
 
@@ -145,7 +167,7 @@ func (c *Client) doWithHeaders(ctx context.Context, method, path string, body an
 // same authentication, body reading, and error handling as ordinary requests.
 //
 // On top of the 429/5xx replay it waits out the two typed busy refusals (HTTP
-// 409 address_reservation_busy / database_busy) up to maxBusyAttempts times,
+// 409 address_reservation_busy / database_busy) up to busyAttempts times (default maxBusyAttempts),
 // honouring Retry-After within busyWaitCap per wait and busyTotalCap overall.
 // When it gives up, the last 409 is returned unchanged, so the caller's error
 // carries the server's own message and reason.
@@ -153,7 +175,7 @@ func (c *Client) doWithAttempts(ctx context.Context, method, path string, body a
 	var waited time.Duration
 	for busy := 1; ; busy++ {
 		resp, data, err := c.doAttempts(ctx, method, path, body, extraHeaders, attempts)
-		if err != nil || busy >= maxBusyAttempts || !isBusyRefusal(resp.StatusCode, data) {
+		if err != nil || busy >= c.busyAttempts || !isBusyRefusal(resp.StatusCode, data) {
 			return resp, data, err
 		}
 		wait := c.busyWait(resp.Header.Get("Retry-After"))

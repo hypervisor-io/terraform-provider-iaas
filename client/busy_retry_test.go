@@ -164,3 +164,22 @@ func TestDatabaseError500_IsBounded(t *testing.T) {
 		t.Errorf("worst-case 5xx wait %v is not bounded", worst)
 	}
 }
+
+// WithBusyRetry gives interactive callers a short budget: 3 tries in all.
+func TestBusyRetry_WithBusyRetryShortBudget(t *testing.T) {
+	var calls int32
+	srv := busyServer(t, ReasonDatabaseBusy, 1000, &calls)
+	c := fastBusyClient(srv.URL).WithBusyRetry(3, 5*time.Millisecond, time.Second)
+	if err := c.doVoid(context.Background(), "DELETE", "/thing/x", nil); err == nil {
+		t.Fatal("want an error")
+	}
+	if got := atomic.LoadInt32(&calls); got != 3 {
+		t.Errorf("calls = %d, want 3", got)
+	}
+	atomic.StoreInt32(&calls, 0)
+	c = fastBusyClient(srv.URL).WithBusyRetry(1, 0, 0)
+	_ = c.doVoid(context.Background(), "DELETE", "/thing/x", nil)
+	if got := atomic.LoadInt32(&calls); got != 1 {
+		t.Errorf("attempts=1: calls = %d, want 1", got)
+	}
+}
