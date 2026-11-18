@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -201,12 +202,33 @@ func classifyState(m map[string]any, field string, readySet, failSet map[string]
 
 	switch {
 	case failSet[state]:
-		return state, false, fmt.Errorf("resource entered fail state: %q", state)
+		return state, false, fmt.Errorf("resource entered fail state: %q%s", state, failDetail(m))
 	case readySet[state]:
 		return state, true, nil
 	default:
 		return state, false, nil
 	}
+}
+
+// failDetail renders the server's own explanation of a failed object: a failed
+// task carries a short plain `message` and a typed nullable `failure_reason`
+// (a closed list such as detach_not_confirmed, no_space, node_unavailable).
+// Both are optional; an object without them yields "". The text is added after
+// the state so existing matchers on the state keep working.
+func failDetail(m map[string]any) string {
+	msg, _ := m["message"].(string)
+	reason, _ := m["failure_reason"].(string)
+	var sb strings.Builder
+	if msg != "" {
+		sb.WriteString(": " + msg)
+	}
+	if reason != "" {
+		sb.WriteString(" (failure_reason: " + reason + ")")
+	}
+	if reason == "detach_not_confirmed" {
+		sb.WriteString("; the disk or volume is still attached, shut the instance down and detach it again")
+	}
+	return sb.String()
 }
 
 // toSet converts a slice of strings into a lookup map.

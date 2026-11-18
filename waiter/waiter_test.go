@@ -354,3 +354,25 @@ func TestErrorTolerance_TransientThenSuccessThenFail(t *testing.T) {
 		t.Fatalf("expected get() called 3 times, got %d", got)
 	}
 }
+
+// A failed task's own message and typed failure_reason ride along in the
+// error; the state name stays first so existing matchers keep working.
+func TestStatePollerFailStateCarriesTaskMessageAndReason(t *testing.T) {
+	task := map[string]any{"status": "failed", "message": "The guest did not release the disk.", "failure_reason": "detach_not_confirmed"}
+	poll := waiter.StatePoller(func() (map[string]any, error) { return task, nil }, "status", []string{"completed"}, []string{"failed"})
+	_, done, err := poll()
+	if err == nil || done {
+		t.Fatalf("done=%v err=%v; want a fail-state error", done, err)
+	}
+	for _, want := range []string{`"failed"`, "The guest did not release the disk.", "failure_reason: detach_not_confirmed", "still attached"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q lacks %q", err.Error(), want)
+		}
+	}
+	// A task without them (or with a null reason) keeps the plain text.
+	plain := map[string]any{"status": "failed", "failure_reason": nil}
+	_, _, err = waiter.StatePoller(func() (map[string]any, error) { return plain, nil }, "status", nil, []string{"failed"})()
+	if err == nil || err.Error() != `resource entered fail state: "failed"` {
+		t.Errorf("plain error = %v", err)
+	}
+}
