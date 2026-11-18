@@ -175,7 +175,7 @@ func (c *Client) doWithAttempts(ctx context.Context, method, path string, body a
 	var waited time.Duration
 	for busy := 1; ; busy++ {
 		resp, data, err := c.doAttempts(ctx, method, path, body, extraHeaders, attempts)
-		if err != nil || busy >= c.busyAttempts || !isBusyRefusal(resp.StatusCode, data) {
+		if err != nil || busy >= c.busyAttempts || !isBusyRefusal(resp.StatusCode, resp.Header, data) {
 			return resp, data, err
 		}
 		wait := c.busyWait(resp.Header.Get("Retry-After"))
@@ -195,8 +195,15 @@ func (c *Client) doWithAttempts(ctx context.Context, method, path string, body a
 
 // isBusyRefusal reports whether the response is one of the two typed 409 busy
 // refusals that guarantee nothing was created, changed or deleted.
-func isBusyRefusal(status int, body []byte) bool {
-	if status != http.StatusConflict {
+//
+// The Retry-After header is REQUIRED as well as the reason: the panel sends it
+// on every such answer, and the reason `database_busy` is ALSO used, without
+// that header, by the managed-database backup and restore admission ("another
+// operation is running on this database": a real conflict that lasts until the
+// other operation ends, and the MCP server sends a backup once). Retrying
+// those would be wrong, so a 409 without Retry-After is never retried.
+func isBusyRefusal(status int, header http.Header, body []byte) bool {
+	if status != http.StatusConflict || parseRetryAfter(header.Get("Retry-After"), time.Now()) <= 0 {
 		return false
 	}
 	var parsed struct {

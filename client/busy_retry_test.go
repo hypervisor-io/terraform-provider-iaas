@@ -115,6 +115,29 @@ func TestBusyRetry_OtherConflictsSurfaceAtOnce(t *testing.T) {
 	}
 }
 
+// The reason database_busy is also the managed-database admission refusal
+// ("another operation is running on this database"), which carries no
+// Retry-After: it is a real conflict and must never be repeated. The same holds
+// for address_reservation_busy without the header.
+func TestBusyRetry_NoRetryAfterMeansNoRetry(t *testing.T) {
+	for _, reason := range []string{ReasonDatabaseBusy, ReasonAddressReservationBusy} {
+		var calls int32
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			atomic.AddInt32(&calls, 1)
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"success":false,"reason":"` + reason + `","message":"Another operation is running on this database."}`))
+		}))
+		c := fastBusyClient(srv.URL)
+		if err := c.doVoid(context.Background(), "POST", "/database/x/backup", nil); err == nil {
+			t.Fatal("want an error")
+		}
+		srv.Close()
+		if got := atomic.LoadInt32(&calls); got != 1 {
+			t.Errorf("%s without Retry-After: calls = %d, want 1", reason, got)
+		}
+	}
+}
+
 // A cancelled context ends the wait at once.
 func TestBusyRetry_ContextCancelEndsWait(t *testing.T) {
 	var calls int32

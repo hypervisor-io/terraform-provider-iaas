@@ -51,11 +51,11 @@ func FromErr(summary string, err error) diag.Diagnostic {
 			sb.WriteString("\nThe target VPC is being deleted, so nothing can be created in it. " +
 				"The request was not retried; use another VPC, or create the VPC again once the delete has finished.")
 		}
-		switch apiErr.Reason {
-		case client.ReasonAddressReservationBusy, client.ReasonDatabaseBusy:
+		switch {
+		case apiErr.RetryAfter > 0 && (apiErr.Reason == client.ReasonAddressReservationBusy || apiErr.Reason == client.ReasonDatabaseBusy):
 			sb.WriteString("\nAnother request was in progress and the provider retried several times. " +
 				"Nothing was created, changed or deleted, so it is safe to run the same command again.")
-		case client.ReasonDatabaseError:
+		case apiErr.Reason == client.ReasonDatabaseError:
 			sb.WriteString("\nThe platform could not complete the request because of an internal database error. " +
 				"Try again later; if it persists, contact the platform administrator with the request id.")
 		}
