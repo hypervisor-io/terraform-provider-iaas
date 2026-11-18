@@ -293,6 +293,20 @@ func (c *Client) AdminGetEmailLog(ctx context.Context) ([]map[string]any, error)
 	return c.doList(ctx, "GET", "/v1/system/email-log", nil)
 }
 
+// AdminGetEmailLogByStatus is AdminGetEmailLog limited to one delivery status:
+// "sent" or "failed" (the panel ignores any other value, so callers validate).
+// An empty status returns every row. Rows carry `status` and `error` (a cleaned
+// one-line transport error on a failed row); a failed row has an empty
+// html_body and its user_id may be empty or null (the recipient is not a panel
+// user).
+func (c *Client) AdminGetEmailLogByStatus(ctx context.Context, status string) ([]map[string]any, error) {
+	path := "/v1/system/email-log"
+	if status != "" {
+		path += "?status=" + url.QueryEscape(status)
+	}
+	return c.doList(ctx, "GET", path, nil)
+}
+
 func (c *Client) AdminGetIPLog(ctx context.Context) ([]map[string]any, error) {
 	return c.doList(ctx, "GET", "/v1/system/ip-log", nil)
 }
