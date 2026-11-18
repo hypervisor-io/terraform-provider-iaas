@@ -471,3 +471,25 @@ func (c *Client) GetInstanceDeployImages(ctx context.Context, id string) (map[st
 func (c *Client) SelfDeployInstance(ctx context.Context, id string, body map[string]any) (map[string]any, error) {
 	return c.doItem(ctx, "POST", inst(id)+"/self-deploy", body, "")
 }
+
+// ListFailedTasks returns the newest page of the account's FAILED tasks
+// (GET /tasks?status=failed[&instance_id=...]), newest first, without walking
+// further pages. Each task carries a short `message` and a typed nullable
+// `failure_reason` (for example detach_not_confirmed: the disk or volume is
+// still attached). Callers use it to explain a failed operation, never to
+// decide an outcome.
+func (c *Client) ListFailedTasks(ctx context.Context, instanceID string) ([]map[string]any, error) {
+	q := url.Values{}
+	q.Set("status", "failed")
+	if instanceID != "" {
+		q.Set("instance_id", instanceID)
+	}
+	resp, raw, err := c.do(ctx, "GET", "/tasks?"+q.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	if err := responseError(resp, raw); err != nil {
+		return nil, err
+	}
+	return decodeList(raw)
+}

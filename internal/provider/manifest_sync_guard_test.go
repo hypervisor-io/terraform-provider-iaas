@@ -24,7 +24,7 @@ import (
 
 // expectedManifestSha256 is the sha256 of the Master repo api-manifest.json
 // this vendored copy must match byte-for-byte.
-const expectedManifestSha256 = "d389565efb5e0a9b1a5e2d6b788343bb11124a7be0acfd2e93c483e3d25779ea"
+const expectedManifestSha256 = "1b617a4336255a6c7ea3fd23f836d3a1fa43f10360b7b0d4689b06050c3bc747"
 
 func TestManifestSyncGuard(t *testing.T) {
 	raw, err := os.ReadFile(manifestPath)

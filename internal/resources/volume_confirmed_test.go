@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
@@ -31,6 +32,7 @@ type confirmedVolumeAPI struct {
 	nodeFails     map[string]bool
 	refuse        map[string][2]string // action -> {reason, message}, answered 422 once
 	order         []string
+	failedTasks   []map[string]any // answer of GET /tasks?status=failed (newest first)
 }
 
 const (
@@ -67,6 +69,15 @@ func newConfirmedVolumeAPI(t *testing.T) (*confirmedVolumeAPI, *acctest.MockServ
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"volume": api.copyVol()})
+	})
+	srv.Handle("GET", "/tasks", func(w http.ResponseWriter, r *http.Request) {
+		api.mu.Lock()
+		defer api.mu.Unlock()
+		data := api.failedTasks
+		if data == nil {
+			data = []map[string]any{}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"current_page": 1, "last_page": 1, "data": data})
 	})
 	mutation := func(action string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -297,5 +308,109 @@ func TestUnitVolume_destroySettlesPendingAttachBeforeDeciding(t *testing.T) {
 	defer api.mu.Unlock()
 	if api.vol != nil {
 		t.Fatalf("volume still present after destroy: %v", api.vol)
+	}
+}
+
+// detachNotConfirmedTask is the failed task the panel writes when a guest never
+// releases a hot-unplugged volume (installer or netboot menu).
+func detachNotConfirmedTask() []map[string]any {
+	return []map[string]any{{
+		"id": "task-1", "name": "Detach volume", "status": "failed",
+		"message":        "The guest did not release the volume.",
+		"failure_reason": "detach_not_confirmed",
+		"created_at":     time.Now().UTC().Format(time.RFC3339),
+	}}
+}
+
+// TestUnitVolume_detachNotConfirmedKeepsAttachedState: moving an attached
+// volume to another instance fails at the detach when the guest never releases
+// it. The apply error carries the server's message and failure_reason, the
+// volume stays recorded as attached to the OLD instance (no drift: a plan with
+// the old config is empty), and the API never saw the second attach.
+func TestUnitVolume_detachNotConfirmedKeepsAttachedState(t *testing.T) {
+	ensureTFBinary(t)
+	t.Setenv("IAAS_INSTANCE_POLL_INTERVAL", "1ms")
+	api, srv := newConfirmedVolumeAPI(t)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{Config: confirmedVolumeConfig(srv.Endpoint(), cvPlan, cvInstA)},
+			{
+				PreConfig: func() {
+					api.mu.Lock()
+					defer api.mu.Unlock()
+					api.nodeFails["detach"] = true
+					api.failedTasks = detachNotConfirmedTask()
+				},
+				Config: confirmedVolumeConfig(srv.Endpoint(), cvPlan, cvInstB),
+				ExpectError: regexp.MustCompile(`(?s)Error detaching volume.*The guest did not release the volume\..*` +
+					`failure_reason: detach_not_confirmed.*still attached`),
+			},
+			{
+				// State must still say: attached to A. The original config plans nothing.
+				Config:   confirmedVolumeConfig(srv.Endpoint(), cvPlan, cvInstA),
+				PlanOnly: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("iaas_volume.test", "instance_id", cvInstA),
+					resource.TestCheckResourceAttr("iaas_volume.test", "status", "attached"),
+				),
+			},
+			{
+				PreConfig: func() {
+					api.mu.Lock()
+					defer api.mu.Unlock()
+					api.nodeFails["detach"] = false
+				},
+				Config: confirmedVolumeConfig(srv.Endpoint(), cvPlan, cvInstA),
+			},
+		},
+	})
+	if got, want := api.mutations(), "attach,detach,detach,delete"; got != want {
+		t.Fatalf("mutation order = %s; want %s (the failed detach must not be followed by an attach)", got, want)
+	}
+}
+
+// TestUnitVolume_destroyDetachNotConfirmedKeepsResource: a destroy whose detach
+// the guest never completes fails, names the reason and keeps the volume in
+// state; a later destroy after the guest released it succeeds.
+func TestUnitVolume_destroyDetachNotConfirmedKeepsResource(t *testing.T) {
+	ensureTFBinary(t)
+	t.Setenv("IAAS_INSTANCE_POLL_INTERVAL", "1ms")
+	api, srv := newConfirmedVolumeAPI(t)
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Factories,
+		Steps: []resource.TestStep{
+			{Config: confirmedVolumeConfig(srv.Endpoint(), cvPlan, cvInstA)},
+			{
+				PreConfig: func() {
+					api.mu.Lock()
+					defer api.mu.Unlock()
+					api.nodeFails["detach"] = true
+					api.failedTasks = detachNotConfirmedTask()
+				},
+				Config:      acctest.ProviderConfig(srv.Endpoint()),
+				Destroy:     false,
+				ExpectError: regexp.MustCompile(`(?s)Error detaching volume before delete.*failure_reason: detach_not_confirmed`),
+			},
+			{
+				PreConfig: func() {
+					api.mu.Lock()
+					defer api.mu.Unlock()
+					api.nodeFails["detach"] = false
+					// The volume is still attached on the panel side.
+					if api.vol["instance_id"] != cvInstA || api.vol["status"] != "attached" {
+						t.Errorf("volume after failed destroy = %v; want still attached to %s", api.vol, cvInstA)
+					}
+				},
+				Config: acctest.ProviderConfig(srv.Endpoint()),
+			},
+		},
+	})
+	api.mu.Lock()
+	defer api.mu.Unlock()
+	if api.vol != nil {
+		t.Fatalf("volume still present after the successful destroy: %v", api.vol)
 	}
 }

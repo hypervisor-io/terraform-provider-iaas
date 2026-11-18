@@ -77,6 +77,11 @@ type fakeVolumeAPI struct {
 	// and an optional Retry-After header value).
 	typed []typedRefusal
 
+	// tasks is the answer of GET /tasks (failed tasks, newest first).
+	tasks         []map[string]any
+	tasksQueried  []string
+	tasksNotFound bool
+
 	requests []string
 }
 
@@ -193,6 +198,19 @@ func (f *fakeVolumeAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer f.mu.Unlock()
 	f.requests = append(f.requests, r.Method+" "+r.URL.Path)
 
+	if r.Method == http.MethodGet && r.URL.Path == "/tasks" {
+		f.tasksQueried = append(f.tasksQueried, r.URL.RawQuery)
+		if f.tasksNotFound {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{"message": "boom"})
+			return
+		}
+		data := f.tasks
+		if data == nil {
+			data = []map[string]any{}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"current_page": 1, "last_page": 1, "data": data})
+		return
+	}
 	if r.Method == http.MethodGet && r.URL.Path == "/storage/volume/vol-1" {
 		f.handleGet(w)
 		return
@@ -901,6 +919,72 @@ func TestCooldownWait_Parsing(t *testing.T) {
 		got, ok := cooldownWait(&tc.e)
 		if ok != tc.ok || got != tc.want {
 			t.Errorf("cooldownWait(%q) = %v,%v; want %v,%v", tc.e.Message, got, ok, tc.want, tc.ok)
+		}
+	}
+}
+
+func failedTask(name, reason, message string, created time.Time) map[string]any {
+	return map[string]any{"id": "t-" + name, "name": name, "status": "failed", "message": message,
+		"failure_reason": reason, "created_at": created.UTC().Format(time.RFC3339)}
+}
+
+// A detach the guest never completed ends as *FailedError that carries the
+// task's message and failure_reason; the volume read back is still attached.
+func TestDetach_NotConfirmedCarriesFailureReasonAndStaysAttached(t *testing.T) {
+	f, c := setup(t)
+	f.vol["status"], f.vol["instance_id"], f.vol["dev"] = "attached", "inst-1", "vdb"
+	f.nodeFails = true
+	f.tasks = []map[string]any{
+		failedTask("Attach volume", "node_task_failed", "unrelated", time.Now()),
+		failedTask("Detach volume", "detach_not_confirmed", "The guest did not release the disk.", time.Now()),
+		failedTask("Detach volume", "no_space", "an older run", time.Now().Add(-time.Hour)),
+	}
+
+	v, err := DetachVolume(context.Background(), c, "vol-1", fast)
+	var failed *FailedError
+	if !errors.As(err, &failed) {
+		t.Fatalf("err = %v; want *FailedError", err)
+	}
+	if failed.FailureReason != ReasonDetachNotConfirmed || failed.Message != "The guest did not release the disk." {
+		t.Errorf("failed = %+v", failed)
+	}
+	for _, want := range []string{"The guest did not release the disk.", "failure_reason: detach_not_confirmed", "still attached"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q lacks %q", err.Error(), want)
+		}
+	}
+	if stringField(v, "instance_id") != "inst-1" || stringField(v, "status") != "attached" {
+		t.Errorf("last observed volume = %v; want still attached", v)
+	}
+	if len(f.tasksQueried) != 1 || !strings.Contains(f.tasksQueried[0], "status=failed") || !strings.Contains(f.tasksQueried[0], "instance_id=inst-1") {
+		t.Errorf("task query = %v", f.tasksQueried)
+	}
+}
+
+// Only a task of this operation's name created since it started explains it;
+// without one, or when the task list cannot be read, the error is the plain
+// node failure (the lookup never changes the outcome).
+func TestFailedError_WithoutMatchingTaskIsPlain(t *testing.T) {
+	for name, setupFn := range map[string]func(f *fakeVolumeAPI){
+		"no task": func(f *fakeVolumeAPI) {},
+		"old task": func(f *fakeVolumeAPI) {
+			f.tasks = []map[string]any{failedTask("Attach volume", "no_space", "old", time.Now().Add(-time.Hour))}
+		},
+		"wrong name": func(f *fakeVolumeAPI) {
+			f.tasks = []map[string]any{failedTask("Resize volume", "no_space", "x", time.Now())}
+		},
+		"list failing": func(f *fakeVolumeAPI) { f.tasksNotFound = true },
+	} {
+		f, c := setup(t)
+		f.nodeFails = true
+		setupFn(f)
+		_, err := AttachVolume(context.Background(), c, "vol-1", "inst-1", fast)
+		var failed *FailedError
+		if !errors.As(err, &failed) {
+			t.Fatalf("%s: err = %v; want *FailedError", name, err)
+		}
+		if failed.FailureReason != "" || failed.Message != "" || strings.Contains(err.Error(), "failure_reason") {
+			t.Errorf("%s: failed = %+v", name, failed)
 		}
 	}
 }

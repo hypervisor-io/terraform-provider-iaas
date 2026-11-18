@@ -25,6 +25,26 @@ const (
 
 	// maxRetryDelay caps the sleep between retries regardless of backoff calculation.
 	maxRetryDelay = 30 * time.Second
+
+	// Busy refusals (HTTP 409 reason address_reservation_busy or database_busy,
+	// always with a Retry-After header, normally 1 second). The Master states
+	// that the request changed nothing ("another request is in progress, safe
+	// to retry"), so replaying it can neither duplicate a create nor repeat a
+	// delete; that holds for every verb, including the single-attempt actions
+	// that never replay a 429/5xx. They are the ONLY 409 reasons retried here:
+	// a real conflict (plan_in_use, load_balancer_destroy_failed,
+	// vpc_delete_incomplete, ...) is returned at once.
+	maxBusyAttempts     = 5                // 1 initial + up to 4 retries
+	defaultBusyWait     = 1 * time.Second  // when the header is absent or unparsable
+	defaultBusyWaitCap  = 10 * time.Second // upper bound of ONE wait, whatever Retry-After says
+	defaultBusyTotalCap = 30 * time.Second // upper bound of all busy waits of one call
+)
+
+// Reasons of the typed busy refusals (see maxBusyAttempts).
+const (
+	ReasonAddressReservationBusy = "address_reservation_busy"
+	ReasonDatabaseBusy           = "database_busy"
+	ReasonDatabaseError          = "database_error"
 )
 
 // Client is the HTTP transport for the IaaS REST API.
@@ -38,6 +58,12 @@ type Client struct {
 	// (e.g. 1 ms) to keep the suite fast without sleeping for real seconds.
 	// New() sets it to defaultRetryBaseDelay (500 ms).
 	retryBaseDelay time.Duration
+
+	// busyDefaultWait, busyWaitCap and busyTotalCap bound the busy-refusal
+	// retry (see maxBusyAttempts). Unexported so tests can shrink them.
+	busyDefaultWait time.Duration
+	busyWaitCap     time.Duration
+	busyTotalCap    time.Duration
 }
 
 // New constructs a Client.
@@ -66,7 +92,10 @@ func New(endpoint, token string, timeout time.Duration, insecure bool) *Client {
 			Timeout:   timeout,
 			Transport: transport,
 		},
-		retryBaseDelay: defaultRetryBaseDelay,
+		retryBaseDelay:  defaultRetryBaseDelay,
+		busyDefaultWait: defaultBusyWait,
+		busyWaitCap:     defaultBusyWaitCap,
+		busyTotalCap:    defaultBusyTotalCap,
 	}
 }
 
@@ -114,7 +143,69 @@ func (c *Client) doWithHeaders(ctx context.Context, method, path string, body an
 
 // doWithAttempts lets non-idempotent actions opt out of replay while sharing the
 // same authentication, body reading, and error handling as ordinary requests.
+//
+// On top of the 429/5xx replay it waits out the two typed busy refusals (HTTP
+// 409 address_reservation_busy / database_busy) up to maxBusyAttempts times,
+// honouring Retry-After within busyWaitCap per wait and busyTotalCap overall.
+// When it gives up, the last 409 is returned unchanged, so the caller's error
+// carries the server's own message and reason.
 func (c *Client) doWithAttempts(ctx context.Context, method, path string, body any, extraHeaders map[string]string, attempts int) (*http.Response, []byte, error) {
+	var waited time.Duration
+	for busy := 1; ; busy++ {
+		resp, data, err := c.doAttempts(ctx, method, path, body, extraHeaders, attempts)
+		if err != nil || busy >= maxBusyAttempts || !isBusyRefusal(resp.StatusCode, data) {
+			return resp, data, err
+		}
+		wait := c.busyWait(resp.Header.Get("Retry-After"))
+		if waited+wait > c.busyTotalCap {
+			return resp, data, nil
+		}
+		waited += wait
+		timer := time.NewTimer(wait)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, nil, ctx.Err()
+		case <-timer.C:
+		}
+	}
+}
+
+// isBusyRefusal reports whether the response is one of the two typed 409 busy
+// refusals that guarantee nothing was created, changed or deleted.
+func isBusyRefusal(status int, body []byte) bool {
+	if status != http.StatusConflict {
+		return false
+	}
+	var parsed struct {
+		Reason json.RawMessage `json:"reason"`
+	}
+	if json.Unmarshal(body, &parsed) != nil {
+		return false
+	}
+	var reason string
+	if json.Unmarshal(parsed.Reason, &reason) != nil {
+		return false
+	}
+	return reason == ReasonAddressReservationBusy || reason == ReasonDatabaseBusy
+}
+
+// busyWait is the Retry-After the server named (default busyDefaultWait),
+// capped at busyWaitCap, plus up to 25 % jitter so parallel resources of one
+// apply do not retry in lockstep.
+func (c *Client) busyWait(header string) time.Duration {
+	wait := parseRetryAfter(header, time.Now())
+	if wait <= 0 {
+		wait = c.busyDefaultWait
+	}
+	if wait > c.busyWaitCap {
+		wait = c.busyWaitCap
+	}
+	return wait + time.Duration(rand.Int64N(int64(wait/4)+1))
+}
+
+// doAttempts is one pass of the 429/5xx retry loop (see doWithAttempts).
+func (c *Client) doAttempts(ctx context.Context, method, path string, body any, extraHeaders map[string]string, attempts int) (*http.Response, []byte, error) {
 	rawURL := c.baseURL + path
 
 	// Pre-marshal the body once; each attempt creates a new bytes.Reader.

@@ -68,6 +68,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
@@ -163,15 +164,38 @@ func (e *RefusedError) Unwrap() error { return e.Err }
 // requested change: the node reported a failure (or the platform could not
 // apply it) and the volume kept its previous size, plan, attachment and
 // billing. Volume is the last observed object.
+//
+// Message and FailureReason are the server's own explanation, read from the
+// failed task after the fact (best effort: empty when the task list could not
+// be read or no matching task was found). FailureReason is the typed reason
+// of the platform's closed list; detach_not_confirmed means the volume is
+// STILL attached (the guest never released it), nothing was billed or changed,
+// and a detach can be repeated after the instance is shut down.
 type FailedError struct {
-	Action   Action
-	VolumeID string
-	Volume   map[string]any
+	Action        Action
+	VolumeID      string
+	Volume        map[string]any
+	Message       string
+	FailureReason string
 }
 
+// ReasonDetachNotConfirmed is the task failure_reason of a detach the guest
+// never completed: the volume or disk is still attached.
+const ReasonDetachNotConfirmed = "detach_not_confirmed"
+
 func (e *FailedError) Error() string {
-	return fmt.Sprintf("volume %s %s failed on the node: the operation ended without the requested change; "+
+	msg := fmt.Sprintf("volume %s %s failed on the node: the operation ended without the requested change; "+
 		"the volume kept its previous state (status %q)", e.VolumeID, e.Action, stringField(e.Volume, "status"))
+	if e.Message != "" {
+		msg += ": " + e.Message
+	}
+	if e.FailureReason != "" {
+		msg += " (failure_reason: " + e.FailureReason + ")"
+	}
+	if e.FailureReason == ReasonDetachNotConfirmed {
+		msg += "; the volume is still attached, shut the instance down and detach it again"
+	}
+	return msg
 }
 
 // PendingError means the deadline passed while the operation was still
@@ -317,6 +341,7 @@ func run(
 	}
 
 	busyBackoff := interval
+	started := time.Now()
 
 	// ── admission ────────────────────────────────────────────────────────────
 	for {
@@ -380,7 +405,7 @@ func run(
 				// one sent by an earlier, timed-out apply) and it ended
 				// without the change: that node failure is the answer to this
 				// request too, never a reason to send it again.
-				return settled, &FailedError{Action: action, VolumeID: id, Volume: settled}
+				return settled, failedError(ctx, c, id, action, settled, started)
 			}
 			continue // a different operation ended and the volume is idle: ask again
 		}
@@ -439,7 +464,7 @@ func run(
 			if desired(v) {
 				return "done", true, nil
 			}
-			outcome = &FailedError{Action: action, VolumeID: id, Volume: v}
+			outcome = failedError(ctx, c, id, action, v, started)
 			return "failed", false, outcome
 		},
 	})
@@ -710,4 +735,38 @@ func stringField(m map[string]any, key string) string {
 	}
 	s, _ := m[key].(string)
 	return s
+}
+
+// failedTaskLookback is how far before the start of the operation a failed
+// task may have been created and still be attributed to it (clock skew
+// between this host and the panel, and the task row being written before the
+// request returns).
+const failedTaskLookback = 2 * time.Minute
+
+// failedError builds a *FailedError and fills Message and FailureReason from
+// the newest failed task named "<action> volume" created since the operation
+// started. The lookup is best effort and never changes the outcome: any error
+// leaves both fields empty.
+func failedError(ctx context.Context, c *client.Client, id string, action Action, vol map[string]any, started time.Time) *FailedError {
+	fe := &FailedError{Action: action, VolumeID: id, Volume: vol}
+	lctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
+	defer cancel()
+	tasks, err := c.ListFailedTasks(lctx, stringField(vol, "instance_id"))
+	if err != nil {
+		return fe
+	}
+	want := string(action) + " volume"
+	for _, t := range tasks { // newest first
+		if !strings.EqualFold(stringField(t, "name"), want) {
+			continue
+		}
+		created, err := time.Parse(time.RFC3339, stringField(t, "created_at"))
+		if err != nil || created.Before(started.Add(-failedTaskLookback)) {
+			continue
+		}
+		fe.Message = stringField(t, "message")
+		fe.FailureReason = stringField(t, "failure_reason")
+		return fe
+	}
+	return fe
 }
