@@ -18,6 +18,7 @@ func TestFromErr_BusyAndDatabaseReasons(t *testing.T) {
 		{client.ReasonAddressReservationBusy, 409, "safe to run the same command again"},
 		{client.ReasonConcurrentUpdateRetry, 409, "safe to run the same command again"},
 		{client.ReasonDatabaseError, 500, "internal database error"},
+		{client.ReasonDeleteState, 409, "Run destroy again"},
 	}
 	retryAfter := map[string]time.Duration{client.ReasonAddressReservationBusy: time.Second, client.ReasonConcurrentUpdateRetry: time.Second}
 	for _, tc := range cases {

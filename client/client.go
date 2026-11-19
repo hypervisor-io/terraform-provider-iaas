@@ -49,6 +49,9 @@ const (
 	// Nothing was started or changed, so for a caller that wants the instance
 	// gone it is the same as "accepted".
 	ReasonDeleteInProgress = "delete_in_progress"
+	// ReasonDeleteState: a deploy or reinstall refused (before any task) for an
+	// instance whose delete is running or failed.
+	ReasonDeleteState = "delete_state"
 	// ReasonPublicIPOperationInFlight: an instance delete refused while a public
 	// address change is on its way to the host (Retry-After 120); it clears by itself.
 	ReasonPublicIPOperationInFlight = "public_ip_operation_in_flight"

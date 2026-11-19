@@ -55,6 +55,9 @@ func FromErr(summary string, err error) diag.Diagnostic {
 		case apiErr.RetryAfter > 0 && (apiErr.Reason == client.ReasonAddressReservationBusy || apiErr.Reason == client.ReasonConcurrentUpdateRetry):
 			sb.WriteString("\nAnother request was in progress and the provider retried several times. " +
 				"Nothing was created, changed or deleted, so it is safe to run the same command again.")
+		case apiErr.Reason == client.ReasonDeleteState:
+			sb.WriteString("\nThis instance is being deleted, or its delete failed, so it cannot be deployed or reinstalled. " +
+				"Nothing was changed. Run destroy again to finish the delete, or remove the instance from the configuration.")
 		case apiErr.Reason == client.ReasonDatabaseError:
 			sb.WriteString("\nThe platform could not complete the request because of an internal database error. " +
 				"Try again later; if it persists, contact the platform administrator with the request id.")
