@@ -633,6 +633,7 @@
       "method": "POST",
       "path": "/api/v1/cloud-service/credits",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): credit_value is greater than zero and at most 100000000; digits beyond the tenth decimal are rounded as before. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -661,6 +662,7 @@
       "method": "POST",
       "path": "/api/v1/cloud-service/currencies",
       "surface": "admin",
+      "contract_notes": "Exchange rate (currency_value): a positive plain decimal, up to 10 digits before and after the point. Exponent text such as 1e-8 is refused (a JSON number is judged by its value); a value equal to the stored one always passes.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -689,6 +691,7 @@
       "method": "PATCH",
       "path": "/api/v1/cloud-service/currency/{csCurrencyId}",
       "surface": "admin",
+      "contract_notes": "Exchange rate (currency_value): a positive plain decimal, up to 10 digits before and after the point. Exponent text such as 1e-8 is refused (a JSON number is judged by its value); a value equal to the stored one always passes.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -843,6 +846,7 @@
       "method": "POST",
       "path": "/api/v1/cloud-service/settings",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): hours_per_month is a whole number 672 to 744 (every hourly charge divides by it), urgent_topup_threshold is 0 to 100000000, negative_balance_threshold, suspension_threshold and max_negative_balance are whole numbers -100000000 to 100000000. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -1592,6 +1596,7 @@
       "method": "PATCH",
       "path": "/api/v1/db/plan/{dbPlanId}",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): credit_value and backup_flat_credit_value are whole credits 0 to 100000000, bandwidth_rate and backup_credit_value are whole credits 0 to 100000000 per unit. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -1620,6 +1625,7 @@
       "method": "POST",
       "path": "/api/v1/db/plans",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): credit_value and backup_flat_credit_value are whole credits 0 to 100000000, bandwidth_rate and backup_credit_value are whole credits 0 to 100000000 per unit. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -2098,6 +2104,7 @@
       "method": "PATCH",
       "path": "/api/v1/hypervisor/group/{hypervisorGroupId}",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): natgw_credit_value, natgw_bandwidth_rate and ipv4_credit_value are whole credits 0 to 100000000. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; new request fields l2_interface, vxlan_mode, lb_image_id, image_storages and allow_guest_nesting (node security policy, default off) are not modelled"
@@ -2196,6 +2203,7 @@
       "method": "POST",
       "path": "/api/v1/hypervisor/groups",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): natgw_credit_value, natgw_bandwidth_rate and ipv4_credit_value are whole credits 0 to 100000000. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; request fields l2_interface, vxlan_mode, lb_image_id, image_storages and allow_guest_nesting (node security policy, default off) are not modelled"
@@ -2884,6 +2892,7 @@
       "method": "PATCH",
       "path": "/api/v1/instance/plan/{instancePlanId}",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): credit_value and backup_flat_credit_value are whole credits 0 to 100000000, bandwidth_rate and backup_credit_value are whole credits 0 to 100000000 per unit. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -2912,6 +2921,7 @@
       "method": "POST",
       "path": "/api/v1/instance/plans",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): credit_value and backup_flat_credit_value are whole credits 0 to 100000000, bandwidth_rate and backup_credit_value are whole credits 0 to 100000000 per unit. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -2926,7 +2936,7 @@
       "method": "DELETE",
       "path": "/api/v1/instance/{instanceId}",
       "surface": "admin",
-      "contract_notes": "Documentation and header only, no request or response field changed: the delete answers 409 reason public_ip_operation_in_flight (with `Retry-After: 120`) while a public IP change for the instance was sent to its node less than two minutes ago; it clears by itself, so a caller repeats the same delete after a short wait. The OpenTofu provider and the MCP server should treat this one 409 as retryable (wait the Retry-After seconds, bounded), and no other 409 or 4xx. A database failure while deleting (a deadlock or lock conflict in the address step, or any other database error) answers 409 concurrent_update_retry with Retry-After: 1 (a concurrency conflict: nothing changed, repeat the same delete) or 500 database_error, never a 200; the SQL text is never returned. DESTROY-RETRY (response additions, no path, verb or request field changed): a 200 means the node accepted the delete, not that the guest is gone. A delete repeated while one is running answers 409 reason delete_in_progress (nothing started; a caller that wants the instance gone treats it as accepted and keeps polling). Get Instance (admin and user) gains delete_state (null, deleting, failed) and delete_error (plain sentence, only when failed): the panel repeats a delete the node never confirmed up to five times and then sets failed, with the instance still running; a repeated delete starts a new attempt. The charge for the instance and its add-ons ends at most five minutes after the first accepted request (a static IP is its own resource and bills until released). Proxmox deletes follow the same states. The OpenTofu provider and the MCP server wait for a 404 after the delete: they should treat 409 delete_in_progress as accepted and stop waiting with delete_error when delete_state is failed.",
+      "contract_notes": "Documentation and header only, no request or response field changed: the delete answers 409 reason public_ip_operation_in_flight (with `Retry-After: 120`) while a public IP change for the instance was sent to its node less than two minutes ago (an address change that was never sent, as for a guest that was created and never deployed, never refuses a delete: the delete closes it); it clears by itself, so a caller repeats the same delete after a short wait. The OpenTofu provider and the MCP server should treat this one 409 as retryable (wait the Retry-After seconds, bounded), and no other 409 or 4xx. A database failure while deleting (a deadlock or lock conflict in the address step, or any other database error) answers 409 concurrent_update_retry with Retry-After: 1 (a concurrency conflict: nothing changed, repeat the same delete) or 500 database_error, never a 200; the SQL text is never returned. DESTROY-RETRY (response additions, no path, verb or request field changed): a 200 means the node accepted the delete, not that the guest is gone. A delete repeated while one is running answers 409 reason delete_in_progress (nothing started; a caller that wants the instance gone treats it as accepted and keeps polling). Get Instance (admin and user) gains delete_state (null, deleting, failed) and delete_error (plain sentence, only when failed): the panel asks the node again for a delete it never confirmed; a node that answers it is still waiting or working is not counted against the panel's attempts; the delete ends as failed (delete_error), with the instance still running and usable, only after the node refused or failed it five times, did not answer for a day, or could not reach the panel for two hours, and once failed a node that still holds the old request can never carry it out (the panel refuses its first step); a repeated delete starts a new attempt (delete_error may now also say the node could not reach the panel). The charge for the instance and its add-ons ends at most five minutes after the first accepted request (a static IP is its own resource and bills until released). Proxmox deletes follow the same states. The OpenTofu provider and the MCP server wait for a 404 after the delete: they should treat 409 delete_in_progress as accepted and stop waiting with delete_error when delete_state is failed.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; accepts optional delete_backups (default false keeps backups)"
@@ -3083,6 +3093,7 @@
       "method": "POST",
       "path": "/api/v1/instance/{instanceId}/deploy",
       "surface": "admin",
+      "contract_notes": "Answers 409 reason delete_state (before any task or send) for an instance whose delete is running or failed (delete_state deleting or failed): a deploy of a guest the customer asked to delete is refused; send the delete again instead. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints",
@@ -3676,6 +3687,7 @@
       "method": "POST",
       "path": "/api/v1/instance/{instanceId}/reinstall",
       "surface": "admin",
+      "contract_notes": "Answers 409 reason delete_state (before any task or send) for an instance whose delete is running or failed (delete_state deleting or failed): a deploy of a guest the customer asked to delete is refused; send the delete again instead. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints",
@@ -5004,6 +5016,7 @@
       "method": "PATCH",
       "path": "/api/v1/lb/plan/{lbPlanId}",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): credit_value and bandwidth_rate are whole credits 0 to 100000000. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -5032,6 +5045,7 @@
       "method": "POST",
       "path": "/api/v1/lb/plans",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): credit_value and bandwidth_rate are whole credits 0 to 100000000. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -6065,6 +6079,7 @@
       "method": "PATCH",
       "path": "/api/v1/s3/plan/{s3PlanId}",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): credit_value is whole credits 0 to 100000000. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -6093,6 +6108,7 @@
       "method": "POST",
       "path": "/api/v1/s3/plans",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): credit_value is whole credits 0 to 100000000. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -7434,6 +7450,7 @@
       "method": "PATCH",
       "path": "/api/v1/volume/plan/{volumePlanId}",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): credit_value, snapshot_credit_value and backup_credit_value are whole credits 0 to 100000000 (snapshot_credit_value and backup_credit_value were bounded by 999999999 before and are now bounded by 100000000). A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -7462,6 +7479,7 @@
       "method": "POST",
       "path": "/api/v1/volume/plans",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): credit_value, snapshot_credit_value and backup_credit_value are whole credits 0 to 100000000 (snapshot_credit_value and backup_credit_value were bounded by 999999999 before and are now bounded by 100000000). A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8397,6 +8415,7 @@
       "method": "PATCH",
       "path": "/api/v1/vpngw/plan/{vpnGwPlanId}",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): credit_value and bandwidth_rate are whole credits 0 to 100000000. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -8425,6 +8444,7 @@
       "method": "POST",
       "path": "/api/v1/vpngw/plans",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): credit_value and bandwidth_rate are whole credits 0 to 100000000. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -9119,7 +9139,7 @@
       "method": "DELETE",
       "path": "/api/cloud-service/instances/{user_instanceId}",
       "surface": "user",
-      "contract_notes": "Documentation and header only, no request or response field changed: the delete answers 409 reason public_ip_operation_in_flight (with `Retry-After: 120`) while a public IP change for the instance was sent to its node less than two minutes ago; it clears by itself, so a caller repeats the same delete after a short wait. The OpenTofu provider and the MCP server should treat this one 409 as retryable (wait the Retry-After seconds, bounded), and no other 409 or 4xx. A database failure while deleting (a deadlock or lock conflict in the address step, or any other database error) answers 409 concurrent_update_retry with Retry-After: 1 (a concurrency conflict: nothing changed, repeat the same delete) or 500 database_error, never a 200; the SQL text is never returned. DESTROY-RETRY (response additions, no path, verb or request field changed): a 200 means the node accepted the delete, not that the guest is gone. A delete repeated while one is running answers 409 reason delete_in_progress (nothing started; a caller that wants the instance gone treats it as accepted and keeps polling). Get Instance (admin and user) gains delete_state (null, deleting, failed) and delete_error (plain sentence, only when failed): the panel repeats a delete the node never confirmed up to five times and then sets failed, with the instance still running; a repeated delete starts a new attempt. The charge for the instance and its add-ons ends at most five minutes after the first accepted request (a static IP is its own resource and bills until released). Proxmox deletes follow the same states. The OpenTofu provider and the MCP server wait for a 404 after the delete: they should treat 409 delete_in_progress as accepted and stop waiting with delete_error when delete_state is failed.",
+      "contract_notes": "Documentation and header only, no request or response field changed: the delete answers 409 reason public_ip_operation_in_flight (with `Retry-After: 120`) while a public IP change for the instance was sent to its node less than two minutes ago (an address change that was never sent, as for a guest that was created and never deployed, never refuses a delete: the delete closes it); it clears by itself, so a caller repeats the same delete after a short wait. The OpenTofu provider and the MCP server should treat this one 409 as retryable (wait the Retry-After seconds, bounded), and no other 409 or 4xx. A database failure while deleting (a deadlock or lock conflict in the address step, or any other database error) answers 409 concurrent_update_retry with Retry-After: 1 (a concurrency conflict: nothing changed, repeat the same delete) or 500 database_error, never a 200; the SQL text is never returned. DESTROY-RETRY (response additions, no path, verb or request field changed): a 200 means the node accepted the delete, not that the guest is gone. A delete repeated while one is running answers 409 reason delete_in_progress (nothing started; a caller that wants the instance gone treats it as accepted and keeps polling). Get Instance (admin and user) gains delete_state (null, deleting, failed) and delete_error (plain sentence, only when failed): the panel asks the node again for a delete it never confirmed; a node that answers it is still waiting or working is not counted against the panel's attempts; the delete ends as failed (delete_error), with the instance still running and usable, only after the node refused or failed it five times, did not answer for a day, or could not reach the panel for two hours, and once failed a node that still holds the old request can never carry it out (the panel refuses its first step); a repeated delete starts a new attempt (delete_error may now also say the node could not reach the panel). The charge for the instance and its add-ons ends at most five minutes after the first accepted request (a static IP is its own resource and bills until released). Proxmox deletes follow the same states. The OpenTofu provider and the MCP server wait for a 404 after the delete: they should treat 409 delete_in_progress as accepted and stop waiting with delete_error when delete_state is failed.",
       "opentofu": {
         "status": "excluded",
         "reason": "optional delete_backups request field and retained-backup deletion behavior are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; existing instance deletion remains available without the cleanup option"
@@ -10144,6 +10164,7 @@
       "method": "POST",
       "path": "/api/instance/{user_instanceId}/deploy",
       "surface": "user",
+      "contract_notes": "Answers 409 reason delete_state (before any task or send) for an instance whose delete is running or failed (delete_state deleting or failed): a deploy of a guest the customer asked to delete is refused; send the delete again instead. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_instance",
@@ -10491,7 +10512,8 @@
       },
       "mcp": {
         "status": "excluded",
-        "reason": "live telemetry/metrics read; served by monitoring, not a management tool/resource"
+        "reason": "live telemetry/metrics read; served by monitoring, not a management tool/resource",
+        "contract_notes": "3388: the embedded `instance.hypervisor` object now carries only id, display_name, type, hypervisor_group_id, status and last_data_received; the host address, private address, host name, SSH port and management fields it used to carry are no longer returned. No consumer reads them; provider and MCP exclude the endpoint."
       }
     },
     {
@@ -10670,7 +10692,7 @@
       "method": "POST",
       "path": "/api/instance/{user_instanceId}/reinstall",
       "surface": "user",
-      "contract_notes": "Answers 409 reason volume_operation_in_progress (before any task or send) while a volume attached to the instance has a backup, restore, snapshot or other operation running; retry when the volume's active_operation is null. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409.",
+      "contract_notes": "Answers 409 reason volume_operation_in_progress (before any task or send) while a volume attached to the instance has a backup, restore, snapshot or other operation running; retry when the volume's active_operation is null. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409. Answers 409 reason delete_state (before any task or send) for an instance whose delete is running or failed (delete_state deleting or failed): a deploy of a guest the customer asked to delete is refused; send the delete again instead. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC",
@@ -10924,7 +10946,7 @@
         "status": "excluded",
         "reason": "ephemeral console/session capability, not a declarative or AI-management action"
       },
-      "contract_notes": "Description only (3388): `vnc_ip` and `vnc_port` are informational and not reachable from outside the platform (the host accepts the VNC port only from the panel's console service and the allowed sources of Settings > System); the console is opened with GET /api/instance/{user_instanceId}/novnc, which connects through the panel over HTTPS. `vnc_ip` (the host's own address) is deprecated and stays in the response for now. Nothing of ours reads either field; the OpenTofu provider and the MCP server exclude the endpoint."
+      "contract_notes": "3388: `vnc_ip` is now always an empty string and `vnc_port` is always null; both fields stay in the answer (no field removed, same JSON types as before for a client that treats them as optional). The host address and port are no longer given out; the console is opened with GET /api/instance/{user_instanceId}/novnc, which connects through the panel over HTTPS. Nothing of ours reads either field; the OpenTofu provider and the MCP server exclude the endpoint (no consumer change)."
     },
     {
       "id": "user POST /api/instance/{user_instanceId}/vnc/{action}",
@@ -13973,7 +13995,7 @@
       "method": "DELETE",
       "path": "/api/self-provisioning/instances/{user_instanceId}",
       "surface": "user",
-      "contract_notes": "A database failure while deleting (a deadlock or lock conflict in the address step, or any other database error) answers 409 concurrent_update_retry with Retry-After: 1 (a concurrency conflict: nothing changed, repeat the same delete) or 500 database_error, never a 200; the SQL text is never returned. DESTROY-RETRY (response additions, no path, verb or request field changed): a 200 means the node accepted the delete, not that the guest is gone. A delete repeated while one is running answers 409 reason delete_in_progress (nothing started; a caller that wants the instance gone treats it as accepted and keeps polling). Get Instance (admin and user) gains delete_state (null, deleting, failed) and delete_error (plain sentence, only when failed): the panel repeats a delete the node never confirmed up to five times and then sets failed, with the instance still running; a repeated delete starts a new attempt. The charge for the instance and its add-ons ends at most five minutes after the first accepted request (a static IP is its own resource and bills until released). Proxmox deletes follow the same states. The OpenTofu provider and the MCP server wait for a 404 after the delete: they should treat 409 delete_in_progress as accepted and stop waiting with delete_error when delete_state is failed.",
+      "contract_notes": "A database failure while deleting (a deadlock or lock conflict in the address step, or any other database error) answers 409 concurrent_update_retry with Retry-After: 1 (a concurrency conflict: nothing changed, repeat the same delete) or 500 database_error, never a 200; the SQL text is never returned. DESTROY-RETRY (response additions, no path, verb or request field changed): a 200 means the node accepted the delete, not that the guest is gone. A delete repeated while one is running answers 409 reason delete_in_progress (nothing started; a caller that wants the instance gone treats it as accepted and keeps polling). Get Instance (admin and user) gains delete_state (null, deleting, failed) and delete_error (plain sentence, only when failed): the panel asks the node again for a delete it never confirmed; a node that answers it is still waiting or working is not counted against the panel's attempts; the delete ends as failed (delete_error), with the instance still running and usable, only after the node refused or failed it five times, did not answer for a day, or could not reach the panel for two hours, and once failed a node that still holds the old request can never carry it out (the panel refuses its first step); a repeated delete starts a new attempt (delete_error may now also say the node could not reach the panel). The charge for the instance and its add-ons ends at most five minutes after the first accepted request (a static IP is its own resource and bills until released). Proxmox deletes follow the same states. The OpenTofu provider and the MCP server wait for a 404 after the delete: they should treat 409 delete_in_progress as accepted and stop waiting with delete_error when delete_state is failed.",
       "opentofu": {
         "status": "excluded",
         "reason": "optional delete_backups request field and retained-backup deletion behavior are not yet implemented by this consumer; consumer synchronization is deferred until after release by the owner; existing instance deletion remains available without the cleanup option"
@@ -15991,6 +16013,7 @@
       "method": "PUT",
       "path": "/api/v1/microvm/plan-group/{microvmPlanGroupId}",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): price_snapshot_gib_hour and price_volume_gib_hour are 0 to 9999.99999999 with at most 8 decimals. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -16033,6 +16056,7 @@
       "method": "POST",
       "path": "/api/v1/microvm/plan-groups",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): price_snapshot_gib_hour and price_volume_gib_hour are 0 to 9999.99999999 with at most 8 decimals. A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -16075,6 +16099,7 @@
       "method": "PUT",
       "path": "/api/v1/microvm/plan/{microvmPlanId}",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): price_vcpu_second 0 to 9999.99999999 (8 decimals), price_mib_second 0 to 99.9999999999 (10 decimals), price_disk_gib_hour 0 to 9999.99999999 (8 decimals), price_runner_minute 0 to 999999.999999 (6 decimals); more decimals than the column holds are refused (they used to be rounded by the database). A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -16103,6 +16128,7 @@
       "method": "POST",
       "path": "/api/v1/microvm/plans",
       "surface": "admin",
+      "contract_notes": "Money limits (one rule for the panel and the API, MoneyRules): price_vcpu_second 0 to 9999.99999999 (8 decimals), price_mib_second 0 to 99.9999999999 (10 decimals), price_disk_gib_hour 0 to 9999.99999999 (8 decimals), price_runner_minute 0 to 999999.999999 (6 decimals); more decimals than the column holds are refused (they used to be rounded by the database). A decimal, exponent text such as 1e9, a thousands separator, hex, INF, NAN or padded spaces is refused with 422 and the message names the limit; nothing is rounded or truncated. A value accepted before and inside the range behaves as before. The provider and the MCP server only read these fields. A value equal to the one already stored on the row always passes, so an unchanged form can be saved again; only a change to an out-of-range value is refused.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
