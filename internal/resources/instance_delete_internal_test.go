@@ -67,10 +67,10 @@ const instDeleting = `{"id":"i1","status":1,"delete_state":"deleting"}`
 
 func TestInstanceDelete_AcceptedThenConfirmed(t *testing.T) {
 	f := &instDelFake{onDelete: instDelOK, showReply: func(n int32) (int, string) {
-		switch {
-		case n == 1:
+		switch n {
+		case 1:
 			return 200, instRunning
-		case n == 2:
+		case 2:
 			return 200, instDeleting
 		}
 		return 404, `{"message":"Instance not found"}`
