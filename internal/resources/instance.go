@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -57,6 +58,13 @@ const (
 // defaultPollInterval. This is a TEST-ONLY seam: the mock lifecycle test sets it
 // tiny so convergence is instant. An unset/invalid value yields the 5s default,
 // so production behaviour is unchanged.
+// maxDeleteRetryWait bounds ONE wait before a refused delete (409
+// public_ip_operation_in_flight) is repeated; the panel names Retry-After 120.
+const maxDeleteRetryWait = 2 * time.Minute
+
+// instanceDeleteRetryWait is a test seam: nil in production.
+var instanceDeleteRetryWait func(time.Duration) time.Duration
+
 func pollInterval() time.Duration {
 	if v := os.Getenv("IAAS_INSTANCE_POLL_INTERVAL"); v != "" {
 		if d, err := time.ParseDuration(v); err == nil && d > 0 {
@@ -647,27 +655,67 @@ func (r *instanceResource) Delete(ctx context.Context, req resource.DeleteReques
 	}
 
 	id := state.ID.ValueString()
-	if err := r.client.DeleteCSInstance(ctx, id); err != nil {
+	// A delete answered 409 delete_in_progress counts as accepted inside the
+	// client. A delete refused with 409 public_ip_operation_in_flight (a public
+	// address change is on its way to the host; it clears by itself) is repeated
+	// after the Retry-After the panel named, within the delete timeout.
+	deadline := time.Now().Add(deleteTimeout)
+	for {
+		err := r.client.DeleteCSInstance(ctx, id)
+		if err == nil {
+			break
+		}
+		var apiErr *client.APIError
+		if errors.As(err, &apiErr) && apiErr.Status == 409 && apiErr.Reason == client.ReasonPublicIPOperationInFlight {
+			wait := apiErr.RetryAfter
+			if wait <= 0 || wait > maxDeleteRetryWait {
+				wait = maxDeleteRetryWait
+			}
+			if instanceDeleteRetryWait != nil {
+				wait = instanceDeleteRetryWait(wait)
+			}
+			if time.Now().Add(wait).Before(deadline) {
+				select {
+				case <-ctx.Done():
+					resp.Diagnostics.Append(diagFromErr("Error deleting instance", ctx.Err()))
+					return
+				case <-time.After(wait):
+					continue
+				}
+			}
+		}
 		resp.Diagnostics.Append(diagFromErr("Error deleting instance", err))
 		return
 	}
 
 	// Converge by polling SHOW until it 404s. The Refresh closure treats an
-	// IsNotFound error as "done", and any other error as terminal.
+	// IsNotFound error as "done". delete_state "failed" is terminal at once: the
+	// panel gave up after its own retries and the instance still exists, so the
+	// error keeps it in state (a later apply sends the delete again). Any other
+	// read error is terminal too.
 	waitErr := waiter.WaitFor(ctx, waiter.Options{
 		Interval: pollInterval(),
 		Timeout:  deleteTimeout,
 		Refresh: func() (string, bool, error) {
-			_, err := r.client.GetInstance(ctx, id)
+			obj, err := r.client.GetInstance(ctx, id)
 			if err != nil {
 				if client.IsNotFound(err) {
 					return "deleted", true, nil
 				}
 				return "", false, err
 			}
+			if failure := client.InstanceDeleteFailure(id, obj); failure != nil {
+				return "failed", false, failure
+			}
 			return "deleting", false, nil
 		},
 	})
+	var delErr *client.InstanceDeleteError
+	if errors.As(waitErr, &delErr) {
+		// The instance is still there: the error keeps it in state.
+		resp.Diagnostics.AddError("Instance delete failed", delErr.Error())
+		return
+	}
 	if waitErr != nil {
 		resp.Diagnostics.AddError(
 			"Error waiting for instance deletion",

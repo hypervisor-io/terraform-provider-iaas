@@ -3,8 +3,10 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -399,5 +401,53 @@ func TestRescueInstance_EmptyID(t *testing.T) {
 	c := New("http://example.invalid/api", "tok", 10*time.Second, false)
 	if _, err := c.RescueInstance(context.Background(), "", true); err == nil {
 		t.Fatal("RescueInstance: expected error for empty id, got nil")
+	}
+}
+
+// TestDeleteCSInstance_409DeleteInProgressIsAccepted: a repeated delete answers
+// 409 reason delete_in_progress (nothing started); it is not an error.
+func TestDeleteCSInstance_409DeleteInProgressIsAccepted(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"success":false,"reason":"delete_in_progress","message":"This instance is already being deleted."}`))
+	}))
+	defer srv.Close()
+	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+	if err := c.DeleteCSInstance(context.Background(), "i1"); err != nil {
+		t.Fatalf("delete_in_progress must be accepted, got %v", err)
+	}
+}
+
+// TestDeleteCSInstance_OtherConflictsStayErrors: only delete_in_progress is accepted.
+func TestDeleteCSInstance_OtherConflictsStayErrors(t *testing.T) {
+	for _, body := range []string{
+		`{"success":false,"reason":"public_ip_operation_in_flight","message":"x"}`,
+		`{"success":false,"message":"no reason"}`,
+	} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(body))
+		}))
+		c := New(srv.URL+"/api", "tok", 10*time.Second, false)
+		if err := c.DeleteCSInstance(context.Background(), "i1"); err == nil {
+			t.Errorf("409 %s must stay an error", body)
+		}
+		srv.Close()
+	}
+}
+
+func TestInstanceDeleteFailure(t *testing.T) {
+	if InstanceDeleteFailure("i1", map[string]any{"delete_state": nil}) != nil ||
+		InstanceDeleteFailure("i1", map[string]any{"delete_state": "deleting"}) != nil ||
+		InstanceDeleteFailure("i1", map[string]any{}) != nil {
+		t.Fatal("null, deleting and absent are not failures")
+	}
+	err := InstanceDeleteFailure("i1", map[string]any{"delete_state": "failed", "delete_error": "boom", "delete_attempts": float64(5)})
+	var de *InstanceDeleteError
+	if !errors.As(err, &de) || de.Message != "boom" || de.Attempts != 5 {
+		t.Fatalf("got %v", err)
+	}
+	if e := InstanceDeleteFailure("i1", map[string]any{"delete_state": "failed"}); e == nil || !strings.Contains(e.Error(), "no reason") {
+		t.Fatalf("missing delete_error still fails: %v", e)
 	}
 }

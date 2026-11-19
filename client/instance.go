@@ -2,8 +2,12 @@ package client
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
+	"strings"
 )
 
 // Instance endpoints (verified against the real controller, routes/user_api.php).
@@ -121,9 +125,64 @@ func (c *Client) RescueInstance(ctx context.Context, id string, enable bool) (ma
 // (the slave finalizes and the row soft-deletes later), so the resource converges
 // by polling GetInstance until IsNotFound. A failure (e.g. protection_enabled) is
 // signalled with success:false at HTTP 200, which doVoid surfaces as an error.
+//
+// A 409 with reason delete_in_progress is NOT an error: a delete of this instance
+// is already running (the panel retries it on its own), nothing was started or
+// changed, and the caller that wants the instance gone keeps waiting for it.
 func (c *Client) DeleteCSInstance(ctx context.Context, id string) error {
 	if id == "" {
 		return fmt.Errorf("DeleteCSInstance: empty id")
 	}
-	return c.doVoid(ctx, "DELETE", "/cloud-service/instances/"+url.PathEscape(id), nil)
+	err := c.doVoid(ctx, "DELETE", "/cloud-service/instances/"+url.PathEscape(id), nil)
+	var apiErr *APIError
+	if errors.As(err, &apiErr) && apiErr.Status == http.StatusConflict && apiErr.Reason == ReasonDeleteInProgress {
+		return nil
+	}
+	return err
+}
+
+// InstanceDeleteError is the terminal answer of an instance delete the panel
+// gave up on: the instance object carries delete_state "failed" and a plain
+// delete_error, and the instance is still there and usable.
+type InstanceDeleteError struct {
+	ID       string
+	Message  string // delete_error, the panel's plain sentence
+	Reason   string // delete_reason, when present
+	Attempts int    // delete_attempts, when present
+}
+
+func (e *InstanceDeleteError) Error() string {
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "instance %s delete failed: %s", e.ID, e.Message)
+	if e.Reason != "" {
+		fmt.Fprintf(&sb, " (reason: %s)", e.Reason)
+	}
+	if e.Attempts > 0 {
+		fmt.Fprintf(&sb, " after %d attempts", e.Attempts)
+	}
+	sb.WriteString(". The instance still exists and keeps running. Sending the delete again starts a new attempt (run terraform apply or destroy again).")
+	return sb.String()
+}
+
+// InstanceDeleteFailure inspects a GetInstance object: it returns an
+// *InstanceDeleteError when delete_state is "failed", nil for null or
+// "deleting" (keep waiting) and for an instance without the field.
+func InstanceDeleteFailure(id string, obj map[string]any) error {
+	if state, _ := obj["delete_state"].(string); state != "failed" {
+		return nil
+	}
+	e := &InstanceDeleteError{ID: id}
+	e.Message, _ = obj["delete_error"].(string)
+	if e.Message == "" {
+		e.Message = "the platform reported no reason"
+	}
+	e.Reason, _ = obj["delete_reason"].(string)
+	switch n := obj["delete_attempts"].(type) {
+	case float64:
+		e.Attempts = int(n)
+	case json.Number:
+		v, _ := n.Int64()
+		e.Attempts = int(v)
+	}
+	return e
 }

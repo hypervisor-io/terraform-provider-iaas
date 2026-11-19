@@ -45,6 +45,13 @@ const (
 	ReasonAddressReservationBusy = "address_reservation_busy"
 	ReasonConcurrentUpdateRetry  = "concurrent_update_retry"
 	ReasonDatabaseError          = "database_error"
+	// ReasonDeleteInProgress: a repeated instance delete while one is running.
+	// Nothing was started or changed, so for a caller that wants the instance
+	// gone it is the same as "accepted".
+	ReasonDeleteInProgress = "delete_in_progress"
+	// ReasonPublicIPOperationInFlight: an instance delete refused while a public
+	// address change is on its way to the host (Retry-After 120); it clears by itself.
+	ReasonPublicIPOperationInFlight = "public_ip_operation_in_flight"
 )
 
 // Client is the HTTP transport for the IaaS REST API.
