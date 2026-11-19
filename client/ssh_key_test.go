@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -216,4 +217,22 @@ func TestDeleteSSHKey_Failure(t *testing.T) {
 // contains is a small substring helper shared by the client test files.
 func contains(s, sub string) bool {
 	return strings.Contains(s, sub)
+}
+
+// 3.3.8.8: a key the panel cannot read as an OpenSSH public key answers 422 with errors.public_key (it was 200 success:false).
+func TestCreateSSHKey_422CarriesTheFieldMessage(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"message":"The public key is not a valid SSH public key.","errors":{"public_key":["The public key is not a valid SSH public key."]}}`))
+	}))
+	defer srv.Close()
+	c := New(srv.URL+"/api", "tok", 5*time.Second, false)
+	_, err := c.CreateSSHKey(context.Background(), "n", "not a key")
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) || apiErr.Status != 422 {
+		t.Fatalf("want a 422 APIError, got %v", err)
+	}
+	if got := apiErr.FieldErrors["public_key"]; len(got) != 1 || !strings.Contains(got[0], "not a valid SSH public key") {
+		t.Fatalf("field message lost: %v", apiErr.FieldErrors)
+	}
 }

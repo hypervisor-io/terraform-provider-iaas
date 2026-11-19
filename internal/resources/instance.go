@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -22,6 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hypervisor-io/terraform-provider-iaas/client"
+	"github.com/hypervisor-io/terraform-provider-iaas/internal/validators"
 	"github.com/hypervisor-io/terraform-provider-iaas/waiter"
 )
 
@@ -37,6 +40,7 @@ var (
 	_ resource.Resource                = &instanceResource{}
 	_ resource.ResourceWithConfigure   = &instanceResource{}
 	_ resource.ResourceWithImportState = &instanceResource{}
+	_ resource.ResourceWithModifyPlan  = &instanceResource{}
 )
 
 // Default timeouts. Create/delete are async (deploy task convergence, then slave
@@ -235,7 +239,10 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 			"cloudcfg": schema.StringAttribute{
 				Optional: true,
 				Description: "Optional cloud-init user-data (YAML) applied at deploy time. WRITE-ONLY: " +
-					"not returned by the API on read. Changing it forces a new resource.",
+					"not returned by the API on read. Changing it forces a new resource. It must be YAML that starts with #cloud-config, " +
+					"not a script (save a script under User Scripts instead); runcmd, bootcmd, write_files, packages, users and " +
+					"ssh_authorized_keys must be lists. The platform checks it when the instance is deployed and refuses a wrong document " +
+					"with the key or line named; the instance record is then left tainted and the next apply replaces it.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -244,7 +251,12 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Optional: true,
 				Computed: true,
 				Description: "Hostname of the instance. The server auto-generates one when omitted. " +
-					"This field is updatable in place (PATCH) and is NOT RequiresReplace.",
+					"This field is updatable in place (PATCH) and is NOT RequiresReplace. " +
+					"It must be a host name (RFC 1123): letters, digits and hyphens, with dots between parts; each part 1-63 characters " +
+					"and not starting or ending with a hyphen; 253 characters in all; upper case and a single part are fine; an underscore, " +
+					"a space or any other character is refused, and so is a trailing dot. The rule is checked at plan time when the hostname " +
+					"is new or changed; a hostname the platform already stores is never re-judged, so an older instance keeps planning clean.",
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"tags": schema.StringAttribute{
 				Optional: true, Computed: true,
@@ -257,6 +269,7 @@ func (r *instanceResource) Schema(ctx context.Context, _ resource.SchemaRequest,
 				Computed: true,
 				Description: "Display name of the instance. Server-assigned when omitted; updatable " +
 					"in place (PATCH).",
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"cpu_cores": schema.Int64Attribute{
 				Computed:    true,
@@ -413,7 +426,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 
 	created, err := r.client.CreateCSInstance(ctx, phase1)
 	if err != nil {
-		resp.Diagnostics.Append(diagFromErr("Error creating instance", err))
+		resp.Diagnostics.Append(instanceInputDiags("Error creating instance", err, "hostname")...)
 		return
 	}
 	id, _ := created["id"].(string)
@@ -451,7 +464,7 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 
 	deployResp, err := r.client.DeployInstance(ctx, id, phase2)
 	if err != nil {
-		resp.Diagnostics.Append(diagFromErr("Error deploying instance", err))
+		resp.Diagnostics.Append(instanceInputDiags("Error deploying instance", err, "hostname", "cloudcfg")...)
 		return
 	}
 	taskID, _ := deployResp["task_id"].(string)
@@ -480,6 +493,14 @@ func (r *instanceResource) Create(ctx context.Context, req resource.CreateReques
 		),
 	})
 	if waitErr != nil {
+		// The panel checks the cloud-config at submit; a document it could not merge after all ends the deploy task
+		// with failure_reason invalid_cloud_config (the message names the key).
+		if strings.Contains(waitErr.Error(), "invalid_cloud_config") {
+			resp.Diagnostics.AddAttributeError(path.Root("cloudcfg"), "The cloud-init user data was refused",
+				fmt.Sprintf("instance %s deploy task %s failed: %s\nFix the user data (cloudcfg: YAML that starts with #cloud-config; runcmd, bootcmd, write_files, packages, users and ssh_authorized_keys must be lists; a script is not accepted here, save it under User Scripts instead). "+
+					"The instance record was created and is marked tainted, so the next apply replaces it.", id, taskID, waitErr.Error()))
+			return
+		}
 		// The id is already in state, so the user can `terraform destroy` to
 		// clean up the half-created instance.
 		resp.Diagnostics.AddError(
@@ -593,16 +614,17 @@ func (r *instanceResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	fields := map[string]any{}
-	if !plan.DisplayName.Equal(state.DisplayName) {
+	// An omitted (unknown or null) value is never sent: the panel refuses an empty hostname or display name.
+	if !plan.DisplayName.IsUnknown() && !plan.DisplayName.IsNull() && !plan.DisplayName.Equal(state.DisplayName) {
 		fields["display_name"] = plan.DisplayName.ValueString()
 	}
-	if !plan.Hostname.Equal(state.Hostname) {
+	if !plan.Hostname.IsUnknown() && !plan.Hostname.IsNull() && !plan.Hostname.Equal(state.Hostname) {
 		fields["hostname"] = plan.Hostname.ValueString()
 	}
 
 	if len(fields) > 0 {
 		if _, err := r.client.UpdateInstance(ctx, state.ID.ValueString(), fields); err != nil {
-			resp.Diagnostics.Append(diagFromErr("Error updating instance", err))
+			resp.Diagnostics.Append(instanceInputDiags("Error updating instance", err, "hostname")...)
 			return
 		}
 	}
@@ -936,4 +958,58 @@ func instanceTagsFromAPI(obj map[string]any, prior types.String) types.String {
 		return types.StringValue(strings.ReplaceAll(tags, ";", ","))
 	}
 	return prior
+}
+
+// ModifyPlan applies the panel's hostname rule (App\Rules\InstanceHostname, 3.3.8.8) to the CONFIGURED hostname when the
+// resource is created or the hostname changes. A hostname equal to the stored one is never judged: the panel accepts it
+// unchanged, so an instance created before the rule (an underscore, say) keeps planning clean while its config is untouched.
+// Nothing is checked for a hostname that is omitted or not yet known (the panel answers 422 at apply, shown on the attribute).
+func (r *instanceResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() { // destroy
+		return
+	}
+	var cfg types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("hostname"), &cfg)...)
+	if resp.Diagnostics.HasError() || cfg.IsNull() || cfg.IsUnknown() {
+		return
+	}
+	if !req.State.Raw.IsNull() {
+		var prior types.String
+		resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("hostname"), &prior)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if !prior.IsNull() && !prior.IsUnknown() && prior.ValueString() == cfg.ValueString() {
+			return
+		}
+	}
+	if msg := validators.InstanceHostnameProblem(cfg.ValueString()); msg != "" {
+		resp.Diagnostics.AddAttributeError(path.Root("hostname"), "Invalid hostname", msg)
+	}
+}
+
+// instanceInputDiags is diagFromErr, plus: a 422 whose errors name one of the given request fields (hostname, cloudcfg) is
+// also shown ON that attribute with the panel's own sentence (invalid_hostname, invalid_cloud_config). The full detail
+// (every field, reason, request id) stays in the main diagnostic.
+func instanceInputDiags(summary string, err error, fields ...string) diag.Diagnostics {
+	var out diag.Diagnostics
+	var apiErr *client.APIError
+	if errors.As(err, &apiErr) && apiErr.Status == http.StatusUnprocessableEntity {
+		for _, f := range fields {
+			msgs := apiErr.FieldErrors[f]
+			if len(msgs) == 0 {
+				continue
+			}
+			detail := strings.Join(msgs, " ")
+			if f == "cloudcfg" {
+				detail += "\nThe cloud-init user data is YAML that starts with #cloud-config. It is not for scripts: save a script under User Scripts instead."
+			}
+			if summary == "Error deploying instance" {
+				detail += "\nThe instance record was created in the first step and is marked tainted, so the next apply replaces it once the value is fixed."
+			}
+			out.AddAttributeError(path.Root(f), "The platform refused this value", detail)
+		}
+	}
+	out.Append(diagFromErr(summary, err))
+	return out
 }
