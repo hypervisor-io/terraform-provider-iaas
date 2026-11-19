@@ -52,6 +52,11 @@ const (
 	// ReasonDeleteState: a deploy or reinstall refused (before any task) for an
 	// instance whose delete is running or failed.
 	ReasonDeleteState = "delete_state"
+	// ReasonInvalidHostname: 422, the hostname is not an RFC 1123 host name (errors.hostname).
+	ReasonInvalidHostname = "invalid_hostname"
+	// ReasonInvalidCloudConfig: 422 at submit (errors.cloudcfg), or the failure_reason of a deploy task whose
+	// cloud-config could not be merged.
+	ReasonInvalidCloudConfig = "invalid_cloud_config"
 	// ReasonPublicIPOperationInFlight: an instance delete refused while a public
 	// address change is on its way to the host (Retry-After 120); it clears by itself.
 	ReasonPublicIPOperationInFlight = "public_ip_operation_in_flight"
