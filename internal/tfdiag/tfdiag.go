@@ -52,7 +52,7 @@ func FromErr(summary string, err error) diag.Diagnostic {
 				"The request was not retried; use another VPC, or create the VPC again once the delete has finished.")
 		}
 		switch {
-		case apiErr.RetryAfter > 0 && (apiErr.Reason == client.ReasonAddressReservationBusy || apiErr.Reason == client.ReasonDatabaseBusy):
+		case apiErr.RetryAfter > 0 && (apiErr.Reason == client.ReasonAddressReservationBusy || apiErr.Reason == client.ReasonConcurrentUpdateRetry):
 			sb.WriteString("\nAnother request was in progress and the provider retried several times. " +
 				"Nothing was created, changed or deleted, so it is safe to run the same command again.")
 		case apiErr.Reason == client.ReasonDatabaseError:

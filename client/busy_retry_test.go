@@ -39,7 +39,7 @@ func fastBusyClient(url string) *Client {
 
 // A busy 409 on a create and on a delete is waited out and the call succeeds.
 func TestBusyRetry_SucceedsAfterBusyAnswers(t *testing.T) {
-	for _, reason := range []string{ReasonAddressReservationBusy, ReasonDatabaseBusy} {
+	for _, reason := range []string{ReasonAddressReservationBusy, ReasonConcurrentUpdateRetry} {
 		for _, once := range []bool{false, true} {
 			var calls int32
 			srv := busyServer(t, reason, 2, &calls)
@@ -83,7 +83,7 @@ func TestBusyRetry_GivesUpWithServerMessage(t *testing.T) {
 // The total wait is bounded: a tiny total cap stops the retry early.
 func TestBusyRetry_TotalWaitIsCapped(t *testing.T) {
 	var calls int32
-	srv := busyServer(t, ReasonDatabaseBusy, 1000, &calls)
+	srv := busyServer(t, ReasonConcurrentUpdateRetry, 1000, &calls)
 	c := fastBusyClient(srv.URL)
 	c.busyTotalCap = 7 * time.Millisecond // one 5 ms wait fits, a second does not
 	start := time.Now()
@@ -120,7 +120,7 @@ func TestBusyRetry_OtherConflictsSurfaceAtOnce(t *testing.T) {
 // Retry-After: it is a real conflict and must never be repeated. The same holds
 // for address_reservation_busy without the header.
 func TestBusyRetry_NoRetryAfterMeansNoRetry(t *testing.T) {
-	for _, reason := range []string{ReasonDatabaseBusy, ReasonAddressReservationBusy} {
+	for _, reason := range []string{"database_busy", ReasonConcurrentUpdateRetry, ReasonAddressReservationBusy} {
 		var calls int32
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&calls, 1)
@@ -141,7 +141,7 @@ func TestBusyRetry_NoRetryAfterMeansNoRetry(t *testing.T) {
 // A cancelled context ends the wait at once.
 func TestBusyRetry_ContextCancelEndsWait(t *testing.T) {
 	var calls int32
-	srv := busyServer(t, ReasonDatabaseBusy, 1000, &calls)
+	srv := busyServer(t, ReasonConcurrentUpdateRetry, 1000, &calls)
 	c := fastBusyClient(srv.URL)
 	c.busyWaitCap = time.Hour
 	c.busyTotalCap = 2 * time.Hour
@@ -191,7 +191,7 @@ func TestDatabaseError500_IsBounded(t *testing.T) {
 // WithBusyRetry gives interactive callers a short budget: 3 tries in all.
 func TestBusyRetry_WithBusyRetryShortBudget(t *testing.T) {
 	var calls int32
-	srv := busyServer(t, ReasonDatabaseBusy, 1000, &calls)
+	srv := busyServer(t, ReasonConcurrentUpdateRetry, 1000, &calls)
 	c := fastBusyClient(srv.URL).WithBusyRetry(3, 5*time.Millisecond, time.Second)
 	if err := c.doVoid(context.Background(), "DELETE", "/thing/x", nil); err == nil {
 		t.Fatal("want an error")

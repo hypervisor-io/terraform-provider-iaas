@@ -26,7 +26,7 @@ const (
 	// maxRetryDelay caps the sleep between retries regardless of backoff calculation.
 	maxRetryDelay = 30 * time.Second
 
-	// Busy refusals (HTTP 409 reason address_reservation_busy or database_busy,
+	// Busy refusals (HTTP 409 reason address_reservation_busy or concurrent_update_retry,
 	// always with a Retry-After header, normally 1 second). The Master states
 	// that the request changed nothing ("another request is in progress, safe
 	// to retry"), so replaying it can neither duplicate a create nor repeat a
@@ -43,7 +43,7 @@ const (
 // Reasons of the typed busy refusals (see maxBusyAttempts).
 const (
 	ReasonAddressReservationBusy = "address_reservation_busy"
-	ReasonDatabaseBusy           = "database_busy"
+	ReasonConcurrentUpdateRetry  = "concurrent_update_retry"
 	ReasonDatabaseError          = "database_error"
 )
 
@@ -68,7 +68,7 @@ type Client struct {
 }
 
 // WithBusyRetry sets the bounds of the busy-refusal retry (HTTP 409
-// address_reservation_busy / database_busy): attempts is the TOTAL number of
+// address_reservation_busy / concurrent_update_retry): attempts is the TOTAL number of
 // tries (1 means never retry), perWait caps one wait and total caps all waits
 // of one call. Values below 1 or 0 keep the defaults (5 tries, 10 s, 30 s).
 // Interactive callers such as the MCP server use a short budget so a tool call
@@ -167,7 +167,7 @@ func (c *Client) doWithHeaders(ctx context.Context, method, path string, body an
 // same authentication, body reading, and error handling as ordinary requests.
 //
 // On top of the 429/5xx replay it waits out the two typed busy refusals (HTTP
-// 409 address_reservation_busy / database_busy) up to busyAttempts times (default maxBusyAttempts),
+// 409 address_reservation_busy / concurrent_update_retry) up to busyAttempts times (default maxBusyAttempts),
 // honouring Retry-After within busyWaitCap per wait and busyTotalCap overall.
 // When it gives up, the last 409 is returned unchanged, so the caller's error
 // carries the server's own message and reason.
@@ -197,7 +197,7 @@ func (c *Client) doWithAttempts(ctx context.Context, method, path string, body a
 // refusals that guarantee nothing was created, changed or deleted.
 //
 // The Retry-After header is REQUIRED as well as the reason: the panel sends it
-// on every such answer, and the reason `database_busy` is ALSO used, without
+// on every such answer, and the reason `database_busy` is a DIFFERENT refusal, sent without
 // that header, by the managed-database backup and restore admission ("another
 // operation is running on this database": a real conflict that lasts until the
 // other operation ends, and the MCP server sends a backup once). Retrying
@@ -216,7 +216,7 @@ func isBusyRefusal(status int, header http.Header, body []byte) bool {
 	if json.Unmarshal(parsed.Reason, &reason) != nil {
 		return false
 	}
-	return reason == ReasonAddressReservationBusy || reason == ReasonDatabaseBusy
+	return reason == ReasonAddressReservationBusy || reason == ReasonConcurrentUpdateRetry
 }
 
 // busyWait is the Retry-After the server named (default busyDefaultWait),
