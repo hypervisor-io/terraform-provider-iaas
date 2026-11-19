@@ -2012,7 +2012,8 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist; partial same-backend config preserves omitted fields, credential-id rotation requires a replacement secret, and backend switches require complete new config (or a new local path); invalid switches return 422; this admin mutation remains explicitly excluded"
-      }
+      },
+      "contract_notes": "A refused field answers 422 with errors; it answered 200 success:false with only a message."
     },
     {
       "id": "admin POST /api/v1/hypervisor/backup-storage/{hypervisorBackupStorageId}/test",
@@ -2966,6 +2967,7 @@
       "method": "PATCH",
       "path": "/api/v1/instance/{instanceId}",
       "surface": "admin",
+      "contract_notes": "Hostname is checked as a host name (RFC 1123) wherever it is accepted: letters, digits and hyphens, dots between labels, each label 1-63 characters, no hyphen at the start or end of a label, 253 characters in all; upper case and a single label are accepted, an underscore or any other character is not, and one trailing dot is accepted and removed. A refused value answers 422 with reason invalid_hostname and errors.hostname (the set-hostname endpoint answers its standard 422 with message and errors). A hostname equal to the one already stored is always accepted. Before this a value the guest cannot use (for example one with a semicolon) was stored and the guest kept its image default name. No request or response field changed; the OpenTofu provider and MCP server send the value unchanged and need no change.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints; new request fields vnc_keymap and protection_enabled are not modelled"
@@ -3086,14 +3088,15 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist"
-      }
+      },
+      "contract_notes": "While the node is deleting the instance this answers 409 with reason delete_state (nothing is sent to the node); a failed delete is not refused."
     },
     {
       "id": "admin POST /api/v1/instance/{instanceId}/deploy",
       "method": "POST",
       "path": "/api/v1/instance/{instanceId}/deploy",
       "surface": "admin",
-      "contract_notes": "Answers 409 reason delete_state (before any task or send) for an instance whose delete is running or failed (delete_state deleting or failed): a deploy of a guest the customer asked to delete is refused; send the delete again instead. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409.",
+      "contract_notes": "Answers 409 reason delete_state (before any task or send) for an instance whose delete is running or failed (delete_state deleting or failed): a deploy of a guest the customer asked to delete is refused; send the delete again instead. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409. Hostname is checked as a host name (RFC 1123) wherever it is accepted: letters, digits and hyphens, dots between labels, each label 1-63 characters, no hyphen at the start or end of a label, 253 characters in all; upper case and a single label are accepted, an underscore or any other character is not, and one trailing dot is accepted and removed. A refused value answers 422 with reason invalid_hostname and errors.hostname (the set-hostname endpoint answers its standard 422 with message and errors). A hostname equal to the one already stored is always accepted. Before this a value the guest cannot use (for example one with a semicolon) was stored and the guest kept its image default name. No request or response field changed; the OpenTofu provider and MCP server send the value unchanged and need no change. cloudcfg is checked when it is submitted: it must parse as YAML (a syntax error names the line), it must not be a script (a first line starting #! or #ps1 is refused: save the script under User Scripts and send its id in user_scripts), and the keys the platform merges with must have the right type: runcmd, bootcmd, write_files, packages, users and ssh_authorized_keys must be lists, ssh_pwauth and disable_root single values. A refusal is 422 with reason invalid_cloud_config and errors.cloudcfg naming the key or the line; a key with nothing under it (runcmd:) is read as empty. A deploy whose cloud-init still cannot be applied ends the task failed with failure_reason invalid_cloud_config and the instance can be deleted or reinstalled. user_scripts selected on a deploy or reinstall now reach the guest on Proxmox nodes the same way they do on KVM nodes (before, they were silently not delivered on Proxmox). Nothing is stored: the scripts travel with the deploy only.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints",
@@ -3132,7 +3135,8 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist; task-bearing success returns a named data.task_id; no-task branches omit it"
-      }
+      },
+      "contract_notes": "Shrinking a disk answers 422 with errors.size (it answered 200 success:false); growing and the other fields behave as before. While the node is deleting the instance this answers 409 with reason delete_state (nothing is sent to the node); a failed delete is not refused."
     },
     {
       "id": "admin POST /api/v1/instance/{instanceId}/disk/{instanceStorageId}/{actionName}",
@@ -3456,7 +3460,8 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist"
-      }
+      },
+      "contract_notes": "action must be add, remove or set-primary and the matching ips (add, remove) or ip (set-primary) must be sent: a missing one answers 422 with errors (an empty ips list used to answer 200 with an empty body, nothing done). While the node is deleting the instance this answers 409 with reason delete_state (nothing is sent to the node); a failed delete is not refused."
     },
     {
       "id": "admin PUT /api/v1/instance/{instanceId}/ips/{ipId}/rdns",
@@ -3519,6 +3524,7 @@
       "method": "PUT",
       "path": "/api/v1/instance/{instanceId}/modify/hostname",
       "surface": "admin",
+      "contract_notes": "Hostname is checked as a host name (RFC 1123) wherever it is accepted: letters, digits and hyphens, dots between labels, each label 1-63 characters, no hyphen at the start or end of a label, 253 characters in all; upper case and a single label are accepted, an underscore or any other character is not, and one trailing dot is accepted and removed. A refused value answers 422 with reason invalid_hostname and errors.hostname (the set-hostname endpoint answers its standard 422 with message and errors). A hostname equal to the one already stored is always accepted. Before this a value the guest cannot use (for example one with a semicolon) was stored and the guest kept its image default name. No request or response field changed; the OpenTofu provider and MCP server send the value unchanged and need no change.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -3687,7 +3693,7 @@
       "method": "POST",
       "path": "/api/v1/instance/{instanceId}/reinstall",
       "surface": "admin",
-      "contract_notes": "Answers 409 reason delete_state (before any task or send) for an instance whose delete is running or failed (delete_state deleting or failed): a deploy of a guest the customer asked to delete is refused; send the delete again instead. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409.",
+      "contract_notes": "Answers 409 reason delete_state (before any task or send) for an instance whose delete is running or failed (delete_state deleting or failed): a deploy of a guest the customer asked to delete is refused; send the delete again instead. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409. Hostname is checked as a host name (RFC 1123) wherever it is accepted: letters, digits and hyphens, dots between labels, each label 1-63 characters, no hyphen at the start or end of a label, 253 characters in all; upper case and a single label are accepted, an underscore or any other character is not, and one trailing dot is accepted and removed. A refused value answers 422 with reason invalid_hostname and errors.hostname (the set-hostname endpoint answers its standard 422 with message and errors). A hostname equal to the one already stored is always accepted. Before this a value the guest cannot use (for example one with a semicolon) was stored and the guest kept its image default name. No request or response field changed; the OpenTofu provider and MCP server send the value unchanged and need no change. cloudcfg is checked when it is submitted: it must parse as YAML (a syntax error names the line), it must not be a script (a first line starting #! or #ps1 is refused: save the script under User Scripts and send its id in user_scripts), and the keys the platform merges with must have the right type: runcmd, bootcmd, write_files, packages, users and ssh_authorized_keys must be lists, ssh_pwauth and disable_root single values. A refusal is 422 with reason invalid_cloud_config and errors.cloudcfg naming the key or the line; a key with nothing under it (runcmd:) is read as empty. A deploy whose cloud-init still cannot be applied ends the task failed with failure_reason invalid_cloud_config and the instance can be deleted or reinstalled. user_scripts selected on a deploy or reinstall now reach the guest on Proxmox nodes the same way they do on KVM nodes (before, they were silently not delivered on Proxmox). Nothing is stored: the scripts travel with the deploy only.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints",
@@ -4014,7 +4020,7 @@
       "method": "POST",
       "path": "/api/v1/instances",
       "surface": "admin",
-      "contract_notes": "409 address_reservation_busy with success:false, reason and message and a Retry-After: 1 header when the addresses cannot be reserved because another request is reserving from the same pool at the same moment and the database kept reporting a concurrency conflict after three short retries; nothing is created (no instance, address, billing row or task), repeat the same request after the wait. A database failure never returns SQL text, table or database names: 500 database_error, or 409 concurrent_update_retry for a retryable concurrency conflict, with a fixed sentence.",
+      "contract_notes": "409 address_reservation_busy with success:false, reason and message and a Retry-After: 1 header when the addresses cannot be reserved because another request is reserving from the same pool at the same moment and the database kept reporting a concurrency conflict after three short retries; nothing is created (no instance, address, billing row or task), repeat the same request after the wait. A database failure never returns SQL text, table or database names: 500 database_error, or 409 concurrent_update_retry for a retryable concurrency conflict, with a fixed sentence. Hostname is checked as a host name (RFC 1123) wherever it is accepted: letters, digits and hyphens, dots between labels, each label 1-63 characters, no hyphen at the start or end of a label, 253 characters in all; upper case and a single label are accepted, an underscore or any other character is not, and one trailing dot is accepted and removed. A refused value answers 422 with reason invalid_hostname and errors.hostname (the set-hostname endpoint answers its standard 422 with message and errors). A hostname equal to the one already stored is always accepted. Before this a value the guest cannot use (for example one with a semicolon) was stored and the guest kept its image default name. No request or response field changed; the OpenTofu provider and MCP server send the value unchanged and need no change.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints. Admin create answers 422 with a top-level capacity reason. Optional boolean enable_vnc (strict JSON boolean, 422 otherwise) sets the console explicitly; when omitted a boot ISO auto-enables VNC and a no-media create leaves it off. Optional string external_reference (max 191) makes a repeated create for the same user and reference return the existing instance. The OpenTofu provider and MCP server do not model these fields yet (consumer work deferred).",
@@ -5698,7 +5704,8 @@
       "mcp": {
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist"
-      }
+      },
+      "contract_notes": "While the node is deleting the instance this answers 409 with reason delete_state (nothing is sent to the node); a failed delete is not refused."
     },
     {
       "id": "admin GET /api/v1/proxmox/node-issues",
@@ -6547,6 +6554,7 @@
       "method": "POST",
       "path": "/api/v1/ssh-keys",
       "surface": "admin",
+      "contract_notes": "A public_key that cannot be read as an OpenSSH public key is refused with 422 and errors.public_key (a bare message before). A readable key behaves as before.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -6997,7 +7005,7 @@
       "method": "GET",
       "path": "/api/v1/task/{taskId}",
       "surface": "admin",
-      "contract_notes": "A failed task now outlives the deletion of its instance and stays readable until the retention prune (60 days). The `message` of a failed volume, disk or storage task is now filled with a short, scrubbed reason when the node sent none. Every failed task now ends with a short plain `message` and a typed `failure_reason` (new nullable task field; every task that fails from now on carries one, node_task_failed when nothing more specific is known; null only on a task that failed before the field existed, or that did not fail). Known failure_reason values: detach_not_confirmed, disk_target_in_use, no_space, device_busy, permission_denied, operation_timeout, instance_not_running, instance_not_found, resource_missing, node_unavailable, download_failed, node_worker_stopped, disk_state_unclear, node_task_failed. Any other reason a node sends is stored as node_task_failed (the list is closed). The old fixed sentence 'See the task log for the step that failed' is gone, and a failed task of ANY kind (not only volume, disk or storage) carries a message. The raw error stays in the task logs. Additive: the OpenTofu provider and MCP server read `message` generically and need no change. The endpoint description lists every value with one plain line each (TaskFailureText::DOC_REASONS); the response examples carry `failure_reason`.",
+      "contract_notes": "A failed task now outlives the deletion of its instance and stays readable until the retention prune (60 days). The `message` of a failed volume, disk or storage task is now filled with a short, scrubbed reason when the node sent none. Every failed task now ends with a short plain `message` and a typed `failure_reason` (new nullable task field; every task that fails from now on carries one, node_task_failed when nothing more specific is known; null only on a task that failed before the field existed, or that did not fail). Known failure_reason values: detach_not_confirmed, disk_target_in_use, no_space, device_busy, permission_denied, operation_timeout, instance_not_running, instance_not_found, resource_missing, node_unavailable, download_failed, node_worker_stopped, disk_state_unclear, invalid_cloud_config, node_task_failed. Any other reason a node sends is stored as node_task_failed (the list is closed). The old fixed sentence 'See the task log for the step that failed' is gone, and a failed task of ANY kind (not only volume, disk or storage) carries a message. The raw error stays in the task logs. Additive: the OpenTofu provider and MCP server read `message` generically and need no change. The endpoint description lists every value with one plain line each (TaskFailureText::DOC_REASONS); the response examples carry `failure_reason`.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -7041,7 +7049,7 @@
       "method": "GET",
       "path": "/api/v1/tasks",
       "surface": "admin",
-      "contract_notes": "A failed task now outlives the deletion of its instance and stays listed until the retention prune (60 days). Every failed task now ends with a short plain `message` and a typed `failure_reason` (new nullable task field; every task that fails from now on carries one, node_task_failed when nothing more specific is known; null only on a task that failed before the field existed, or that did not fail). Known failure_reason values: detach_not_confirmed, disk_target_in_use, no_space, device_busy, permission_denied, operation_timeout, instance_not_running, instance_not_found, resource_missing, node_unavailable, download_failed, node_worker_stopped, disk_state_unclear, node_task_failed. Any other reason a node sends is stored as node_task_failed (the list is closed). The old fixed sentence 'See the task log for the step that failed' is gone, and a failed task of ANY kind (not only volume, disk or storage) carries a message. The raw error stays in the task logs. Additive: the OpenTofu provider and MCP server read `message` generically and need no change. The endpoint description lists every value with one plain line each (TaskFailureText::DOC_REASONS); the response examples carry `failure_reason`.",
+      "contract_notes": "A failed task now outlives the deletion of its instance and stays listed until the retention prune (60 days). Every failed task now ends with a short plain `message` and a typed `failure_reason` (new nullable task field; every task that fails from now on carries one, node_task_failed when nothing more specific is known; null only on a task that failed before the field existed, or that did not fail). Known failure_reason values: detach_not_confirmed, disk_target_in_use, no_space, device_busy, permission_denied, operation_timeout, instance_not_running, instance_not_found, resource_missing, node_unavailable, download_failed, node_worker_stopped, disk_state_unclear, invalid_cloud_config, node_task_failed. Any other reason a node sends is stored as node_task_failed (the list is closed). The old fixed sentence 'See the task log for the step that failed' is gone, and a failed task of ANY kind (not only volume, disk or storage) carries a message. The raw error stays in the task logs. Additive: the OpenTofu provider and MCP server read `message` generically and need no change. The endpoint description lists every value with one plain line each (TaskFailureText::DOC_REASONS); the response examples carry `failure_reason`.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -7866,6 +7874,7 @@
       "method": "PATCH",
       "path": "/api/v1/vpc/{vpcId}",
       "surface": "admin",
+      "contract_notes": "A name that is sent must be a real name: an empty or null name is refused with 422 errors.name (it was ignored while the answer said updated), and an invalid name answers 422 with errors (it was 400 {error}). Leaving name out still leaves it unchanged. The provider and the MCP server do not use this endpoint.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -7993,6 +8002,7 @@
       "method": "PATCH",
       "path": "/api/v1/vpc/{vpcId}/subnet/{vpcSubnetId}",
       "surface": "admin",
+      "contract_notes": "A name that is sent must be a real name: an empty or null name is refused with 422 errors.name (it was ignored while the answer said updated). Leaving name out is unchanged.",
       "opentofu": {
         "status": "excluded",
         "reason": "admin api/v1 surface; the OpenTofu provider is user-scoped IaC and does not model admin endpoints"
@@ -9122,7 +9132,7 @@
       "method": "POST",
       "path": "/api/cloud-service/instances",
       "surface": "user",
-      "contract_notes": "409 address_reservation_busy with success:false, reason and message and a Retry-After: 1 header when the addresses cannot be reserved because another request is reserving from the same pool at the same moment and the database kept reporting a concurrency conflict after three short retries; nothing is created (no instance, address, billing row or task), repeat the same request after the wait. A database failure never returns SQL text, table or database names: 500 database_error, or 409 concurrent_update_retry for a retryable concurrency conflict, with a fixed sentence.",
+      "contract_notes": "409 address_reservation_busy with success:false, reason and message and a Retry-After: 1 header when the addresses cannot be reserved because another request is reserving from the same pool at the same moment and the database kept reporting a concurrency conflict after three short retries; nothing is created (no instance, address, billing row or task), repeat the same request after the wait. A database failure never returns SQL text, table or database names: 500 database_error, or 409 concurrent_update_retry for a retryable concurrency conflict, with a fixed sentence. Hostname is checked as a host name (RFC 1123) wherever it is accepted: letters, digits and hyphens, dots between labels, each label 1-63 characters, no hyphen at the start or end of a label, 253 characters in all; upper case and a single label are accepted, an underscore or any other character is not, and one trailing dot is accepted and removed. A refused value answers 422 with reason invalid_hostname and errors.hostname (the set-hostname endpoint answers its standard 422 with message and errors). A hostname equal to the one already stored is always accepted. Before this a value the guest cannot use (for example one with a semicolon) was stored and the guest kept its image default name. No request or response field changed; the OpenTofu provider and MCP server send the value unchanged and need no change.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_instance",
@@ -10007,6 +10017,7 @@
       "method": "PATCH",
       "path": "/api/instance/{user_instanceId}",
       "surface": "user",
+      "contract_notes": "Hostname is checked as a host name (RFC 1123) wherever it is accepted: letters, digits and hyphens, dots between labels, each label 1-63 characters, no hyphen at the start or end of a label, 253 characters in all; upper case and a single label are accepted, an underscore or any other character is not, and one trailing dot is accepted and removed. A refused value answers 422 with reason invalid_hostname and errors.hostname (the set-hostname endpoint answers its standard 422 with message and errors). A hostname equal to the one already stored is always accepted. Before this a value the guest cannot use (for example one with a semicolon) was stored and the guest kept its image default name. No request or response field changed; the OpenTofu provider and MCP server send the value unchanged and need no change.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_instance"
@@ -10164,7 +10175,7 @@
       "method": "POST",
       "path": "/api/instance/{user_instanceId}/deploy",
       "surface": "user",
-      "contract_notes": "Answers 409 reason delete_state (before any task or send) for an instance whose delete is running or failed (delete_state deleting or failed): a deploy of a guest the customer asked to delete is refused; send the delete again instead. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409.",
+      "contract_notes": "Answers 409 reason delete_state (before any task or send) for an instance whose delete is running or failed (delete_state deleting or failed): a deploy of a guest the customer asked to delete is refused; send the delete again instead. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409. Hostname is checked as a host name (RFC 1123) wherever it is accepted: letters, digits and hyphens, dots between labels, each label 1-63 characters, no hyphen at the start or end of a label, 253 characters in all; upper case and a single label are accepted, an underscore or any other character is not, and one trailing dot is accepted and removed. A refused value answers 422 with reason invalid_hostname and errors.hostname (the set-hostname endpoint answers its standard 422 with message and errors). A hostname equal to the one already stored is always accepted. Before this a value the guest cannot use (for example one with a semicolon) was stored and the guest kept its image default name. No request or response field changed; the OpenTofu provider and MCP server send the value unchanged and need no change. cloudcfg is checked when it is submitted: it must parse as YAML (a syntax error names the line), it must not be a script (a first line starting #! or #ps1 is refused: save the script under User Scripts and send its id in user_scripts), and the keys the platform merges with must have the right type: runcmd, bootcmd, write_files, packages, users and ssh_authorized_keys must be lists, ssh_pwauth and disable_root single values. A refusal is 422 with reason invalid_cloud_config and errors.cloudcfg naming the key or the line; a key with nothing under it (runcmd:) is read as empty. A deploy whose cloud-init still cannot be applied ends the task failed with failure_reason invalid_cloud_config and the instance can be deleted or reinstalled. user_scripts selected on a deploy or reinstall now reach the guest on Proxmox nodes the same way they do on KVM nodes (before, they were silently not delivered on Proxmox). Nothing is stored: the scripts travel with the deploy only.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_instance",
@@ -10556,7 +10567,8 @@
       "mcp": {
         "status": "excluded",
         "reason": "controller validator/service contract mismatch (validator accepts add/release/swap; the service accepts add/remove/set-primary with an ips[] array). VPC IP add/remove is covered by user.instance_vpc.add_ip / user.instance_vpc.remove_ip"
-      }
+      },
+      "contract_notes": "action must be add, remove or set-primary and the matching ips (add, remove) or ip (set-primary) must be sent: a missing one answers 422 with errors (an empty ips list used to answer 200 with an empty body, nothing done). While the node is deleting the instance this answers 409 with reason delete_state (nothing is sent to the node); a failed delete is not refused."
     },
     {
       "id": "user POST /api/instance/{user_instanceId}/iso/{device}/{action}",
@@ -10692,7 +10704,7 @@
       "method": "POST",
       "path": "/api/instance/{user_instanceId}/reinstall",
       "surface": "user",
-      "contract_notes": "Answers 409 reason volume_operation_in_progress (before any task or send) while a volume attached to the instance has a backup, restore, snapshot or other operation running; retry when the volume's active_operation is null. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409. Answers 409 reason delete_state (before any task or send) for an instance whose delete is running or failed (delete_state deleting or failed): a deploy of a guest the customer asked to delete is refused; send the delete again instead. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409.",
+      "contract_notes": "Answers 409 reason volume_operation_in_progress (before any task or send) while a volume attached to the instance has a backup, restore, snapshot or other operation running; retry when the volume's active_operation is null. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409. Answers 409 reason delete_state (before any task or send) for an instance whose delete is running or failed (delete_state deleting or failed): a deploy of a guest the customer asked to delete is refused; send the delete again instead. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing this 409. Hostname is checked as a host name (RFC 1123) wherever it is accepted: letters, digits and hyphens, dots between labels, each label 1-63 characters, no hyphen at the start or end of a label, 253 characters in all; upper case and a single label are accepted, an underscore or any other character is not, and one trailing dot is accepted and removed. A refused value answers 422 with reason invalid_hostname and errors.hostname (the set-hostname endpoint answers its standard 422 with message and errors). A hostname equal to the one already stored is always accepted. Before this a value the guest cannot use (for example one with a semicolon) was stored and the guest kept its image default name. No request or response field changed; the OpenTofu provider and MCP server send the value unchanged and need no change. cloudcfg is checked when it is submitted: it must parse as YAML (a syntax error names the line), it must not be a script (a first line starting #! or #ps1 is refused: save the script under User Scripts and send its id in user_scripts), and the keys the platform merges with must have the right type: runcmd, bootcmd, write_files, packages, users and ssh_authorized_keys must be lists, ssh_pwauth and disable_root single values. A refusal is 422 with reason invalid_cloud_config and errors.cloudcfg naming the key or the line; a key with nothing under it (runcmd:) is read as empty. A deploy whose cloud-init still cannot be applied ends the task failed with failure_reason invalid_cloud_config and the instance can be deleted or reinstalled. user_scripts selected on a deploy or reinstall now reach the guest on Proxmox nodes the same way they do on KVM nodes (before, they were silently not delivered on Proxmox). Nothing is stored: the scripts travel with the deploy only.",
       "opentofu": {
         "status": "excluded",
         "reason": "imperative action, not representable as declarative IaC",
@@ -10753,6 +10765,7 @@
       "method": "POST",
       "path": "/api/instance/{user_instanceId}/self-deploy",
       "surface": "user",
+      "contract_notes": "Hostname is checked as a host name (RFC 1123) wherever it is accepted: letters, digits and hyphens, dots between labels, each label 1-63 characters, no hyphen at the start or end of a label, 253 characters in all; upper case and a single label are accepted, an underscore or any other character is not, and one trailing dot is accepted and removed. A refused value answers 422 with reason invalid_hostname and errors.hostname (the set-hostname endpoint answers its standard 422 with message and errors). A hostname equal to the one already stored is always accepted. Before this a value the guest cannot use (for example one with a semicolon) was stored and the guest kept its image default name. No request or response field changed; the OpenTofu provider and MCP server send the value unchanged and need no change.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_instance"
@@ -10888,14 +10901,14 @@
         "status": "excluded",
         "reason": "live telemetry/metrics read; served by monitoring, not a management tool/resource"
       },
-      "contract_notes": "Every failed task now ends with a short plain `message` and a typed `failure_reason` (new nullable task field; every task that fails from now on carries one, node_task_failed when nothing more specific is known; null only on a task that failed before the field existed, or that did not fail). Known failure_reason values: detach_not_confirmed, disk_target_in_use, no_space, device_busy, permission_denied, operation_timeout, instance_not_running, instance_not_found, resource_missing, node_unavailable, download_failed, node_worker_stopped, disk_state_unclear, node_task_failed. Any other reason a node sends is stored as node_task_failed (the list is closed). The old fixed sentence 'See the task log for the step that failed' is gone, and a failed task of ANY kind (not only volume, disk or storage) carries a message. The raw error stays in the task logs. Additive: the OpenTofu provider and MCP server read `message` generically and need no change. The endpoint description lists every value with one plain line each (TaskFailureText::DOC_REASONS); the response examples carry `failure_reason`."
+      "contract_notes": "Every failed task now ends with a short plain `message` and a typed `failure_reason` (new nullable task field; every task that fails from now on carries one, node_task_failed when nothing more specific is known; null only on a task that failed before the field existed, or that did not fail). Known failure_reason values: detach_not_confirmed, disk_target_in_use, no_space, device_busy, permission_denied, operation_timeout, instance_not_running, instance_not_found, resource_missing, node_unavailable, download_failed, node_worker_stopped, disk_state_unclear, invalid_cloud_config, node_task_failed. Any other reason a node sends is stored as node_task_failed (the list is closed). The old fixed sentence 'See the task log for the step that failed' is gone, and a failed task of ANY kind (not only volume, disk or storage) carries a message. The raw error stays in the task logs. Additive: the OpenTofu provider and MCP server read `message` generically and need no change. The endpoint description lists every value with one plain line each (TaskFailureText::DOC_REASONS); the response examples carry `failure_reason`."
     },
     {
       "id": "user GET /api/instance/{user_instanceId}/tasks",
       "method": "GET",
       "path": "/api/instance/{user_instanceId}/tasks",
       "surface": "user",
-      "contract_notes": "Every failed task now ends with a short plain `message` and a typed `failure_reason` (new nullable task field; every task that fails from now on carries one, node_task_failed when nothing more specific is known; null only on a task that failed before the field existed, or that did not fail). Known failure_reason values: detach_not_confirmed, disk_target_in_use, no_space, device_busy, permission_denied, operation_timeout, instance_not_running, instance_not_found, resource_missing, node_unavailable, download_failed, node_worker_stopped, disk_state_unclear, node_task_failed. Any other reason a node sends is stored as node_task_failed (the list is closed). The old fixed sentence 'See the task log for the step that failed' is gone, and a failed task of ANY kind (not only volume, disk or storage) carries a message. The raw error stays in the task logs. Additive: the OpenTofu provider and MCP server read `message` generically and need no change. A failed task of a deleted instance stays in GET /api/tasks (this route needs the live instance). The endpoint description lists every value with one plain line each (TaskFailureText::DOC_REASONS); the response examples carry `failure_reason`.",
+      "contract_notes": "Every failed task now ends with a short plain `message` and a typed `failure_reason` (new nullable task field; every task that fails from now on carries one, node_task_failed when nothing more specific is known; null only on a task that failed before the field existed, or that did not fail). Known failure_reason values: detach_not_confirmed, disk_target_in_use, no_space, device_busy, permission_denied, operation_timeout, instance_not_running, instance_not_found, resource_missing, node_unavailable, download_failed, node_worker_stopped, disk_state_unclear, invalid_cloud_config, node_task_failed. Any other reason a node sends is stored as node_task_failed (the list is closed). The old fixed sentence 'See the task log for the step that failed' is gone, and a failed task of ANY kind (not only volume, disk or storage) carries a message. The raw error stays in the task logs. Additive: the OpenTofu provider and MCP server read `message` generically and need no change. A failed task of a deleted instance stays in GET /api/tasks (this route needs the live instance). The endpoint description lists every value with one plain line each (TaskFailureText::DOC_REASONS); the response examples carry `failure_reason`.",
       "opentofu": {
         "status": "excluded",
         "reason": "live telemetry/metrics read; not declarative IaC"
@@ -12196,7 +12209,7 @@
       "method": "POST",
       "path": "/api/load-balancers",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. 409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted. 409 address_reservation_busy with success:false, reason and message and a Retry-After: 1 header when the public address cannot be reserved because another request is reserving from the same pool at the same moment and the database kept reporting a concurrency conflict after three short retries; nothing is created (no appliance VM, row, address or task), repeat the same request after the wait.",
+      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. 409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted. 409 address_reservation_busy with success:false, reason and message and a Retry-After: 1 header when the public address cannot be reserved because another request is reserving from the same pool at the same moment and the database kept reporting a concurrency conflict after three short retries; nothing is created (no appliance VM, row, address or task), repeat the same request after the wait. A refused field answers 422 with errors (lb_plan_id, vpc_id, ...); it answered 200 with only a message.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_load_balancer"
@@ -13709,6 +13722,7 @@
       "method": "PATCH",
       "path": "/api/scaling-group/{user_scalingGroupId}",
       "surface": "user",
+      "contract_notes": "cloud_init is checked when it is submitted: it must parse as YAML (a syntax error names the line), it must not be a script (a first line starting #! or #ps1 is refused: save the script under User Scripts and pick it on the group), and the keys the platform merges with must have the right type: runcmd, bootcmd, write_files, packages, users and ssh_authorized_keys must be lists, ssh_pwauth and disable_root single values. A refusal is 422 with reason invalid_cloud_config and errors.cloudcfg naming the key or the line; a key with nothing under it (runcmd:) is read as empty. A deploy whose cloud-init still cannot be applied ends the task failed with failure_reason invalid_cloud_config and the instance can be deleted or reinstalled. A refused field answers 422 with errors; it answered 200 success:false with only a message.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_autoscaling_group"
@@ -13807,6 +13821,7 @@
       "method": "POST",
       "path": "/api/scaling-groups",
       "surface": "user",
+      "contract_notes": "cloud_init is checked when it is submitted: it must parse as YAML (a syntax error names the line), it must not be a script (a first line starting #! or #ps1 is refused: save the script under User Scripts and pick it on the group), and the keys the platform merges with must have the right type: runcmd, bootcmd, write_files, packages, users and ssh_authorized_keys must be lists, ssh_pwauth and disable_root single values. A refusal is 422 with reason invalid_cloud_config and errors.cloudcfg naming the key or the line; a key with nothing under it (runcmd:) is read as empty. A deploy whose cloud-init still cannot be applied ends the task failed with failure_reason invalid_cloud_config and the instance can be deleted or reinstalled. A refused field answers 422 with errors; it answered 200 success:false with only a message.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_autoscaling_group"
@@ -13980,7 +13995,7 @@
       "method": "POST",
       "path": "/api/self-provisioning/instances",
       "surface": "user",
-      "contract_notes": "409 address_reservation_busy with success:false, reason and message and a Retry-After: 1 header when the addresses cannot be reserved because another request is reserving from the same pool at the same moment and the database kept reporting a concurrency conflict after three short retries; nothing is created (no instance, address, billing row or task), repeat the same request after the wait. A database failure never returns SQL text, table or database names: 500 database_error, or 409 concurrent_update_retry for a retryable concurrency conflict, with a fixed sentence.",
+      "contract_notes": "409 address_reservation_busy with success:false, reason and message and a Retry-After: 1 header when the addresses cannot be reserved because another request is reserving from the same pool at the same moment and the database kept reporting a concurrency conflict after three short retries; nothing is created (no instance, address, billing row or task), repeat the same request after the wait. A database failure never returns SQL text, table or database names: 500 database_error, or 409 concurrent_update_retry for a retryable concurrency conflict, with a fixed sentence. Hostname is checked as a host name (RFC 1123) wherever it is accepted: letters, digits and hyphens, dots between labels, each label 1-63 characters, no hyphen at the start or end of a label, 253 characters in all; upper case and a single label are accepted, an underscore or any other character is not, and one trailing dot is accepted and removed. A refused value answers 422 with reason invalid_hostname and errors.hostname (the set-hostname endpoint answers its standard 422 with message and errors). A hostname equal to the one already stored is always accepted. Before this a value the guest cannot use (for example one with a semicolon) was stored and the guest kept its image default name. No request or response field changed; the OpenTofu provider and MCP server send the value unchanged and need no change.",
       "opentofu": {
         "status": "excluded",
         "reason": "Create may answer 422 with a machine-readable capacity reason; OpenTofu client parity is pending. A specific reason is answered only when every server in the location was refused for it, otherwise no_capacity."
@@ -14081,7 +14096,7 @@
       "method": "POST",
       "path": "/api/ssh-keys",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows.",
+      "contract_notes": "Subuser authorization is per-project aware: a per-project permission override set by the account owner REPLACES the team role for resources tagged with that project, resolved from the route resource and from body/query ids (project_id, instance_id, vpc_id, subnet and SSH key ids). A denied project answers 403 {success:false, reason:project_permission_denied}; list, count, search, dashboard and metrics responses omit rows of denied projects (filtered before pagination); account owners and untagged resources are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change beyond seeing these 403s and fewer rows. A public_key that cannot be read as an OpenSSH public key is refused with 422 and errors.public_key (it answered 200 success:false); a readable key behaves as before, and the provider and the MCP server already treat a non-2xx answer as a failure.",
       "opentofu": {
         "status": "covered",
         "type": "iaas_ssh_key"
@@ -14560,7 +14575,7 @@
       "method": "GET",
       "path": "/api/tasks",
       "surface": "user",
-      "contract_notes": "Subuser authorization is per-project aware: the resource's project (a task by its instance, a database backup policy by every database attached to it) is judged against the account owner's per-project permission overrides; a denied project answers 403 {success:false, reason:project_permission_denied} and list/detail responses omit or exclude rows and counts of denied projects. Owners are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change. A failed task now outlives the deletion of its instance: it stays in this list (instance_id kept, instance null) and readable through its logs until the retention prune (60 days), with its message. Other tasks of a deleted instance are still removed with it. Every failed task now ends with a short plain `message` and a typed `failure_reason` (new nullable task field; every task that fails from now on carries one, node_task_failed when nothing more specific is known; null only on a task that failed before the field existed, or that did not fail). Known failure_reason values: detach_not_confirmed, disk_target_in_use, no_space, device_busy, permission_denied, operation_timeout, instance_not_running, instance_not_found, resource_missing, node_unavailable, download_failed, node_worker_stopped, disk_state_unclear, node_task_failed. Any other reason a node sends is stored as node_task_failed (the list is closed). The old fixed sentence 'See the task log for the step that failed' is gone, and a failed task of ANY kind (not only volume, disk or storage) carries a message. The raw error stays in the task logs. Additive: the OpenTofu provider and MCP server read `message` generically and need no change. The endpoint description lists every value with one plain line each (TaskFailureText::DOC_REASONS); the response examples carry `failure_reason`.",
+      "contract_notes": "Subuser authorization is per-project aware: the resource's project (a task by its instance, a database backup policy by every database attached to it) is judged against the account owner's per-project permission overrides; a denied project answers 403 {success:false, reason:project_permission_denied} and list/detail responses omit or exclude rows and counts of denied projects. Owners are unchanged. No request or response field changed, so the OpenTofu provider and MCP server need no change. A failed task now outlives the deletion of its instance: it stays in this list (instance_id kept, instance null) and readable through its logs until the retention prune (60 days), with its message. Other tasks of a deleted instance are still removed with it. Every failed task now ends with a short plain `message` and a typed `failure_reason` (new nullable task field; every task that fails from now on carries one, node_task_failed when nothing more specific is known; null only on a task that failed before the field existed, or that did not fail). Known failure_reason values: detach_not_confirmed, disk_target_in_use, no_space, device_busy, permission_denied, operation_timeout, instance_not_running, instance_not_found, resource_missing, node_unavailable, download_failed, node_worker_stopped, disk_state_unclear, invalid_cloud_config, node_task_failed. Any other reason a node sends is stored as node_task_failed (the list is closed). The old fixed sentence 'See the task log for the step that failed' is gone, and a failed task of ANY kind (not only volume, disk or storage) carries a message. The raw error stays in the task logs. Additive: the OpenTofu provider and MCP server read `message` generically and need no change. The endpoint description lists every value with one plain line each (TaskFailureText::DOC_REASONS); the response examples carry `failure_reason`.",
       "opentofu": {
         "status": "excluded",
         "reason": "live telemetry/metrics read; not declarative IaC"
