@@ -5396,7 +5396,7 @@
         "status": "excluded",
         "reason": "admin config/pricing/account mutation excluded from the MCP server's safe allowlist"
       },
-      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted. 409 address_reservation_busy with success:false, reason and message and a Retry-After: 1 header when the public address cannot be reserved because another request is reserving from the same pool at the same moment and the database kept reporting a concurrency conflict after three short retries; nothing is created (no appliance VM, row, address or task), repeat the same request after the wait."
+      "contract_notes": "409 vpc_deleting (success:false, reason, message) when the target VPC is being deleted (status deleting); nothing is created, attached or peered. New answer: before, the request was accepted. 409 address_reservation_busy with success:false, reason and message and a Retry-After: 1 header when the public address cannot be reserved because another request is reserving from the same pool at the same moment and the database kept reporting a concurrency conflict after three short retries; nothing is created (no appliance VM, row, address or task), repeat the same request after the wait. A refused field answers 422 with errors (lb_plan_id, vpc_id, ...); it answered 200 with only a message."
     },
     {
       "id": "admin GET /api/v1/mass-mail",
