@@ -65,19 +65,19 @@ func TestCreateIPSet_Success(t *testing.T) {
 	}
 }
 
-// TestCreateIPSet_Failure verifies a 200 success:false response surfaces the
+// TestCreateIPSet_Failure verifies a 422 field refusal (API-422: it used to be a 200 success:false) surfaces the
 // API message as an error (C3).
 func TestCreateIPSet_Failure(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"success":false,"message":"The name field is required."}`))
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"message":"The name field is required.","errors":{"name":["The name field is required."]}}`))
 	}))
 	defer srv.Close()
 
 	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
 	_, err := c.CreateIPSet(context.Background(), map[string]any{"ip_version": "ipv4"})
 	if err == nil {
-		t.Fatal("CreateIPSet: expected error for success:false, got nil")
+		t.Fatal("CreateIPSet: expected error for a 422, got nil")
 	}
 	if !contains(err.Error(), "name field is required") {
 		t.Errorf("error = %q; want it to contain %q", err.Error(), "name field is required")

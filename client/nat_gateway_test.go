@@ -350,19 +350,19 @@ func TestAttachNatGatewaySubnet_Success(t *testing.T) {
 	}
 }
 
-// TestAttachNatGatewaySubnet_NotPrivate verifies a 200 success:false (subnet not
-// private / already attached) surfaces as an error.
+// TestAttachNatGatewaySubnet_NotPrivate verifies a 422 on subnet_id (subnet not
+// private or of another VPC; API-422, it used to be a 200 success:false) surfaces as an error.
 func TestAttachNatGatewaySubnet_NotPrivate(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"success":false,"message":"Only private subnets can be attached"}`))
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"success":false,"message":"Only private subnets can be attached","errors":{"subnet_id":["Only private subnets can be attached"]}}`))
 	}))
 	defer srv.Close()
 
 	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
 	_, err := c.AttachNatGatewaySubnet(context.Background(), "vpc-1", "ngw-1", "sub-pub")
 	if err == nil {
-		t.Fatal("AttachNatGatewaySubnet: expected error for 200 success:false, got nil")
+		t.Fatal("AttachNatGatewaySubnet: expected error for a 422 on subnet_id, got nil")
 	}
 	if !contains(err.Error(), "private") {
 		t.Errorf("error = %q; want it to contain %q", err.Error(), "private")

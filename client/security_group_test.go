@@ -62,19 +62,19 @@ func TestCreateSecurityGroup_Success(t *testing.T) {
 	}
 }
 
-// TestCreateSecurityGroup_Failure verifies a 200 success:false response surfaces
+// TestCreateSecurityGroup_Failure verifies a 422 field refusal (API-422: it used to be a 200 success:false) surfaces
 // the API message as an error (C3).
 func TestCreateSecurityGroup_Failure(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"success":false,"message":"The name field is required."}`))
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"message":"The name field is required.","errors":{"name":["The name field is required."]}}`))
 	}))
 	defer srv.Close()
 
 	c := New(srv.URL+"/api", "tok", 10*time.Second, false)
 	_, err := c.CreateSecurityGroup(context.Background(), map[string]any{})
 	if err == nil {
-		t.Fatal("CreateSecurityGroup: expected error for success:false, got nil")
+		t.Fatal("CreateSecurityGroup: expected error for a 422, got nil")
 	}
 	if !contains(err.Error(), "name field is required") {
 		t.Errorf("error = %q; want it to contain %q", err.Error(), "name field is required")
